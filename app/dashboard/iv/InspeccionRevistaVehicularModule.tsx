@@ -85,6 +85,17 @@ export default function InspeccionRevistaVehicularForm() {
       })
     );
   };
+    const calculatePercentage = () => {
+    const total = Object.keys(inspectionData).length;
+    const checked = Object.values(inspectionData).filter(val => val).length;
+    return Math.round((checked / total) * 100);
+  };
+
+  // const toggleField = (field: keyof typeof inspectionData) => {
+  //   setInspectionData(prev => ({ ...prev, [field]: !prev[field] }));
+  // };
+
+
 
   const handleRemoveImage = (id: string) => {
     setSelectedImages(prev => prev.filter(img => img.id !== id));
@@ -110,6 +121,33 @@ export default function InspeccionRevistaVehicularForm() {
   return (
     <form className="container mx-auto p-4 bg-white border border-muted rounded-lg">
       <h2 className="text-2xl font-bold text-gray-800 mb-6 pb-3 border-b">Inspección para Revista Vehicular</h2>
+<h3 className="text-lg font-semibold text-gray-700 mb-2">Ponderación general de inspección</h3>
+<div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden mb-2">
+  <div
+    className="h-full text-white text-[10px] font-semibold flex items-center justify-center"
+    style={{
+      width: `${calculatePercentage()}%`,
+      backgroundColor:
+        calculatePercentage() < 50
+          ? "#dc2626" // rojo
+          : calculatePercentage() < 80
+          ? "#facc15" // amarillo
+          : "#16a34a", // verde
+      transition: "width 0.3s ease-in-out",
+    }}
+  >
+    {calculatePercentage()}%
+  </div>
+</div>
+<p className="text-sm font-medium text-black text-center">
+  {
+    calculatePercentage() < 50
+      ? "Malo"
+      : calculatePercentage() < 80
+      ? "Regular"
+      : "Bueno"
+  }
+</p>
 
       <section className="mb-8">
         <h3 className="text-xl font-semibold text-gray-700 mb-4">Datos generales (editable)</h3>

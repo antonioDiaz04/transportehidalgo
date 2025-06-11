@@ -317,8 +317,8 @@ export default function ExpedienteModule() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Expedientes</h2>
-        <p className="text-muted-foreground">Gestione los expedientes del sistema</p>
+        <h2 className="text-2xl font-bold tracking-tight">Consultar Vehículo</h2>
+        <p className="text-muted-foreground">Modificar Datos del Vehículo</p>
       </div>
       </div>
 
@@ -359,7 +359,7 @@ export default function ExpedienteModule() {
             <TableHead>Serie</TableHead>
             <TableHead>Placa</TableHead>
             <TableHead>Número Expediente</TableHead>
-            <TableHead className="text-right">Acciones</TableHead>
+            {/* <TableHead className="text-right">Acciones</TableHead> */}
           </TableRow>
           </TableHeader>
           <TableBody>
@@ -400,7 +400,7 @@ export default function ExpedienteModule() {
               <TableCell>{exp.tipo}</TableCell>
               <TableCell>{exp.titular}</TableCell>
               <TableCell>{exp.id}</TableCell>
-              <TableCell className="text-right">
+              {/* <TableCell className="text-right">
               <div className="flex justify-end gap-2">
                 <Button variant="ghost" size="icon">
                 <FileText className="h-4 w-4" />
@@ -411,7 +411,7 @@ export default function ExpedienteModule() {
                 <span className="sr-only">Descargar</span>
                 </Button>
               </div>
-              </TableCell>
+              </TableCell> */}
             </TableRow>
             ))
           ) : (

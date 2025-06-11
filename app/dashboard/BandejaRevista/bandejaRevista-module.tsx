@@ -147,7 +147,8 @@ export default function BandejaRevistaModule() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <Input placeholder="Municipio" value={municipality} onChange={e => setMunicipality(e.target.value)} />
+        {/* <Input placeholder="Municipio" value={municipality} onChange={e => setMunicipality(e.target.value)} /> */}
+        <Input type="date" value={inspectionDate} onChange={e => setInspectionDate(e.target.value)} />
         <Input type="date" value={inspectionDate} onChange={e => setInspectionDate(e.target.value)} />
       </div>
 
