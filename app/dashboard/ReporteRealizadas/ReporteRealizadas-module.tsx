@@ -256,10 +256,24 @@ export default function ReporteRealizadas() {
   return (
     <div className="p-8 bg-white border border-muted rounded-lg overflow-x-auto">
       <h2 className="text-2xl font-bold mb-6">Revistas Vehiculares</h2>
-      
+      <div className="mb-2">
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">Rango de Fecha:</h3>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <Input type="date" />
-        <Input type="date" />
+        <div>
+          <label htmlFor="fechaInicio" className="block text-sm font-medium text-gray-700 mb-1">Fecha Inicio</label>
+          <Input
+            id="fechaInicio"
+            type="date"
+          />
+        </div>
+        <div>
+          <label htmlFor="fechaFin" className="block text-sm font-medium text-gray-700 mb-1">Fecha Fin</label>
+          <Input
+            id="fechaFin"
+            type="date"
+          />
+        </div>
       </div>
 
       <table className="w-full table-auto text-left border-collapse border border-gray-200">

@@ -564,30 +564,23 @@ export default function AutorizacionModule() {
       {/* Card simple para la lista de expedientes */}
       <Card className="border border-muted shadow-none">
         <CardContent className="pt-6 pb-6 px-6">
-          <div className="mb-4 flex flex-col sm:flex-row items-center gap-4">
-            <div className="relative flex-1 w-full">
+          <div className="mb-4 flex flex-col gap-2">
+            <h2 className="text-lg font-semibold text-foreground">Datos de búsqueda</h2>
+            <label className="text-sm font-medium text-muted-foreground">
+              NÚMERO DE AUTORIZACIÓN:
+            </label>
+            <div className="relative w-full">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Buscar por Folio, Serie, Placa o Número de Expediente..."
+                placeholder="Buscar Número de Expediente..."
                 className="pl-8 w-full"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            {/* <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Filtrar por estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos los estados</SelectItem>
-                <SelectItem value="activo">Activo</SelectItem>
-                <SelectItem value="en revisión">En Revisión</SelectItem>
-                <SelectItem value="completado">Completado</SelectItem>
-                <SelectItem value="archivado">Archivado</SelectItem>
-              </SelectContent>
-            </Select> */}
           </div>
+
           <div className="rounded-md border">
             <Table>
               <TableHeader>

@@ -26,10 +26,10 @@ function ReadonlyField({ label, value }: ReadonlyFieldProps) {
 
 export default function TitularModule() {
   const router = useRouter()
-      const [nombre, setNombre] = useState('');
-      const [APaterno, setAPaterno] = useState('');
-      const [AMaterno, setAMaterno] = useState('');
-  
+  const [nombre, setNombre] = useState('');
+  const [APaterno, setAPaterno] = useState('');
+  const [AMaterno, setAMaterno] = useState('');
+
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("todos")
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
@@ -325,11 +325,19 @@ export default function TitularModule() {
           <p className="text-muted-foreground">Modificar Datos del Vehículo</p>
         </div>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        <Input placeholder="Nombre" value={nombre} onChange={e => setNombre(e.target.value)} />
-        <Input placeholder="Apaterno Materno" value={AMaterno} onChange={e => setAMaterno(e.target.value)} />
-        <Input placeholder="Apellido paterno" value={APaterno} onChange={e => setAPaterno(e.target.value)} />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+          <Input placeholder="Nombre" value={nombre} onChange={e => setNombre(e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Apellido Paterno</label>
+          <Input placeholder="Apellido Paterno" value={APaterno} onChange={e => setAPaterno(e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Apellido Materno</label>
+          <Input placeholder="Apellido Materno" value={AMaterno} onChange={e => setAMaterno(e.target.value)} />
+        </div>
       </div>
 
       {/* Card simple para la lista de expedientes */}
