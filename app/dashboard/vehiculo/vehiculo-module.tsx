@@ -31,7 +31,7 @@ function ReadonlyField({ label, value }: ReadonlyFieldProps) {
   )
 }
 
-export default function ExpedienteModule() {
+export default function VehiculoModule() {
   const [concession, setConcession] = useState('');
 
   const router = useRouter()

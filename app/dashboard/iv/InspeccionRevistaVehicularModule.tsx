@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,15 @@ interface SelectedImage {
   previewUrl: string;
   customName?: string;
 }
+
+const imageTypes = [
+  'Número de Serie',
+  'Número de Motor',
+  'Fotografía Frontal',
+  'Fotografía Trasera',
+  'Fotografía Lateral Izquierda',
+  'Fotografía Lateral Derecha'
+];
 
 const initialInspectionData = {
   placaDelantera: true,
@@ -55,15 +64,22 @@ export default function InspeccionRevistaVehicularForm() {
   const [aprobarRevistaVehicular, setAprobarRevistaVehicular] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Limpiar object URLs cuando el componente se desmonte o las imágenes cambien
+  useEffect(() => {
+    return () => {
+      selectedImages.forEach(img => URL.revokeObjectURL(img.previewUrl));
+    };
+  }, [selectedImages]);
+
   const toggleField = (field: keyof typeof inspectionData) => {
     setInspectionData(prev => ({ ...prev, [field]: !prev[field] }));
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (files) {
+    if (files && files.length > 0) {
       const newImages: SelectedImage[] = Array.from(files).map(file => ({
-        id: file.name + Date.now(),
+        id: `${file.name}-${Date.now()}`,
         file: file,
         type: '',
         previewUrl: URL.createObjectURL(file),
@@ -85,23 +101,23 @@ export default function InspeccionRevistaVehicularForm() {
       })
     );
   };
-    const calculatePercentage = () => {
+
+  const calculatePercentage = () => {
     const total = Object.keys(inspectionData).length;
     const checked = Object.values(inspectionData).filter(val => val).length;
     return Math.round((checked / total) * 100);
   };
 
-  // const toggleField = (field: keyof typeof inspectionData) => {
-  //   setInspectionData(prev => ({ ...prev, [field]: !prev[field] }));
-  // };
-
-
-
   const handleRemoveImage = (id: string) => {
+    const imageToRemove = selectedImages.find(img => img.id === id);
+    if (imageToRemove) {
+      URL.revokeObjectURL(imageToRemove.previewUrl);
+    }
     setSelectedImages(prev => prev.filter(img => img.id !== id));
   };
 
-  const handleAddImages = () => {
+  const handleAddImages = (e: React.MouseEvent) => {
+    e.preventDefault();
     const allTypesSelected = selectedImages.every(img => img.type !== '');
     if (!allTypesSelected) {
       alert("Por favor, selecciona un tipo para cada imagen antes de agregar.");
@@ -109,6 +125,17 @@ export default function InspeccionRevistaVehicularForm() {
     }
     setSelectedImages([]);
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Aquí puedes agregar la lógica para enviar el formulario
+    console.log({
+      inspectionData,
+      selectedImages,
+      observaciones,
+      aprobarRevistaVehicular
+    });
   };
 
   const renderCheckboxField = (label: string, key: keyof typeof inspectionData) => (
@@ -119,36 +146,33 @@ export default function InspeccionRevistaVehicularForm() {
   );
 
   return (
-    <form className="container mx-auto p-4 bg-white border border-muted rounded-lg">
+    <form onSubmit={handleSubmit} className="container mx-auto p-4 bg-white border border-muted rounded-lg">
       <h2 className="text-2xl font-bold text-gray-800 mb-6 pb-3 border-b">Inspección para Revista Vehicular</h2>
-<h3 className="text-lg font-semibold text-gray-700 mb-2">Ponderación general de inspección</h3>
-<div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden mb-2">
-  <div
-    className="h-full text-white text-[10px] font-semibold flex items-center justify-center"
-    style={{
-      width: `${calculatePercentage()}%`,
-      backgroundColor:
-        calculatePercentage() < 50
-          ? "#dc2626" // rojo
-          : calculatePercentage() < 80
-          ? "#facc15" // amarillo
-          : "#16a34a", // verde
-      transition: "width 0.3s ease-in-out",
-    }}
-  >
-    {calculatePercentage()}%
-  </div>
-</div>
-<p className="text-sm font-medium text-black text-center">
-  {
-    calculatePercentage() < 50
-      ? "Malo"
-      : calculatePercentage() < 80
-      ? "Regular"
-      : "Bueno"
-  }
-</p>
+      
+      {/* Sección de Ponderación */}
+      <h3 className="text-lg font-semibold text-gray-700 mb-2">Ponderación general de inspección</h3>
+      <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden mb-2">
+        <div
+          className="h-full text-white text-[10px] font-semibold flex items-center justify-center"
+          style={{
+            width: `${calculatePercentage()}%`,
+            backgroundColor:
+              calculatePercentage() < 50
+                ? "#dc2626"
+                : calculatePercentage() < 80
+                  ? "#facc15"
+                  : "#16a34a",
+            transition: "width 0.3s ease-in-out",
+          }}
+        >
+          {calculatePercentage()}%
+        </div>
+      </div>
+      <p className="text-sm font-medium text-black text-center">
+        {calculatePercentage() < 50 ? "Malo" : calculatePercentage() < 80 ? "Regular" : "Bueno"}
+      </p>
 
+      {/* Sección de Datos Generales */}
       <section className="mb-8">
         <h3 className="text-xl font-semibold text-gray-700 mb-4">Datos generales (editable)</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -158,50 +182,109 @@ export default function InspeccionRevistaVehicularForm() {
         </div>
       </section>
 
-      <section className="mb-8">
-        <h3 className="text-xl font-semibold text-gray-700 mb-4">Imágenes</h3>
-        <div className="flex items-center space-x-4 mb-4">
-          <Input type="file" multiple ref={fileInputRef} onChange={handleFileChange} className="flex-grow" />
-          <Select onValueChange={value => {
-            if (selectedImages.length > 0) {
-              handleTypeChange(selectedImages[selectedImages.length - 1].id, value);
-            }
-          }}>
-            <SelectTrigger id="imageType" className="w-[200px]">
-              <SelectValue placeholder="Tipo de imagen:" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="frontal">Frontal</SelectItem>
-              <SelectItem value="trasera">Trasera</SelectItem>
-              <SelectItem value="lateral">Lateral</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button onClick={() => fileInputRef.current?.click()}>Agregar</Button>
+      {/* Sección de Imágenes */}
+      <section className="mb-8 p-6 bg-white rounded-xl">
+        <div className="flex justify-between items-start mb-4">
+          <h2 className="text-xl font-bold">Agregar Imágenes</h2>
         </div>
-        <div className="flex flex-wrap gap-4 mb-4">
-          {selectedImages.map((img) => (
-            <div key={img.id} className="flex flex-col items-center">
-              <Image src={img.previewUrl} alt={img.file.name} width={80} height={80} className="rounded border" />
-              <span className="text-xs">{img.customName || img.file.name}</span>
-              <Button variant="destructive" size="sm" onClick={() => handleRemoveImage(img.id)}>Eliminar</Button>
+
+        <input
+          type="file"
+          ref={fileInputRef}
+          multiple
+          accept="image/*"
+          onChange={handleFileChange}
+          className="hidden"
+        />
+
+        {selectedImages.map((img) => (
+          <div key={img.id} className="flex items-center gap-4 mb-4">
+            <Image 
+              src={img.previewUrl} 
+              alt={img.file.name} 
+              width={80} 
+              height={80} 
+              className="rounded border"
+              onLoad={() => URL.revokeObjectURL(img.previewUrl)} // Liberar memoria después de cargar
+            />
+            <div className="flex-1">
+              <p className="text-sm font-medium mb-1">
+                {img.customName || img.file.name}
+              </p>
+              <select
+                value={img.type}
+                onChange={(e) => handleTypeChange(img.id, e.target.value)}
+                className="border p-2 rounded w-full"
+              >
+                <option value="">Seleccione tipo</option>
+                {imageTypes.map(type => <option key={type} value={type}>{type}</option>)}
+              </select>
             </div>
-          ))}
-        </div>
-        <div className="flex justify-center mb-6">
-          <Button onClick={handleAddImages} disabled={selectedImages.length === 0}>Cargar Imágenes</Button>
+            <Button 
+              type="button"
+              variant="destructive" 
+              onClick={() => handleRemoveImage(img.id)}
+            >
+              Eliminar
+            </Button>
+          </div>
+        ))}
+
+        <div className="flex justify-between mt-4">
+          <Button 
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            + Más Imágenes
+          </Button>
+          <Button 
+            type="button"
+            variant="destructive" 
+            onClick={() => setSelectedImages([])}
+          >
+            Vaciar Imágenes
+          </Button>
+          <div className="flex gap-2">
+            <Button 
+              type="button"
+              variant="secondary" 
+              onClick={() => setSelectedImages([])}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              type="button"
+              onClick={handleAddImages} 
+              disabled={selectedImages.length === 0}
+            >
+              Agregar
+            </Button>
+          </div>
         </div>
       </section>
 
+      {/* Sección de Confirmación */}
       <section className="mb-8">
         <h3 className="text-xl font-semibold text-gray-700 mb-4">Confirmar Inspección Vehicular</h3>
         <div>
           <label htmlFor="observaciones" className="block text-sm font-medium text-gray-700 mb-1">Observaciones:</label>
-          <Textarea id="observaciones" className="min-h-[100px] bg-gray-100" value={observaciones} onChange={e => setObservaciones(e.target.value)} />
+          <Textarea 
+            id="observaciones" 
+            className="min-h-[100px] bg-gray-100" 
+            value={observaciones} 
+            onChange={e => setObservaciones(e.target.value)} 
+          />
         </div>
         <div className="flex items-center justify-between mt-8">
           <div className="flex items-center space-x-2">
-            <Checkbox id="aprobarRevista" checked={aprobarRevistaVehicular} onCheckedChange={checked => setAprobarRevistaVehicular(!!checked)} />
-            <label htmlFor="aprobarRevista" className="text-sm font-medium text-gray-900">Aprobar Revista Vehicular</label>
+            <Checkbox 
+              id="aprobarRevista" 
+              checked={aprobarRevistaVehicular} 
+              onCheckedChange={checked => setAprobarRevistaVehicular(!!checked)} 
+            />
+            <label htmlFor="aprobarRevista" className="text-sm font-medium text-gray-900">
+              Aprobar Revista Vehicular
+            </label>
           </div>
           <Button
             type="submit"

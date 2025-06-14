@@ -25,7 +25,7 @@ const navigation = [
   { name: "Titular", href: "/dashboard/titular", icon: User },
   { name: "Vehículo", href: "/dashboard/vehiculo", icon: Car },
   { name: "Búsqueda de Revista Vehicular", href: "/dashboard/BandejaRevista", icon: Search },
-  { name: "Reporte de Inspecciones Realizadas", href: "/dashboard/inspecciones", icon: Search },
+  { name: "Reporte de Inspecciones Realizadas", href: "/dashboard/ReporteRealizadas", icon: Search },
 ]
 
 export default function DashboardLayout({
@@ -57,7 +57,7 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 w-64 transform bg-gray-100 border-r transition-transform duration-200 ease-in-out z-50",
+          "fixed inset-y-0 left-0 w-64 transform bg-gray-100 border-r transition-transform duration-200 ease-in-out max-sm:z-50 lg:z-0" ,
           shouldCollapseSidebar 
             ? (sidebarOpen ? "translate-x-0" : "-translate-x-full") 
             : "translate-x-0"
@@ -89,7 +89,7 @@ export default function DashboardLayout({
                   "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-[#bc1c44]/10 text-[#bc1c44]"
-                    : "text-gray-600 hover:bg-[#bc1c44]/5 hover:text-[#bc1c44]",
+                    : "text-gray-600 hover:bg-[#404040]/5 hover:text-gray-900",
                 )}
               >
                 <Icon className={cn("h-5 w-5", isActive ? "text-[#bc1c44]" : "text-gray-500")} />
@@ -144,7 +144,7 @@ export default function DashboardLayout({
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-4 md:p-6">
+        <main className="flex-1 p-4 md:p-6 ">
           {/* Añadimos un margen superior solo en móvil/tablet para evitar que el contenido quede pegado al header */}
           <div className={cn(shouldCollapseSidebar ? "mt-4" : "")}>
             {children}

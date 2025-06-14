@@ -10,13 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useRouter } from "next/navigation"
 
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-
 type ReadonlyFieldProps = {
   label: string
   value: string
@@ -31,10 +24,12 @@ function ReadonlyField({ label, value }: ReadonlyFieldProps) {
   )
 }
 
-export default function ExpedienteModule() {
-  const [concession, setConcession] = useState('');
-
+export default function TitularModule() {
   const router = useRouter()
+      const [nombre, setNombre] = useState('');
+      const [APaterno, setAPaterno] = useState('');
+      const [AMaterno, setAMaterno] = useState('');
+  
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("todos")
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
@@ -97,6 +92,7 @@ export default function ExpedienteModule() {
     observaciones: "",
   };
 
+  // Datos de ejemplo para concesionario
   const concesionarioData = {
     tipoPersona: "Física",
     nombre: "Juan",
@@ -113,81 +109,6 @@ export default function ExpedienteModule() {
     fechaAlta: "01/01/2020",
     estatus: "Activo",
     observacionesConcesionario: "",
-
-    domicilio: {
-      calle: "Av. Reforma",
-      colonia: "Centro",
-      cruzaCon: "Av. Juárez",
-      referencia: "Frente a la plaza",
-      numeroExterior: "123",
-      numeroInterior: "4B",
-      estado: "Hidalgo",
-      codigoPostal: "42000",
-      municipio: "Pachuca",
-      localidad: "Pachuca Centro",
-      tipoDireccion: "Particular",
-      esFiscal: true,
-      telefono: "7711234567",
-      fax: "7717654321"
-    },
-
-    beneficiarios: [
-      { nombre: "Luis Pérez", parentesco: "Hijo" },
-      { nombre: "Ana García", parentesco: "Esposa" },
-    ],
-
-    referencias: [
-      {
-        nombreCompleto: "Carlos Ramírez",
-        parentesco: "Hermano",
-        calle: "Av. Insurgentes",
-        colonia: "Del Valle",
-        cruzaCon: "Eje 7 Sur",
-        referencia: "Cerca del parque",
-        numeroExterior: "456",
-        numeroInterior: "2A",
-        estado: "CDMX",
-        codigoPostal: "03100",
-        municipio: "Benito Juárez",
-        localidad: "Ciudad de México",
-        tipoDireccion: "Particular",
-        telefonoParticular: "5551234567",
-        fax: "5557654321",
-      }]
-  };
-
-  type Concesionario = {
-    tipoPersona: string;
-    identificador: string;
-    nombre: string;
-    apellidoPaterno: string;
-    apellidoMaterno: string;
-    fechaNacimiento: string;
-    lugarNacimiento: string;
-    genero: string;
-    rfc: string;
-    nacionalidad: string;
-    correoElectronico: string;
-    estadoCivil: string;
-    fechaAlta: string;
-    estatus: string;
-    observacionesConcesionario: string;
-    domicilio?: {
-      calle: string;
-      numero: string;
-      colonia: string;
-      municipio: string;
-      estado: string;
-      codigoPostal: string;
-    };
-    beneficiarios?: {
-      nombre: string;
-      parentesco: string;
-    }[];
-    referencias?: {
-      nombre: string;
-      telefono: string;
-    }[];
   };
 
   // Data structure for the "Vehiculo" section, based on unnamed.png / image_c99a1c.png
@@ -326,8 +247,7 @@ export default function ExpedienteModule() {
               <Input readOnly className="bg-gray-100" value={concesionarioData.estatus} placeholder="Estatus" />
             </div>
           </div>
-
-          <div className="mt-4 mb-6">
+          <div className="mt-4">
             <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones:</label>
             <Input
               value={concesionarioData.observacionesConcesionario}
@@ -335,164 +255,9 @@ export default function ExpedienteModule() {
               className="bg-gray-100 border border-gray-200 text-gray-800 rounded-md p-2 text-sm focus:outline-none focus:ring-0 focus:border-gray-200"
             />
           </div>
-
-          {/* Acordeón debajo de observaciones */}
-          <div className="border rounded-md overflow-hidden">
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="beneficiarios">
-                <AccordionTrigger className="text-left px-4 py-2 font-medium bg-white border-b">Beneficiarios Registrados</AccordionTrigger>
-                <AccordionContent className="p-4 bg-gray-50 space-y-3">
-                  {concesionarioData.beneficiarios?.map((b, i) => (
-                    <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-3 rounded-md bg-white">
-                      <Input readOnly className="bg-gray-100" value={b.nombre} placeholder="Nombre" />
-                      <Input readOnly className="bg-gray-100" value={b.parentesco} placeholder="Parentesco" />
-                    </div>
-                  ))}
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="domicilio">
-                <AccordionTrigger className="text-left px-4 py-2 font-medium bg-white border-b">
-                  Domicilio Registrado
-                </AccordionTrigger>
-                <AccordionContent className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Calle</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.calle} placeholder="Calle" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Colonia</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.colonia} placeholder="Colonia" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Cruza con</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.cruzaCon} placeholder="Cruza con" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Referencia</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.referencia} placeholder="Referencia" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Número Exterior</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.numeroExterior} placeholder="Número Exterior" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Número Interior</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.numeroInterior} placeholder="Número Interior" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Estado</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.estado} placeholder="Estado" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Código Postal</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.codigoPostal} placeholder="Código Postal" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Municipio</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.municipio} placeholder="Municipio" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Localidad</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.localidad} placeholder="Localidad" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Tipo de Dirección</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.tipoDireccion} placeholder="Tipo de Dirección" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">¿Es Fiscal?</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.esFiscal ? "Sí" : "No"} placeholder="¿Es Fiscal?" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Teléfono</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.telefono} placeholder="Teléfono" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Fax</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.fax} placeholder="Fax" />
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="referencias">
-                <AccordionTrigger className="text-left px-4 py-2 font-medium bg-white border-b">
-                  Referencias Familiares
-                </AccordionTrigger>
-                <AccordionContent className="p-4 bg-gray-50 space-y-4">
-                  {concesionarioData.referencias?.map((r, i) => (
-                    <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded-md bg-white">
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Nombre Completo</label>
-                        <Input readOnly className="bg-gray-100" value={r.nombreCompleto} placeholder="Nombre Completo" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Parentesco</label>
-                        <Input readOnly className="bg-gray-100" value={r.parentesco} placeholder="Parentesco" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Calle</label>
-                        <Input readOnly className="bg-gray-100" value={r.calle} placeholder="Calle" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Colonia</label>
-                        <Input readOnly className="bg-gray-100" value={r.colonia} placeholder="Colonia" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Cruza con</label>
-                        <Input readOnly className="bg-gray-100" value={r.cruzaCon} placeholder="Cruza con" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Referencia</label>
-                        <Input readOnly className="bg-gray-100" value={r.referencia} placeholder="Referencia" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Número Exterior</label>
-                        <Input readOnly className="bg-gray-100" value={r.numeroExterior} placeholder="Número Exterior" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Número Interior</label>
-                        <Input readOnly className="bg-gray-100" value={r.numeroInterior} placeholder="Número Interior" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Estado</label>
-                        <Input readOnly className="bg-gray-100" value={r.estado} placeholder="Estado" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Código Postal</label>
-                        <Input readOnly className="bg-gray-100" value={r.codigoPostal} placeholder="Código Postal" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Municipio</label>
-                        <Input readOnly className="bg-gray-100" value={r.municipio} placeholder="Municipio" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Localidad</label>
-                        <Input readOnly className="bg-gray-100" value={r.localidad} placeholder="Localidad" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Tipo de Dirección</label>
-                        <Input readOnly className="bg-gray-100" value={r.tipoDireccion} placeholder="Tipo de Dirección" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Teléfono (Particular)</label>
-                        <Input readOnly className="bg-gray-100" value={r.telefonoParticular} placeholder="Teléfono (Particular)" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Fax</label>
-                        <Input readOnly className="bg-gray-100" value={r.fax} placeholder="Fax" />
-                      </div>
-                    </div>
-                  ))}
-                </AccordionContent>
-              </AccordionItem>
-
-            </Accordion>
-          </div>
         </>
       ),
-    }
-    ,
+    },
     {
       title: "Vehiculo",
       content: (
@@ -559,6 +324,12 @@ export default function ExpedienteModule() {
           <h2 className="text-2xl font-bold tracking-tight">Consultar Vehículo</h2>
           <p className="text-muted-foreground">Modificar Datos del Vehículo</p>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <Input placeholder="Nombre" value={nombre} onChange={e => setNombre(e.target.value)} />
+        <Input placeholder="Apaterno Materno" value={AMaterno} onChange={e => setAMaterno(e.target.value)} />
+        <Input placeholder="Apellido paterno" value={APaterno} onChange={e => setAPaterno(e.target.value)} />
       </div>
 
       {/* Card simple para la lista de expedientes */}

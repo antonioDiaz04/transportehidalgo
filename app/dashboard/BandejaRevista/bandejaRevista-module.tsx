@@ -133,7 +133,7 @@ export default function BandejaRevistaModule() {
   };
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow">
+    <div className="p-6 bg-white rounded-lg border border-muted">
       <h2 className="text-2xl font-bold mb-4">Búsqueda de Revista Vehicular</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -154,26 +154,26 @@ export default function BandejaRevistaModule() {
 
       <Button onClick={handleSearch} className="mb-6">Buscar</Button>
 
-      <table className="w-full table-auto text-left border">
-        <thead className="bg-gray-200">
+      <table className="w-full table-auto text-left border border-gray-200">
+        <thead className="bg-gray-100">
           <tr>
-            <th className="p-2">ID</th>
-            <th className="p-2">Concesión</th>
-            <th className="p-2">Placa</th>
-            <th className="p-2">Concesionario</th>
-            <th className="p-2">Municipio</th>
-            <th className="p-2">Opciones</th>
+            <th className="p-3 border border-gray-300">ID</th>
+            <th className="p-3 border border-gray-300">Concesión</th>
+            <th className="p-3 border border-gray-300">Placa</th>
+            <th className="p-3 border border-gray-300">Concesionario</th>
+            <th className="p-3 border border-gray-300">Municipio</th>
+            <th className="p-3 border border-gray-300">Opciones</th>
           </tr>
         </thead>
         <tbody>
           {filteredData.map((item) => (
-            <tr key={item.id} className="border-t">
-              <td className="p-2">{item.id}</td>
-              <td className="p-2">{item.concession}</td>
-              <td className="p-2">{item.plate}</td>
-              <td className="p-2">{item.concessionaire}</td>
-              <td className="p-2">{item.municipality}</td>
-              <td className="p-2">
+            <tr key={item.id} className="hover:bg-gray-50 border border-gray-200">
+              <td className="p-3 border border-gray-300">{item.id}</td>
+              <td className="p-3 border border-gray-300">{item.concession}</td>
+              <td className="p-3 border border-gray-300">{item.plate}</td>
+              <td className="p-3 border border-gray-300">{item.concessionaire}</td>
+              <td className="p-3 border border-gray-300">{item.municipality}</td>
+              <td className="p-3 border border-gray-300">
                 <Button onClick={() => {
                   setSelectedVehicle(item);
                   setShowModal(true);

@@ -36,7 +36,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex bg-gray-100 flex-col items-center justify-between text-[#b01639] p-4 overflow-hidden">
+    <div className="min-h-screen flex  bg-gray-100 flex-col items-center justify-between text-[#b01639] p-4 overflow-hidden">
       {/* Header with brand colors */}
       <header className="w-full absolute top-0 py-4 px-6 flex justify-between items-center z-10">
         <Image

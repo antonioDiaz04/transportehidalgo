@@ -5,14 +5,14 @@ import Image from "next/image"
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-white">
-      <header className="sticky top-0 z-40 w-full border-b bg-white">
+    <div className="min-h-screen bg-gray-100">
+      <header className=" top-0 z-40 w-full">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
-            <Image src="http://apps.transportehidalgo.gob.mx:8081/Imagenes/stch.png" alt="Logo" width={80} height={80} />
+            <Image src="https://res.cloudinary.com/dvvhnrvav/image/upload/v1749563496/transporte/afhhpxszzwtttnfyyg6r.jpg" alt="Logo" width={220} height={150} />
             {/* <span className="text-xl font-bold text-[#bc1c44]"></span> */}
           </div>
-          <nav className="hidden md:flex gap-6">
+          {/* <nav className="hidden md:flex gap-6">
             <Link href="/" className="text-sm font-medium hover:text-[#bc1c44] transition-colors">
               Inicio
             </Link>
@@ -25,7 +25,7 @@ export default function Home() {
             <Link href="#contact" className="text-sm font-medium hover:text-[#bc1c44] transition-colors">
               Contacto
             </Link>
-          </nav>
+          </nav> */}
           <div>
             <Button asChild className="bg-[#bc1c44] hover:bg-[#80142c]">
               <Link href="/login">Iniciar Sesión</Link>
@@ -34,27 +34,9 @@ export default function Home() {
         </div>
       </header>
       <main>
-        <section className="py-20 md:py-32 bg-white">
+        <section className="py-10 md:py-32 bg-gray-100">
           <div className="container px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 xl:grid-cols-2">
-              <div className="flex flex-col justify-center space-y-4">
-                <div className="space-y-2">
-                  <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none text-[#bc1c44]">
-                    Sistema ERP Moderno y Minimalista
-                  </h1>
-                  <p className="max-w-[600px] text-gray-500 md:text-xl">
-                    Una solución completa para la gestión de su empresa con una interfaz moderna y fácil de usar.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Button asChild className="bg-[#bc1c44] hover:bg-[#80142c]">
-                    <Link href="/login">Comenzar Ahora</Link>
-                  </Button>
-                  <Button variant="outline" asChild>
-                    <Link href="#features">Conocer Más</Link>
-                  </Button>
-                </div>
-              </div>
               <div className="flex items-center justify-center">
                 <Image
                   src="http://apps.transportehidalgo.gob.mx:8081/Imagenes/stch.png"
@@ -64,82 +46,81 @@ export default function Home() {
                   className="rounded-lg object-cover"
                 />
               </div>
-            </div>
-          </div>
-        </section>
-        <section id="features" className="py-12 md:py-24 bg-[#DDC9A3]">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight text-[#bc1c44]">
-                  Características Principales
-                </h2>
-                <p className="max-w-[900px] text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Nuestro sistema ERP ofrece todas las herramientas que necesita para gestionar su empresa de manera
-                  eficiente.
-                </p>
+              <div className="flex flex-col justify-center space-y-4">
+                <div className="space-y-2">
+                  <h1 className="text-[4rem] md:text-6xl font-extrabold text-black mb-6 leading-tight drop-shadow-lg">
+                    Plataforma Integral de <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#b01639] to-[#dd0a3b]">
+                      Transporte Hidalgo
+                    </span>
+                  </h1>
+
+
+                  <p className="max-w-[600px] text-gray-500 md:text-xl">
+                    Una solución completa para la gestión de su empresa con una interfaz moderna y fácil de usar.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 min-[400px]:flex-row">
+                  <Button asChild className="bg-[#bc1c44] hover:bg-[#80142c]">
+                    <Link href="/login">Comenzar Ahora</Link>
+                  </Button>
+                  {/* <Button variant="outline" asChild>
+                    <Link href="#features">Conocer Más</Link>
+                  </Button> */}
+                </div>
               </div>
-            </div>
-            <div className="mx-auto grid max-w-5xl items-center gap-6 py-12 lg:grid-cols-3 lg:gap-12">
-              {[
-                {
-                  title: "Gestión de Expedientes",
-                  description: "Administre todos sus expedientes de manera eficiente y segura.",
-                },
-                {
-                  title: "Control de Usuarios",
-                  description: "Gestione los permisos y accesos de todos los usuarios del sistema.",
-                },
-                {
-                  title: "Reportes Detallados",
-                  description: "Obtenga informes detallados sobre todas las operaciones realizadas.",
-                },
-                {
-                  title: "Gestión de Vehículos",
-                  description: "Control completo sobre la información de vehículos registrados.",
-                },
-                {
-                  title: "Búsqueda Avanzada",
-                  description: "Encuentre rápidamente la información que necesita con nuestro sistema de búsqueda.",
-                },
-                {
-                  title: "Diseño Responsivo",
-                  description: "Acceda al sistema desde cualquier dispositivo con una experiencia optimizada.",
-                },
-              ].map((feature, index) => (
-                <Card key={index} className="border-none shadow-sm">
-                  <CardHeader>
-                    <CardTitle>{feature.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-gray-500">{feature.description}</p>
-                  </CardContent>
-                </Card>
-              ))}
+
             </div>
           </div>
         </section>
-      </main>
-      <footer className="border-t bg-[#80142c] py-6 md:py-8">
-        <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
-          <div className="flex items-center gap-2">
-            <Image src="http://apps.transportehidalgo.gob.mx:8081/Imagenes/stch.png" alt="Logo" width={100} height={100} />
-            <span className="text-lg font-semibold text-[#bc1c44]">ERP System</span>
-          </div>
-          <p className="text-sm text-gray-500">© 2025 ERP System. Todos los derechos reservados.</p>
-          <div className="flex gap-4">
-            <Link href="#" className="text-sm text-gray-500 hover:text-[#bc1c44]">
-              Términos
-            </Link>
-            <Link href="#" className="text-sm text-gray-500 hover:text-[#bc1c44]">
-              Privacidad
-            </Link>
-            <Link href="#" className="text-sm text-gray-500 hover:text-[#bc1c44]">
-              Contacto
-            </Link>
+        {/* Infinite Carousel Banner */}
+        <div className="w-full overflow-hidden text-center my-12 py-4">
+          <h1 className="text-5xl text-black mb-6 leading-tight drop-shadow-lg">
+            Entidades oficiales del Transporte en Hidalgo
+          </h1>
+          {/* Entidades oficiales del Transporte en Hidalgo */}
+          <div className="flex animate-scroll-logos whitespace-nowrap">
+            {[...Array(5)].map((_, i) => (
+              <Image
+                key={i}
+                src="https://res.cloudinary.com/dvvhnrvav/image/upload/v1749225391/ow0pfzer6dnnzgvtin5q.jpg"
+                alt="Logos de Movilidad Hidalgo"
+                width={1200}
+                height={50}
+                className="inline-block h-auto"
+              />
+            ))}
+            {[...Array(5)].map((_, i) => (
+              <Image
+                key={`duplicate-${i}`}
+                src="https://res.cloudinary.com/dvvhnrvav/image/upload/v1749225391/ow0pfzer6dnnzgvtin5q.jpg"
+                alt="Logos de Movilidad Hidalgo"
+                width={120}
+                height={50}
+                className="inline-block h-auto"
+              />
+            ))}
           </div>
         </div>
+
+
+      </main>
+      {/* Footer */}
+      <footer className="relative w-full">
+        {/* Div morado encima */}
+        <div className="w-full h-5 bg-[#7b1e3b]" />
+
+        {/* Imagen decorativa */}
+        <div className="relative w-full h-5 overflow-hidden">
+          <Image
+            src="https://res.cloudinary.com/dvvhnrvav/image/upload/v1749563496/transporte/fjr7hbdptzspaa9bfcsa.jpg"
+            alt="Imagen decorativa del footer"
+            layout="fill"
+            objectFit="cover"
+            className="opacity-90"
+          />
+        </div>
       </footer>
+
     </div>
   )
 }
