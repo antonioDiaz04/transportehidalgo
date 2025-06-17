@@ -5,7 +5,18 @@ import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { Car, Circle, Folder, LogOut, Menu, Search, Settings, User, Users, X } from "lucide-react"
+import {
+  Car,
+  Circle,
+  Folder,
+  LogOut,
+  Menu,
+  Search,
+  User,
+  X,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -16,7 +27,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useDevice } from "@/hooks/use-device" // Cambiamos a useDevice
+import { useDevice } from "@/hooks/use-device"
 import { cn } from "@/lib/utils"
 
 const navigation = [
@@ -28,112 +39,221 @@ const navigation = [
   { name: "Reporte de Inspecciones Realizadas", href: "/dashboard/ReporteRealizadas", icon: Search },
 ]
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const { isMobile, isTablet } = useDevice() // Usamos el nuevo hook
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  // Determinar si el sidebar debe estar colapsado por defecto
+  const { isMobile, isTablet } = useDevice()
   const shouldCollapseSidebar = isMobile || isTablet
+  const [sidebarOpen, setSidebarOpen] = useState(!shouldCollapseSidebar)
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
-  // Close sidebar when route changes on mobile or tablet
+  // Close sidebar on navigation in mobile/tablet
   useEffect(() => {
     if (shouldCollapseSidebar) {
       setSidebarOpen(false)
     }
   }, [pathname, shouldCollapseSidebar])
 
-  return (
-    <div className="min-h-screen bg-white">
-      {/* Mobile/Tablet sidebar overlay */}
-      {sidebarOpen && shouldCollapseSidebar && (
-        <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
-      )}
+  const toggleSidebar = () => {
+    if (shouldCollapseSidebar) {
+      setSidebarOpen(!sidebarOpen)
+    } else {
+      setIsCollapsed(!isCollapsed)
+    }
+  }
 
-      {/* Sidebar */}
+  return (
+    <div className="min-h-screen bg-gray-100 flex">
+      {/* Sidebar - Comportamiento diferente en móvil/desktop */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 w-64 transform bg-gray-100 border-r transition-transform duration-200 ease-in-out max-sm:z-50 lg:z-0" ,
-          shouldCollapseSidebar 
-            ? (sidebarOpen ? "translate-x-0" : "-translate-x-full") 
-            : "translate-x-0"
+          "z-40 inset-y-0 left-0 bg-white border-r shadow-md flex flex-col transition-all duration-300",
+          // Desktop
+          !shouldCollapseSidebar && [
+            "h-screen sticky top-0",
+            isCollapsed ? "w-20" : "w-64"
+          ],
+          // Mobile/Tablet
+          shouldCollapseSidebar && [
+            "fixed w-[calc(100%-3rem)] max-w-sm transform",
+            sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          ]
         )}
       >
-        <div className="flex h-16 items-center justify-between border-b px-4">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <Image src="https://res.cloudinary.com/dvvhnrvav/image/upload/v1749563496/transporte/afhhpxszzwtttnfyyg6r.jpg" alt="Logo" width={150} height={120} />
-           
-          </Link>
-
-          {shouldCollapseSidebar && (
-            <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)}>
-              <X className="h-5 w-5" />
-              <span className="sr-only">Cerrar menú</span>
-            </Button>
-          )}
-        </div>
-        <div className="flex flex-col gap-1 p-4">
-          {navigation.map((item) => {
-            const isActive = pathname === item.href
-            const Icon = item.icon
-
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
+        {/* Sidebar Header */}
+        <div className={cn(
+          "flex h-16 items-center justify-between border-b px-4 shrink-0",
+          isCollapsed && "justify-center px-0"
+        )}>
+          {!isCollapsed ? (
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <Image
+                src="https://res.cloudinary.com/dvvhnrvav/image/upload/v1750031388/transporte/lfnc4lotpxbwlvtbjadk.png"
+                alt="Logo"
+                width={200}
+                height={120}
                 className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-[#bc1c44]/10 text-[#bc1c44]"
-                    : "text-gray-600 hover:bg-[#404040]/5 hover:text-gray-900",
+                  "h-auto object-contain",
+                  shouldCollapseSidebar ? "w-32" : "w-40"
                 )}
-              >
-                <Icon className={cn("h-5 w-5", isActive ? "text-[#bc1c44]" : "text-gray-500")} />
-                {item.name}
-              </Link>
-            )
-          })}
+              />
+            </Link>
+          ) : (
+            <div className="w-10"></div> // Espacio para mantener altura
+          )}
+          
+          {/* Botón de cerrar/colapsar */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleSidebar}
+            className={cn(
+              "md:flex",
+              shouldCollapseSidebar ? "" : "hidden"
+            )}
+          >
+            {shouldCollapseSidebar ? (
+              <X className="h-5 w-5" />
+            ) : isCollapsed ? (
+              <ChevronRight className="h-5 w-5" />
+            ) : (
+              <ChevronLeft className="h-5 w-5" />
+            )}
+            <span className="sr-only">
+              {shouldCollapseSidebar ? "Cerrar menú" : isCollapsed ? "Expandir menú" : "Colapsar menú"}
+            </span>
+          </Button>
+        </div>
+
+        {/* Scrollable Sidebar Content */}
+        <div className="flex-1 overflow-y-auto">
+          <div className={cn(
+            "flex flex-col gap-1 p-4",
+            isCollapsed && "items-center px-2"
+          )}>
+            {navigation.map((item) => {
+              const isActive = pathname === item.href
+              const Icon = item.icon
+
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-[#bc1c44]/10 text-[#bc1c44]"
+                      : "text-gray-600 hover:bg-[#404040]/5 hover:text-gray-900",
+                    isCollapsed && "justify-center px-2"
+                  )}
+                  onClick={() => shouldCollapseSidebar && setSidebarOpen(false)}
+                >
+                  <Icon className={cn(
+                    "h-5 w-5 flex-shrink-0",
+                    isActive ? "text-[#bc1c44]" : "text-gray-500"
+                  )} />
+                  <span className={cn(
+                    "whitespace-normal overflow-hidden text-ellipsis",
+                    isCollapsed ? "hidden" : "block"
+                  )}>
+                    {item.name}
+                  </span>
+                </Link>
+              )
+            })}
+          </div>
         </div>
       </aside>
 
-      {/* Main content */}
-      <div className={cn("flex flex-col", shouldCollapseSidebar ? "ml-0" : "ml-64")}>
-        {/* Header */}
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-gray-100 px-4">
-          {shouldCollapseSidebar && (
-            <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Abrir menú</span>
+      {/* Overlay solo para móvil/tablet cuando sidebar está abierto */}
+      {sidebarOpen && shouldCollapseSidebar && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Main Container */}
+      <div className={cn(
+        "flex-1 flex flex-col min-w-0 transition-all duration-300",
+        // Desktop
+        !shouldCollapseSidebar && [
+          isCollapsed ? "ml-0" : "ml-34"
+        ],
+        // Mobile
+        shouldCollapseSidebar && "ml-0"
+      )}>
+        {/* Header - Diseño diferente para móvil/desktop */}
+        <header className={cn(
+          "sticky top-0 z-30 flex items-center justify-between border-b bg-white shadow-sm",
+          // Desktop
+          "h-16 px-4",
+          // Mobile
+          "h-14 px-2 sm:h-16 sm:px-4"
+        )}>
+          <div className="flex items-center">
+            {/* Botón de menú - Siempre visible para poder expandir/colapsar */}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={toggleSidebar}
+              className="mr-1 h-9 w-9"
+            >
+              {shouldCollapseSidebar ? (
+                <Menu className="h-5 w-5" />
+              ) : isCollapsed ? (
+                <Menu className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+              <span className="sr-only">Menú</span>
             </Button>
-          )}
-          <div className={cn("flex-1", shouldCollapseSidebar ? "ml-4" : "ml-0")}>
-            {/* <h1 className="text-lg font-semibold">Dashboard</h1> */}
-             <span className="text-xl font-bold text-[#bc1c44]">STCH</span>
+            
+            {/* Logo/Título */}
+            <div className="flex items-center">
+              <span className={cn(
+                "font-bold text-[#bc1c44]",
+                // Desktop
+                "text-xl",
+                // Mobile
+                "text-lg sm:text-xl"
+              )}>
+                STCH
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
+
+          {/* User Menu */}
+          <div className="flex items-center gap-2 sm:gap-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
+                <Button variant="ghost" className="relative rounded-full">
+                  <Avatar className={cn(
+                    // Desktop
+                    "h-8 w-8",
+                    // Mobile
+                    "h-7 w-7 sm:h-8 sm:w-8"
+                  )}>
                     <AvatarImage src="/placeholder-user.jpg" alt="Usuario" />
-                    <AvatarFallback className="bg-[#bc1c44] text-white">PA</AvatarFallback>
+                    <AvatarFallback className={cn(
+                      "bg-[#bc1c44] text-white",
+                      // Desktop
+                      "text-sm",
+                      // Mobile
+                      "text-xs sm:text-sm"
+                    )}>PA</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">Usuario: </p>
+                    <p className="text-sm font-medium leading-none">Usuario:</p>
                     <p className="text-xs leading-none text-muted-foreground">Pepe Alejandro Sanchez</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/">
+                  <Link href="/" className="w-full">
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Cerrar sesión</span>
                   </Link>
@@ -143,10 +263,15 @@ export default function DashboardLayout({
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 p-4 md:p-6 ">
-          {/* Añadimos un margen superior solo en móvil/tablet para evitar que el contenido quede pegado al header */}
-          <div className={cn(shouldCollapseSidebar ? "mt-4" : "")}>
+        {/* Main Content */}
+        <main className={cn(
+          "flex-1 overflow-x-hidden",
+          // Desktop
+          "p-6",
+          // Mobile
+          "p-3 sm:p-4"
+        )}>
+          <div className="mx-auto w-full max-w-[1800px]">
             {children}
           </div>
         </main>

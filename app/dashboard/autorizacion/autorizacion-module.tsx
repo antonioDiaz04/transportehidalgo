@@ -241,38 +241,95 @@ export default function AutorizacionModule() {
       title: "Concesión",
       content: (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4  p-4 rounded-md">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-md">
             <div className="space-y-3">
-              <Input readOnly className="bg-gray-100" value={concessionData.folio} placeholder="Folio" />
-              <Input readOnly className="bg-gray-100" value={concessionData.tipoServicio} placeholder="Tipo de Servicio" />
-              <Input readOnly className="bg-gray-100" value={concessionData.tipoPlaca} placeholder="Tipo Placa" />
-              <Input readOnly className="bg-gray-100" value={concessionData.mnemotecnia} placeholder="Mnemotecnia" />
-              <Input readOnly className="bg-gray-100" value={concessionData.modalidad} placeholder="Modalidad" />
-              <Input readOnly className="bg-gray-100" value={concessionData.municipioAutorizado} placeholder="Municipio Autorizado" />
-              <Input readOnly className="bg-gray-100" value={concessionData.claseUnidad} placeholder="Clase Unidad" />
-              <Input readOnly className="bg-gray-100" value={concessionData.vigencia} placeholder="Vigencia" />
-              <Input readOnly className="bg-gray-100" value={concessionData.estatus} placeholder="Estatus" />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Folio</label>
+                <Input readOnly className="bg-gray-100" value={concessionData.folio} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Servicio</label>
+                <Input readOnly className="bg-gray-100" value={concessionData.tipoServicio} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo Placa</label>
+                <Input readOnly className="bg-gray-100" value={concessionData.tipoPlaca} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Mnemotecnia</label>
+                <Input readOnly className="bg-gray-100" value={concessionData.mnemotecnia} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Modalidad</label>
+                <Input readOnly className="bg-gray-100" value={concessionData.modalidad} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Municipio Autorizado</label>
+                <Input readOnly className="bg-gray-100" value={concessionData.municipioAutorizado} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Clase Unidad</label>
+                <Input readOnly className="bg-gray-100" value={concessionData.claseUnidad} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Vigencia</label>
+                <Input readOnly className="bg-gray-100" value={concessionData.vigencia} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Estatus</label>
+                <Input readOnly className="bg-gray-100" value={concessionData.estatus} />
+              </div>
             </div>
+
             <div className="space-y-3">
-              <Input readOnly className="bg-gray-100" value={concessionData.seriePlaca} placeholder="Serie Placa" />
-              <Input readOnly className="bg-gray-100" value={concessionData.fechaRegistro} placeholder="Fecha Registro" />
-              <Input readOnly className="bg-gray-100" value={concessionData.fechaRenovacion} placeholder="Fecha Renovacion" />
-              <Input readOnly className="bg-gray-100" value={concessionData.numeroExpediente} placeholder="Número Expediente" />
-              <Input readOnly className="bg-gray-100" value={concessionData.submodalidad} placeholder="Submodalidad" />
-              <Input readOnly className="bg-gray-100" value={concessionData.localidadAutorizada} placeholder="Localidad Autorizada" />
-              <Input readOnly className="bg-gray-100" value={concessionData.tipoUnidad} placeholder="Tipo Unidad" />
-              <Input readOnly className="bg-gray-100" value={concessionData.seriePlacaAnterior} placeholder="Serie Placa Anterior" />
-              <Input readOnly className="bg-gray-100" value={concessionData.fechaVencimiento} placeholder="Fecha de Vencimiento" />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Serie Placa</label>
+                <Input readOnly className="bg-gray-100" value={concessionData.seriePlaca} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Fecha Registro</label>
+                <Input readOnly className="bg-gray-100" value={concessionData.fechaRegistro} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Fecha Renovación</label>
+                <Input readOnly className="bg-gray-100" value={concessionData.fechaRenovacion} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Número Expediente</label>
+                <Input readOnly className="bg-gray-100" value={concessionData.numeroExpediente} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Submodalidad</label>
+                <Input readOnly className="bg-gray-100" value={concessionData.submodalidad} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Localidad Autorizada</label>
+                <Input readOnly className="bg-gray-100" value={concessionData.localidadAutorizada} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo Unidad</label>
+                <Input readOnly className="bg-gray-100" value={concessionData.tipoUnidad} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Serie Placa Anterior</label>
+                <Input readOnly className="bg-gray-100" value={concessionData.seriePlacaAnterior} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Vencimiento</label>
+                <Input readOnly className="bg-gray-100" value={concessionData.fechaVencimiento} />
+              </div>
             </div>
           </div>
+
           <div className="mt-4">
-            <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones:</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
             <Input
               value={concessionData.observaciones}
               readOnly
               className="bg-gray-100 border border-gray-200 text-gray-800 rounded-md p-2 text-sm focus:outline-none focus:ring-0 focus:border-gray-200"
             />
           </div>
+
         </>
       ),
     },
@@ -282,23 +339,41 @@ export default function AutorizacionModule() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
-              <Input readOnly className="bg-gray-100" value={seguroData.aseguradora} placeholder="Aseguradora" />
-              <Input readOnly className="bg-gray-100" value={seguroData.folioPago} placeholder="Folio de Pago" />
-              <Input readOnly className="bg-gray-100" value={seguroData.fechaVencimiento} placeholder="Fecha de Vencimiento" />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Aseguradora</label>
+                <Input readOnly className="bg-gray-100" value={seguroData.aseguradora} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Folio de Pago</label>
+                <Input readOnly className="bg-gray-100" value={seguroData.folioPago} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Vencimiento</label>
+                <Input readOnly className="bg-gray-100" value={seguroData.fechaVencimiento} />
+              </div>
             </div>
+
             <div className="space-y-3">
-              <Input readOnly className="bg-gray-100" value={seguroData.numeroPoliza} placeholder="Número de Póliza" />
-              <Input readOnly className="bg-gray-100" value={seguroData.fechaExpedicion} placeholder="Fecha de Expedición" />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Número de Póliza</label>
+                <Input readOnly className="bg-gray-100" value={seguroData.numeroPoliza} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Expedición</label>
+                <Input readOnly className="bg-gray-100" value={seguroData.fechaExpedicion} />
+              </div>
             </div>
           </div>
+
           <div className="mt-4">
-            <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones:</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
             <Input
               value={seguroData.observaciones}
               readOnly
               className="bg-gray-100 border border-gray-200 text-gray-800 rounded-md p-2 text-sm focus:outline-none focus:ring-0 focus:border-gray-200"
             />
           </div>
+
         </>
       ),
     },
@@ -308,22 +383,64 @@ export default function AutorizacionModule() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             <div className="space-y-3">
-              <Input readOnly className="bg-gray-100" value={concesionarioData.tipoPersona} placeholder="Tipo de Persona" />
-              <Input readOnly className="bg-gray-100" value={concesionarioData.identificador} placeholder="Identificador" />
-              <Input readOnly className="bg-gray-100" value={concesionarioData.nombre} placeholder="Nombre" />
-              <Input readOnly className="bg-gray-100" value={concesionarioData.apellidoPaterno} placeholder="Apellido Paterno" />
-              <Input readOnly className="bg-gray-100" value={concesionarioData.apellidoMaterno} placeholder="Apellido Materno" />
-              <Input readOnly className="bg-gray-100" value={concesionarioData.fechaNacimiento} placeholder="Fecha de Nacimiento" />
-              <Input readOnly className="bg-gray-100" value={concesionarioData.lugarNacimiento} placeholder="Lugar de Nacimiento" />
-              <Input readOnly className="bg-gray-100" value={concesionarioData.genero} placeholder="Género" />
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Tipo de Persona</label>
+                <Input readOnly className="bg-gray-100" value={concesionarioData.tipoPersona} placeholder="Tipo de Persona" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Identificador</label>
+                <Input readOnly className="bg-gray-100" value={concesionarioData.identificador} placeholder="Identificador" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Nombre</label>
+                <Input readOnly className="bg-gray-100" value={concesionarioData.nombre} placeholder="Nombre" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Apellido Paterno</label>
+                <Input readOnly className="bg-gray-100" value={concesionarioData.apellidoPaterno} placeholder="Apellido Paterno" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Apellido Materno</label>
+                <Input readOnly className="bg-gray-100" value={concesionarioData.apellidoMaterno} placeholder="Apellido Materno" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Fecha de Nacimiento</label>
+                <Input readOnly className="bg-gray-100" value={concesionarioData.fechaNacimiento} placeholder="Fecha de Nacimiento" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Lugar de Nacimiento</label>
+                <Input readOnly className="bg-gray-100" value={concesionarioData.lugarNacimiento} placeholder="Lugar de Nacimiento" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Género</label>
+                <Input readOnly className="bg-gray-100" value={concesionarioData.genero} placeholder="Género" />
+              </div>
             </div>
             <div className="space-y-3">
-              <Input readOnly className="bg-gray-100" value={concesionarioData.rfc} placeholder="RFC" />
-              <Input readOnly className="bg-gray-100" value={concesionarioData.nacionalidad} placeholder="Nacionalidad" />
-              <Input readOnly className="bg-gray-100" value={concesionarioData.correoElectronico} placeholder="Correo Electrónico" />
-              <Input readOnly className="bg-gray-100" value={concesionarioData.estadoCivil} placeholder="Estado Civil" />
-              <Input readOnly className="bg-gray-100" value={concesionarioData.fechaAlta} placeholder="Fecha Alta" />
-              <Input readOnly className="bg-gray-100" value={concesionarioData.estatus} placeholder="Estatus" />
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">RFC</label>
+                <Input readOnly className="bg-gray-100" value={concesionarioData.rfc} placeholder="RFC" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Nacionalidad</label>
+                <Input readOnly className="bg-gray-100" value={concesionarioData.nacionalidad} placeholder="Nacionalidad" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Correo Electrónico</label>
+                <Input readOnly className="bg-gray-100" value={concesionarioData.correoElectronico} placeholder="Correo Electrónico" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Estado Civil</label>
+                <Input readOnly className="bg-gray-100" value={concesionarioData.estadoCivil} placeholder="Estado Civil" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Fecha Alta</label>
+                <Input readOnly className="bg-gray-100" value={concesionarioData.fechaAlta} placeholder="Fecha Alta" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Estatus</label>
+                <Input readOnly className="bg-gray-100" value={concesionarioData.estatus} placeholder="Estatus" />
+              </div>
             </div>
           </div>
 
@@ -344,8 +461,14 @@ export default function AutorizacionModule() {
                 <AccordionContent className="p-4 bg-gray-50 space-y-3">
                   {concesionarioData.beneficiarios?.map((b, i) => (
                     <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-3 rounded-md bg-white">
-                      <Input readOnly className="bg-gray-100" value={b.nombre} placeholder="Nombre" />
-                      <Input readOnly className="bg-gray-100" value={b.parentesco} placeholder="Parentesco" />
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Nombre</label>
+                        <Input readOnly className="bg-gray-100" value={b.nombre} placeholder="Nombre" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Parentesco</label>
+                        <Input readOnly className="bg-gray-100" value={b.parentesco} placeholder="Parentesco" />
+                      </div>
                     </div>
                   ))}
                 </AccordionContent>
@@ -486,7 +609,6 @@ export default function AutorizacionModule() {
                   ))}
                 </AccordionContent>
               </AccordionItem>
-
             </Accordion>
           </div>
         </>
@@ -499,47 +621,134 @@ export default function AutorizacionModule() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.clase} placeholder="Clase" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.tipo} placeholder="Tipo" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.marca} placeholder="Marca" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.subMarca} placeholder="SubMarca" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.version} placeholder="Versión" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.modelo} placeholder="Modelo" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.tipoPlaca} placeholder="Tipo de Placa" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.tipoServicio} placeholder="Tipo de Servicio" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.fechaFactura} placeholder="Fecha Factura" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.folioFactura} placeholder="Folio Factura" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.importeFactura} placeholder="Importe Factura" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.numeroMotor} placeholder="Número de Motor" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.polizaSeguro} placeholder="Póliza de Seguro" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.numeroSerie} placeholder="Número de Serie" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.origen} placeholder="Origen" />
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Clase</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.clase} placeholder="Clase" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Tipo</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.tipo} placeholder="Tipo" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Marca</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.marca} placeholder="Marca" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">SubMarca</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.subMarca} placeholder="SubMarca" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Versión</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.version} placeholder="Versión" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Modelo</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.modelo} placeholder="Modelo" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Tipo de Placa</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.tipoPlaca} placeholder="Tipo de Placa" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Tipo de Servicio</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.tipoServicio} placeholder="Tipo de Servicio" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Fecha Factura</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.fechaFactura} placeholder="Fecha Factura" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Folio Factura</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.folioFactura} placeholder="Folio Factura" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Importe Factura</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.importeFactura} placeholder="Importe Factura" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Número de Motor</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.numeroMotor} placeholder="Número de Motor" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Póliza de Seguro</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.polizaSeguro} placeholder="Póliza de Seguro" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Número de Serie</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.numeroSerie} placeholder="Número de Serie" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Origen</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.origen} placeholder="Origen" />
+              </div>
             </div>
             <div className="space-y-3">
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.capacidad} placeholder="Capacidad" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.estadoProcedencia} placeholder="Estado de Procedencia" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.combustible} placeholder="Combustible" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.estatus} placeholder="Estatus" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.placaAnterior} placeholder="Placa Anterior" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.categoria} placeholder="Categoría" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.rfv} placeholder="RFV" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.cilindros} placeholder="Cilindros" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.numeroPasajeros} placeholder="Número de Pasajeros" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.vigencia} placeholder="Vigencia" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.numeroPuertas} placeholder="Número de Puertas" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.numeroToneladas} placeholder="Número de Toneladas" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.centimetrosCubicos} placeholder="Centímetros Cúbicos" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.color} placeholder="Color" />
-              <Input readOnly className="bg-gray-100" value={vehicleDetailsData.nrpv} placeholder="NRPV" />
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Capacidad</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.capacidad} placeholder="Capacidad" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Estado de Procedencia</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.estadoProcedencia} placeholder="Estado de Procedencia" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Combustible</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.combustible} placeholder="Combustible" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Estatus</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.estatus} placeholder="Estatus" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Placa Anterior</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.placaAnterior} placeholder="Placa Anterior" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Categoría</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.categoria} placeholder="Categoría" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">RFV</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.rfv} placeholder="RFV" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Cilindros</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.cilindros} placeholder="Cilindros" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Número de Pasajeros</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.numeroPasajeros} placeholder="Número de Pasajeros" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Vigencia</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.vigencia} placeholder="Vigencia" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Número de Puertas</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.numeroPuertas} placeholder="Número de Puertas" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Número de Toneladas</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.numeroToneladas} placeholder="Número de Toneladas" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Centímetros Cúbicos</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.centimetrosCubicos} placeholder="Centímetros Cúbicos" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Color</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.color} placeholder="Color" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">NRPV</label>
+                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.nrpv} placeholder="NRPV" />
+              </div>
             </div>
           </div>
           <div className="mt-4 flex justify-end">
             <Button
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-md transition-all duration-300 transform hover:-translate-y-0.5"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-sm transition-all duration-300 transform hover:-translate-y-0.5"
               onClick={() => {
-                // Usar router.push para navegación sin recargar la página
-                // Importa useRouter de next/navigation arriba
-                // import { useRouter } from "next/navigation"
                 router.push("iv")
               }}
             >
@@ -562,7 +771,7 @@ export default function AutorizacionModule() {
       </div>
 
       {/* Card simple para la lista de expedientes */}
-      <Card className="border border-muted shadow-none">
+      <Card className="border border-muted shadow-md">
         <CardContent className="pt-6 pb-6 px-6">
           <div className="mb-4 flex flex-col gap-2">
             <h2 className="text-lg font-semibold text-foreground">Datos de búsqueda</h2>
@@ -581,17 +790,16 @@ export default function AutorizacionModule() {
             </div>
           </div>
 
-          <div className="rounded-md border">
+          <div className="rounded-md shadow-lg border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Elegir</TableHead>
-                  <TableHead>Documento</TableHead>
-                  <TableHead>Folio</TableHead>
-                  <TableHead>Serie</TableHead>
-                  <TableHead>Placa</TableHead>
-                  <TableHead>Número Expediente</TableHead>
-                  {/* <TableHead className="text-right">Acciones</TableHead> */}
+                  <TableHead className="font-bold text-gray-900">Elegir</TableHead>
+                  <TableHead className="font-bold text-gray-900">Documento</TableHead>
+                  <TableHead className="font-bold text-gray-900">Folio</TableHead>
+                  <TableHead className="font-bold text-gray-900">Serie</TableHead>
+                  <TableHead className="font-bold text-gray-900">Placa</TableHead>
+                  <TableHead className="font-bold text-gray-900">Número Expediente</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -665,7 +873,7 @@ export default function AutorizacionModule() {
       </Card>
 
       {cardSections.map((section, idx) => (
-        <Card key={section.title} className="border border-muted shadow-none overflow-hidden">
+        <Card key={section.title} className="border border-muted shadow-sm overflow-hidden">
           <button
             type="button"
             className="w-full flex items-center justify-between px-2 py-2  border-b border-blue-200 hover:bg-muted bg-blue-50  transition-colors rounded-t-lg focus:outline-none"

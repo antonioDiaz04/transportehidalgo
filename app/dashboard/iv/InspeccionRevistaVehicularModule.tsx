@@ -257,7 +257,7 @@ export default function InspeccionRevistaVehicularForm() {
               onClick={handleAddImages} 
               disabled={selectedImages.length === 0}
             >
-              Agregar
+              Guardas imagen
             </Button>
           </div>
         </div>
