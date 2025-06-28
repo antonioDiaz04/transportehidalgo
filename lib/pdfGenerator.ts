@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 
-export function generarPDF() {
+export function generarPDF(img:any) {
     console.log('[PDF] Iniciando generación de PDF...');
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' }); // Tamaño carta
 

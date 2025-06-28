@@ -1,4 +1,5 @@
 'use client' // <-- Esto lo convierte en un Client Component
+
 import dynamic from "next/dynamic"
 import { LoadingFallback } from "@/components/lazy-module"
 

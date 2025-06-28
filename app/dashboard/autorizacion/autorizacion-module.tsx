@@ -1,912 +1,767 @@
 "use client"
+import axios from "axios";
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Search, ChevronDown, ChevronUp, Folder, FileText, Download, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Search, Plus, FileText, Download } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useRouter } from "next/navigation"
-
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion";
+} from "@/components/ui/accordion"
 
-type ReadonlyFieldProps = {
-  label: string
-  value: string
+type Expediente = {
+  concesion: string
+  id: string
+  titular: string
+  tipo: string
 }
 
-function ReadonlyField({ label, value }: ReadonlyFieldProps) {
-  return (
-    <div>
-      <label className="block text-xs font-medium text-muted-foreground">{label}:</label>
-      <Input value={value} readOnly />
-    </div>
-  )
+type ConcesionData = {
+  idC: any
+  folio: string
+  tipoServicio: string
+  tipoPlaca: string
+  mnemotecnia: string
+  modalidad: string
+  municipioAutorizado: string
+  claseUnidad: string
+  vigencia: string
+  estatus: string
+  seriePlaca: string
+  fechaRegistro: string
+  fechaRenovacion: string
+  numeroExpediente: string
+  submodalidad: string
+  localidadAutorizada: string
+  tipoUnidad: string
+  seriePlacaAnterior: string
+  fechaVencimiento: string
+  observaciones: string
+}
+
+type SeguroData = {
+  aseguradora: string
+  folioPago: string
+  fechaVencimiento: string
+  numeroPoliza: string
+  fechaExpedicion: string
+  observaciones: string
+}
+
+type ConcesionarioData = {
+  tipoPersona: string
+  nombre: string
+  apellidoPaterno: string
+  apellidoMaterno: string
+  fechaNacimiento: string
+  lugarNacimiento: string
+  identificador: string
+  genero: string
+  rfc: string
+  nacionalidad: string
+  correoElectronico: string
+  estadoCivil: string
+  fechaAlta: string
+  estatus: string
+  observacionesConcesionario: string
+  domicilio: {
+    calle: string
+    colonia: string
+    cruzaCon: string
+    referencia: string
+    numeroExterior: string
+    numeroInterior: string
+    estado: string
+    codigoPostal: string
+    municipio: string
+    localidad: string
+    tipoDireccion: string
+    esFiscal: boolean
+    telefono: string
+    fax: string
+  }
+  beneficiarios: Array<{
+    nombre: string
+    parentesco: string
+  }>
+  referencias: Array<{
+    nombreCompleto: string
+    parentesco: string
+    calle: string
+    colonia: string
+    cruzaCon: string
+    referencia: string
+    numeroExterior: string
+    numeroInterior: string
+    estado: string
+    codigoPostal: string
+    municipio: string
+    localidad: string
+    tipoDireccion: string
+    telefonoParticular: string
+    fax: string
+  }>
+}
+
+type vehicleDetailsData = {
+  idV: any
+  clase: string
+  placaAnterior: string
+  tipo: string
+  categoria: string
+  marca: string
+  rfv: string
+  subMarca: string
+  cilindros: string
+  version: string
+  numeroPasajeros: string
+  modelo: string
+  vigencia: string
+  tipoPlaca: string
+  numeroPuertas: string
+  tipoServicio: string
+  numeroToneladas: string
+  fechaFactura: string
+  centimetrosCubicos: string
+  folioFactura: string
+  color: string
+  importeFactura: string
+  numeroMotor: string
+  polizaSeguro: string
+  numeroSerie: string
+  origen: string
+  capacidad: string
+  estadoProcedencia: string
+  combustible: string
+  estatus: string
+  nrpv: string
 }
 
 export default function AutorizacionModule() {
-  const [concession, setConcession] = useState('');
-
   const router = useRouter()
+  // let idC: any; // Variable para almacenar el ID de la concesión
+  // let idV: any; // Variable para almacenar el ID del vehículo
   const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("todos")
-  const [activeIndex, setActiveIndex] = useState<number | null>(null)
-
-  const toggleAccordion = (index: number) => {
-    setActiveIndex((prevIndex) => (prevIndex === index ? null : index))
-  }
-
+  const [isSearching, setIsSearching] = useState(false)
+  const [selectedExpediente, setSelectedExpediente] = useState<Expediente | null>(null)
+  const [openSections, setOpenSections] = useState<number[]>([])
+  const [error, setError] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<any>(null);
   // Datos de ejemplo
-  const expedientes = [
-    { concesion: "Concesión", id: "C014690", titular: "A660FVC", tipo: "STCH-6*1S.2.1/14690-12" },
-    { concesion: "Concesión", id: "C014691", titular: "A661FVC", tipo: "STCH-6*1S.2.1/14691-12" },
-    { concesion: "Concesión", id: "C014692", titular: "A662FVC", tipo: "STCH-6*1S.2.1/14692-12" },
-    { concesion: "Concesión", id: "C014693", titular: "A663FVC", tipo: "STCH-6*1S.2.1/14693-12" },
-  ]
+  const [expedientes, setExpedientes] = useState<Expediente[]>([]);
+  const [concessionData, setConcessionData] = useState<ConcesionData | null>(null);
+  const [seguroData, setSeguroData] = useState<SeguroData | null>(null);
+  const [concesionarioData, setConcesionarioData] = useState<ConcesionarioData | null>(null);
+  const [vehicleDetailsData, setVehicleDetailsData] = useState<vehicleDetailsData | null>(null);
 
+  const [activeTab, setActiveTab] = useState(0); // Primera tab activa por defecto
   const filteredExpedientes = expedientes.filter((exp) => {
-    const matchesSearch =
-      exp.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      exp.titular.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      exp.tipo.toLowerCase().includes(searchTerm.toLowerCase())
-
-    return matchesSearch
+    const searchLower = searchTerm.toLowerCase()
+    return (
+      exp.id.toLowerCase().includes(searchLower) ||
+      exp.titular.toLowerCase().includes(searchLower) ||
+      exp.tipo.toLowerCase().includes(searchLower)
+    )
   })
 
+  const handleSearch = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!searchTerm.trim()) return;
 
-  // Minimalist Accordion Card Section
-  const [openCard, setOpenCard] = useState<number | null>(0)
+    setIsSearching(true);
+    setError(null);
 
-  // Datos de ejemplo para concesión
-  const concessionData = {
-    folio: "123456",
-    tipoServicio: "Transporte Público",
-    tipoPlaca: "A",
-    mnemotecnia: "MNEMO",
-    modalidad: "Urbano",
-    municipioAutorizado: "ATOTONILCO DE TULA",
-    claseUnidad: "",
-    vigencia: "2025",
-    estatus: "Activo",
-    seriePlaca: "SP123456",
-    fechaRegistro: "01/01/2020",
-    fechaRenovacion: "01/01/2025",
-    numeroExpediente: "EXP123456",
-    submodalidad: "Suburbano",
-    localidadAutorizada: "Centro",
-    tipoUnidad: "",
-    seriePlacaAnterior: "",
-    fechaVencimiento: "01/01/2026",
-    observaciones: "",
+    try {
+      // Buscar por folio
+      const searchParams = new URLSearchParams();
+      searchParams.append("folio", searchTerm);
+
+      const { data } = await axios.get(`http://localhost:3000/api/concesion/folio?${searchParams.toString()}`, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        withCredentials: true
+      });
+
+      console.log("Respuesta de la API:", data);
+
+      if (data?.data) {
+        // idVehiculo: data.vehiculo.data.IdVehiculo || "",
+
+        // Mapear los datos recibidos a la estructura esperada por la UI
+        const concesion = {
+          idC: data?.data.IdConcesion,
+          folio: data.data.Folio ?? "",
+          tipoServicio: data.data.TipoServicio ?? "",
+          tipoPlaca: data.data.TipoPlaca ?? "",
+          mnemotecnia: data.data.Mnemotecnia ?? "",
+          modalidad: data.data.Modalidad ?? "",
+          municipioAutorizado: data.data.MunicipioAutorizado ?? "",
+          claseUnidad: data.data.ClaseUnidad ?? "",
+          vigencia: data.data.VigenciaAnios ? `${data.data.VigenciaAnios} años` : "",
+          estatus: "", // No viene en la respuesta, dejar vacío o mapear si existe
+          seriePlaca: data.data.SeriePlacaActual ?? "",
+          fechaRegistro: data.data.FechaExpedicion ?? "",
+          fechaRenovacion: data.data.FechaRenovacion ?? "",
+          numeroExpediente: data.data.NumeroExpediente ?? "",
+          submodalidad: data.data.SubModalidad ?? "",
+          localidadAutorizada: data.data.LocalidadAutorizada ?? "",
+          tipoUnidad: data.data.TipoUnidad ?? "",
+          seriePlacaAnterior: data.data.SeriePlacaAnterior ?? "",
+          fechaVencimiento: data.data.FechaVencimiento ?? "",
+          observaciones: data.data.Observaciones ?? "",
+        };
+
+        setConcessionData(concesion);
+        setSeguroData(null);
+        setConcesionarioData(null);
+        setVehicleDetailsData(null);
+        setSelectedExpediente({
+          id: data.data.NumeroExpediente ?? "",
+          concesion: data.data.Folio ?? "",
+          titular: "", // No viene en la respuesta
+          tipo: data.data.TipoServicio ?? ""
+        });
+        console.log("Respuesta de la API:", concesion.idC);
+
+        // Nueva consulta para obtener la información completa de la concesión por su ID
+        if (concesion.idC) {
+          try {
+            const detalle = await axios.get(`http://localhost:3000/api/concesion/${concesion.idC}`, {
+              headers: {
+                "Content-Type": "application/json",
+              },
+              withCredentials: true
+            });
+            // const detalle = detalleResp.data?.data;
+
+            // Mapear datos relacionados si existen
+            // El API regresa los datos anidados en .data.data, por lo que hay que desestructurar correctamente
+            console.log("Respuesta de la API 2:", detalle);
+            const detalleData = detalle.data;
+            console.log("Respuesta de la API 3:", detalleData);
+            if (detalleData) {
+              // Seguro
+              if (detalleData.seguro?.data) {
+                setSeguroData({
+                  aseguradora: detalleData.seguro.data.NombreAseguradora,
+                  folioPago: detalleData.seguro.data.FolioPago,
+                  fechaVencimiento: detalleData.seguro.data.FechaVencimiento,
+                  numeroPoliza: detalleData.seguro.data.NumeroPoliza,
+                  fechaExpedicion: detalleData.seguro.data.FechaExpedicion,
+                  observaciones: detalleData.seguro.data.Observaciones,
+                });
+              }
+              // Concesionario
+              if (detalleData.concesionario?.data) {
+
+                setConcesionarioData(
+                  {
+
+                    tipoPersona: detalleData.concesionario.data.TipoPersona,
+                    nombre: detalleData.concesionario.data.Nombre,
+                    apellidoPaterno: detalleData.concesionario.data.ApellidoPaterno,
+                    apellidoMaterno: detalleData.concesionario.data.ApellidoMaterno,
+                    fechaNacimiento: detalleData.concesionario.data.FechaNacimiento,
+                    lugarNacimiento: detalleData.concesionario.data.LugarNacimiento,
+                    identificador: detalleData.concesionario.data.IdConcesionario,
+                    genero: detalleData.concesionario.data.Genero,
+                    rfc: detalleData.concesionario.data.RFC,
+                    nacionalidad: detalleData.concesionario.data.Nacionalidad,
+                    correoElectronico: detalleData.concesionario.data.Mail,
+                    estadoCivil: detalleData.concesionario.data.EstadoCivil,
+                    fechaAlta: detalleData.concesionario.data.FechaAlta,
+                    estatus: detalleData.concesionario.data.Estatus,
+                    observacionesConcesionario: detalleData.concesionario.data.Observaciones,
+                    domicilio: {
+                      calle: detalleData.direcciones?.data?.[0]?.Calle,
+                      colonia: detalleData.direcciones?.data?.[0]?.Colonia,
+                      cruzaCon: detalleData.direcciones?.data?.[0]?.CruceCalles,
+                      referencia: detalleData.direcciones?.data?.[0]?.Referencia,
+                      numeroExterior: detalleData.direcciones?.data?.[0]?.NumExterior,
+                      numeroInterior: detalleData.direcciones?.data?.[0]?.NumInterior,
+                      estado: detalleData.direcciones?.data?.[0]?.Estado,
+                      codigoPostal: detalleData.direcciones?.data?.[0]?.CodigoPostal,
+                      municipio: detalleData.direcciones?.data?.[0]?.Municipio,
+                      localidad: detalleData.direcciones?.data?.[0]?.Localidad,
+                      tipoDireccion: detalleData.direcciones?.data?.[0]?.TipoDireccion,
+                      esFiscal: detalleData.direcciones?.data?.[0]?.EsFiscal ?? false,
+                      telefono: detalleData.direcciones?.data?.[0]?.Telefono,
+                      fax: detalleData.direcciones?.data?.[0]?.Fax,
+                    },
+                    beneficiarios: Array.isArray(detalleData.beneficiarios?.data)
+                      ? detalleData.beneficiarios.data.map((b: any) => ({
+                        nombre: b.NombreCompleto,
+                        parentesco: b.Parentesco,
+                      }))
+                      : [],
+                    referencias: Array.isArray(detalleData.referencias?.data)
+                      ? detalleData.referencias.data.map((r: any) => ({
+                        nombreCompleto: r.NombreCompleto,
+                        parentesco: r.Parentesco,
+                        calle: r.Calle,
+                        colonia: r.Colonia,
+                        cruzaCon: r.CruceCalles,
+                        referencia: r.Referencia,
+                        numeroExterior: r.NumExterior,
+                        numeroInterior: r.NumInterior,
+                        estado: r.Estado,
+                        codigoPostal: r.CodigoPostal,
+                        municipio: r.Municipio,
+                        localidad: r.Localidad,
+                        tipoDireccion: r.TipoDireccion,
+                        telefonoParticular: r.Telefono,
+                        fax: r.Fax,
+                      }))
+                      : [],
+                  }
+                )
+                // setConcesionarioData(vehiculo);
+              }
+              // Vehículo
+              if (detalleData.vehiculo?.data) {
+                console.log(detalleData.vehiculo.data.IdVehiculo)
+                const vehiculo = {
+
+                  idV: detalleData.vehiculo.data.IdVehiculo, // Obtener el ID del vehículo si existe
+                  clase: detalleData.vehiculo.data.ClaseVehiculo,
+                  placaAnterior: detalleData.vehiculo.data.PlacaAnterior,
+                  tipo: detalleData.vehiculo.data.TipoVehiculo,
+                  categoria: detalleData.vehiculo.data.Categoria,
+                  marca: detalleData.vehiculo.data.Marca,
+                  rfv: detalleData.vehiculo.data.RegFedVeh,
+                  subMarca: detalleData.vehiculo.data.SubMarca,
+                  cilindros: detalleData.vehiculo.data.NumeroCilindros?.toString(),
+                  version: detalleData.vehiculo.data.Version,
+                  numeroPasajeros: detalleData.vehiculo.data.NumeroPasajeros?.toString(),
+                  modelo: detalleData.vehiculo.data.Modelo?.toString(),
+                  vigencia: detalleData.vehiculo.data.Vigencia,
+                  tipoPlaca: detalleData.vehiculo.data.TipoPlaca,
+                  numeroPuertas: detalleData.vehiculo.data.NumeroPuertas?.toString(),
+                  tipoServicio: detalleData.vehiculo.data.TipoServicio,
+                  numeroToneladas: detalleData.vehiculo.data.NumeroToneladas,
+                  fechaFactura: detalleData.vehiculo.data.FechaFactura,
+                  centimetrosCubicos: detalleData.vehiculo.data.CentrimetrosCubicos,
+                  folioFactura: detalleData.vehiculo.data.NumeroFactura,
+                  color: detalleData.vehiculo.data.Color,
+                  importeFactura: detalleData.vehiculo.data.ImporteFactura?.toString(),
+                  numeroMotor: detalleData.vehiculo.data.Motor,
+                  polizaSeguro: detalleData.vehiculo.data.PolizaSeguro,
+                  numeroSerie: detalleData.vehiculo.data.SerieNIV,
+                  origen: detalleData.vehiculo.data.VehiculoOrigen,
+                  capacidad: detalleData.vehiculo.data.Capacidad,
+                  estadoProcedencia: detalleData.vehiculo.data.EstadoProcedencia,
+                  combustible: detalleData.vehiculo.data.Combustible,
+                  estatus: detalleData.vehiculo.data.IdEstatus?.toString(),
+                  nrpv: detalleData.vehiculo.data.NRPV,
+                }
+                setVehicleDetailsData(vehiculo);
+                console.log("Respuesta de la API 2.2:", vehiculo.idV);
+
+              }
+            }
+          }
+          catch (detalleErr) {
+            setError("No se pudo obtener el detalle de la concesión");
+          }
+
+        } else {
+          setError("No se encontraron datos");
+        }
+        setSearchResults(data.data);
+        setOpenSections([0, 1, 2, 3]); // Abrir todas las secciones por defecto
+        setActiveTab(0); // Reiniciar a la primera pestaña
+        setSearchTerm(""); // Limpiar el campo de búsqueda
+      }
+    } catch (err) {
+      console.error("Error al buscar concesión:", err);
+      setError("Error al buscar concesión. Por favor, intenta de nuevo.");
+    } finally {
+      setIsSearching(false);
+
+
+    };
+  }
+  function ReadonlyField({ label, value }: { label: string; value: string }) {
+    return (
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
+        <div className="flex items-center h-10 px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50">
+          {value || <span className="text-gray-400">No especificado</span>}
+        </div>
+      </div>
+    )
   }
 
-  // Datos de ejemplo para seguro
-  const seguroData = {
-    aseguradora: "AXA Seguros",
-    folioPago: "FP123456",
-    fechaVencimiento: "01/01/2026",
-    numeroPoliza: "NP789012",
-    fechaExpedicion: "01/01/2025",
-    observaciones: "",
-  };
 
-  const concesionarioData = {
-    tipoPersona: "Física",
-    nombre: "Juan",
-    apellidoPaterno: "Pérez",
-    apellidoMaterno: "García",
-    fechaNacimiento: "01/01/1980",
-    lugarNacimiento: "Hidalgo",
-    identificador: "ID123456",
-    genero: "Masculino",
-    rfc: "PEGA800101XXX",
-    nacionalidad: "Mexicana",
-    correoElectronico: "juan.perez@example.com",
-    estadoCivil: "Soltero",
-    fechaAlta: "01/01/2020",
-    estatus: "Activo",
-    observacionesConcesionario: "",
-
-    domicilio: {
-      calle: "Av. Reforma",
-      colonia: "Centro",
-      cruzaCon: "Av. Juárez",
-      referencia: "Frente a la plaza",
-      numeroExterior: "123",
-      numeroInterior: "4B",
-      estado: "Hidalgo",
-      codigoPostal: "42000",
-      municipio: "Pachuca",
-      localidad: "Pachuca Centro",
-      tipoDireccion: "Particular",
-      esFiscal: true,
-      telefono: "7711234567",
-      fax: "7717654321"
-    },
-
-    beneficiarios: [
-      { nombre: "Luis Pérez", parentesco: "Hijo" },
-      { nombre: "Ana García", parentesco: "Esposa" },
-    ],
-
-    referencias: [
-      {
-        nombreCompleto: "Carlos Ramírez",
-        parentesco: "Hermano",
-        calle: "Av. Insurgentes",
-        colonia: "Del Valle",
-        cruzaCon: "Eje 7 Sur",
-        referencia: "Cerca del parque",
-        numeroExterior: "456",
-        numeroInterior: "2A",
-        estado: "CDMX",
-        codigoPostal: "03100",
-        municipio: "Benito Juárez",
-        localidad: "Ciudad de México",
-        tipoDireccion: "Particular",
-        telefonoParticular: "5551234567",
-        fax: "5557654321",
-      }]
-  };
-
-  type Concesionario = {
-    tipoPersona: string;
-    identificador: string;
-    nombre: string;
-    apellidoPaterno: string;
-    apellidoMaterno: string;
-    fechaNacimiento: string;
-    lugarNacimiento: string;
-    genero: string;
-    rfc: string;
-    nacionalidad: string;
-    correoElectronico: string;
-    estadoCivil: string;
-    fechaAlta: string;
-    estatus: string;
-    observacionesConcesionario: string;
-    domicilio?: {
-      calle: string;
-      numero: string;
-      colonia: string;
-      municipio: string;
-      estado: string;
-      codigoPostal: string;
-    };
-    beneficiarios?: {
-      nombre: string;
-      parentesco: string;
-    }[];
-    referencias?: {
-      nombre: string;
-      telefono: string;
-    }[];
-  };
-
-  // Data structure for the "Vehiculo" section, based on unnamed.png / image_c99a1c.png
-  const vehicleDetailsData = {
-    clase: 'AUTOMÓVIL',
-    placaAnterior: 'A782FUZ',
-    tipo: 'SEDAN',
-    categoria: 'Automovil',
-    marca: 'NISSAN',
-    rfv: '', // Empty in image
-    subMarca: 'VERSA',
-    cilindros: '0',
-    version: 'SEDAN',
-    numeroPasajeros: '5',
-    modelo: '2018',
-    vigencia: '31/dic/2030',
-    tipoPlaca: '', // Empty in image
-    numeroPuertas: '', // Empty in image
-    tipoServicio: 'SERVICIO PÚBLICO DE TRANSPORTE DE PASAJEROS',
-    numeroToneladas: '', // Empty in image
-    fechaFactura: '01/ene./0001',
-    centimetrosCubicos: '', // Empty in image
-    folioFactura: '', // Empty in image
-    color: '', // Empty in image
-    importeFactura: '', // Empty in image
-    numeroMotor: 'HR16446815T',
-    polizaSeguro: '7960002470',
-    numeroSerie: '3N1CN7AD4JK419815',
-    origen: '', // Empty in image
-    capacidad: '5 P.',
-    estadoProcedencia: '', // Empty in image
-    combustible: '', // Empty in image
-    estatus: 'Activo/Asignado',
-    nrpv: '', // Empty in image
-  };
-
-  // Datos de ejemplo para propietario
-  const propietarioData = {
-    nombrePropietario: "Juan Pérez García",
-    numeroPoliza: "NP789012",
-    folio: "FP123456",
-    fechaEmision: "01/01/2025",
-    fechaVencimiento: "01/01/2026",
-    ruta: "Ruta 1",
-    tipoUnidad: "Urbano",
-    claseUnidad: "Clase A",
-  };
+  const toggleSection = (index: number) => {
+    setOpenSections(prev =>
+      prev.includes(index)
+        ? prev.filter(i => i !== index)
+        : [...prev, index]
+    )
+  }
 
   const cardSections = [
     {
       title: "Concesión",
+      icon: <Folder className="w-4 h-4 text-gray-600" />,
       content: (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-md">
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Folio</label>
-                <Input readOnly className="bg-gray-100" value={concessionData.folio} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Servicio</label>
-                <Input readOnly className="bg-gray-100" value={concessionData.tipoServicio} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo Placa</label>
-                <Input readOnly className="bg-gray-100" value={concessionData.tipoPlaca} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mnemotecnia</label>
-                <Input readOnly className="bg-gray-100" value={concessionData.mnemotecnia} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Modalidad</label>
-                <Input readOnly className="bg-gray-100" value={concessionData.modalidad} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Municipio Autorizado</label>
-                <Input readOnly className="bg-gray-100" value={concessionData.municipioAutorizado} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Clase Unidad</label>
-                <Input readOnly className="bg-gray-100" value={concessionData.claseUnidad} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Vigencia</label>
-                <Input readOnly className="bg-gray-100" value={concessionData.vigencia} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Estatus</label>
-                <Input readOnly className="bg-gray-100" value={concessionData.estatus} />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Serie Placa</label>
-                <Input readOnly className="bg-gray-100" value={concessionData.seriePlaca} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Fecha Registro</label>
-                <Input readOnly className="bg-gray-100" value={concessionData.fechaRegistro} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Fecha Renovación</label>
-                <Input readOnly className="bg-gray-100" value={concessionData.fechaRenovacion} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Número Expediente</label>
-                <Input readOnly className="bg-gray-100" value={concessionData.numeroExpediente} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Submodalidad</label>
-                <Input readOnly className="bg-gray-100" value={concessionData.submodalidad} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Localidad Autorizada</label>
-                <Input readOnly className="bg-gray-100" value={concessionData.localidadAutorizada} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo Unidad</label>
-                <Input readOnly className="bg-gray-100" value={concessionData.tipoUnidad} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Serie Placa Anterior</label>
-                <Input readOnly className="bg-gray-100" value={concessionData.seriePlacaAnterior} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Vencimiento</label>
-                <Input readOnly className="bg-gray-100" value={concessionData.fechaVencimiento} />
-              </div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+          <div className="space-y-3">
+            <ReadonlyField label="Folio" value={concessionData?.folio ?? ""} />
+            <ReadonlyField label="Tipo de Servicio" value={concessionData?.tipoServicio ?? ""} />
+            <ReadonlyField label="Tipo Placa" value={concessionData?.tipoPlaca ?? ""} />
+            <ReadonlyField label="Mnemotecnia" value={concessionData?.mnemotecnia ?? ""} />
+            <ReadonlyField label="Modalidad" value={concessionData?.modalidad ?? ""} />
+            <ReadonlyField label="Municipio Autorizado" value={concessionData?.municipioAutorizado ?? ""} />
+            <ReadonlyField label="Clase Unidad" value={concessionData?.claseUnidad ?? ""} />
+            <ReadonlyField label="Vigencia" value={concessionData?.vigencia ?? ""} />
+            <ReadonlyField label="Estatus" value={concessionData?.estatus ?? ""} />
           </div>
-
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
-            <Input
-              value={concessionData.observaciones}
-              readOnly
-              className="bg-gray-100 border border-gray-200 text-gray-800 rounded-md p-2 text-sm focus:outline-none focus:ring-0 focus:border-gray-200"
-            />
+          <div className="space-y-3">
+            <ReadonlyField label="Serie Placa" value={concessionData?.seriePlaca ?? ""} />
+            <ReadonlyField label="Fecha Registro" value={concessionData?.fechaRegistro ?? ""} />
+            <ReadonlyField label="Fecha Renovación" value={concessionData?.fechaRenovacion ?? ""} />
+            <ReadonlyField label="Número Expediente" value={concessionData?.numeroExpediente ?? ""} />
+            <ReadonlyField label="Submodalidad" value={concessionData?.submodalidad ?? ""} />
+            <ReadonlyField label="Localidad Autorizada" value={concessionData?.localidadAutorizada ?? ""} />
+            <ReadonlyField label="Tipo Unidad" value={concessionData?.tipoUnidad ?? ""} />
+            <ReadonlyField label="Serie Placa Anterior" value={concessionData?.seriePlacaAnterior ?? ""} />
+            <ReadonlyField label="Fecha de Vencimiento" value={concessionData?.fechaVencimiento ?? ""} />
           </div>
-
-        </>
-      ),
+          <div className="md:col-span-2">
+            <ReadonlyField label="Observaciones" value={concessionData?.observaciones ?? ""} />
+          </div>
+        </div>
+      )
     },
     {
       title: "Seguro",
+      icon: <FileText className="w-4 h-4 text-gray-600" />,
       content: (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Aseguradora</label>
-                <Input readOnly className="bg-gray-100" value={seguroData.aseguradora} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Folio de Pago</label>
-                <Input readOnly className="bg-gray-100" value={seguroData.folioPago} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Vencimiento</label>
-                <Input readOnly className="bg-gray-100" value={seguroData.fechaVencimiento} />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Número de Póliza</label>
-                <Input readOnly className="bg-gray-100" value={seguroData.numeroPoliza} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Expedición</label>
-                <Input readOnly className="bg-gray-100" value={seguroData.fechaExpedicion} />
-              </div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+          <div className="space-y-3">
+            <ReadonlyField label="Aseguradora" value={seguroData?.aseguradora ?? ""} />
+            <ReadonlyField label="Folio de Pago" value={seguroData?.folioPago ?? ""} />
+            <ReadonlyField label="Fecha de Vencimiento" value={seguroData?.fechaVencimiento ?? ""} />
           </div>
-
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
-            <Input
-              value={seguroData.observaciones}
-              readOnly
-              className="bg-gray-100 border border-gray-200 text-gray-800 rounded-md p-2 text-sm focus:outline-none focus:ring-0 focus:border-gray-200"
-            />
+          <div className="space-y-3">
+            <ReadonlyField label="Número de Póliza" value={seguroData?.numeroPoliza ?? ""} />
+            <ReadonlyField label="Fecha de Expedición" value={seguroData?.fechaExpedicion ?? ""} />
           </div>
-
-        </>
-      ),
+          <div className="md:col-span-2">
+            <ReadonlyField label="Observaciones" value={seguroData?.observaciones ?? ""} />
+          </div>
+        </div>
+      )
     },
     {
       title: "Información del concesionario",
+      icon: <FileText className="w-4 h-4 ttext-gray-600" />,
       content: (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Tipo de Persona</label>
-                <Input readOnly className="bg-gray-100" value={concesionarioData.tipoPersona} placeholder="Tipo de Persona" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Identificador</label>
-                <Input readOnly className="bg-gray-100" value={concesionarioData.identificador} placeholder="Identificador" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Nombre</label>
-                <Input readOnly className="bg-gray-100" value={concesionarioData.nombre} placeholder="Nombre" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Apellido Paterno</label>
-                <Input readOnly className="bg-gray-100" value={concesionarioData.apellidoPaterno} placeholder="Apellido Paterno" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Apellido Materno</label>
-                <Input readOnly className="bg-gray-100" value={concesionarioData.apellidoMaterno} placeholder="Apellido Materno" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Fecha de Nacimiento</label>
-                <Input readOnly className="bg-gray-100" value={concesionarioData.fechaNacimiento} placeholder="Fecha de Nacimiento" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Lugar de Nacimiento</label>
-                <Input readOnly className="bg-gray-100" value={concesionarioData.lugarNacimiento} placeholder="Lugar de Nacimiento" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Género</label>
-                <Input readOnly className="bg-gray-100" value={concesionarioData.genero} placeholder="Género" />
-              </div>
+              <ReadonlyField label="Tipo de Persona" value={concesionarioData?.tipoPersona ?? ""} />
+              <ReadonlyField label="Identificador" value={concesionarioData?.identificador ?? ""} />
+              <ReadonlyField label="Nombre" value={concesionarioData?.nombre ?? ""} />
+              <ReadonlyField label="Apellido Paterno" value={concesionarioData?.apellidoPaterno ?? ""} />
+              <ReadonlyField label="Apellido Materno" value={concesionarioData?.apellidoMaterno ?? ""} />
+              <ReadonlyField label="Fecha de Nacimiento" value={concesionarioData?.fechaNacimiento ?? ""} />
+              <ReadonlyField label="Lugar de Nacimiento" value={concesionarioData?.lugarNacimiento ?? ""} />
+              <ReadonlyField label="Género" value={concesionarioData?.genero ?? ""} />
             </div>
             <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">RFC</label>
-                <Input readOnly className="bg-gray-100" value={concesionarioData.rfc} placeholder="RFC" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Nacionalidad</label>
-                <Input readOnly className="bg-gray-100" value={concesionarioData.nacionalidad} placeholder="Nacionalidad" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Correo Electrónico</label>
-                <Input readOnly className="bg-gray-100" value={concesionarioData.correoElectronico} placeholder="Correo Electrónico" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Estado Civil</label>
-                <Input readOnly className="bg-gray-100" value={concesionarioData.estadoCivil} placeholder="Estado Civil" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Fecha Alta</label>
-                <Input readOnly className="bg-gray-100" value={concesionarioData.fechaAlta} placeholder="Fecha Alta" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Estatus</label>
-                <Input readOnly className="bg-gray-100" value={concesionarioData.estatus} placeholder="Estatus" />
-              </div>
+              <ReadonlyField label="RFC" value={concesionarioData?.rfc ?? ""} />
+              <ReadonlyField label="Nacionalidad" value={concesionarioData?.nacionalidad ?? ""} />
+              <ReadonlyField label="Correo Electrónico" value={concesionarioData?.correoElectronico ?? ""} />
+              <ReadonlyField label="Estado Civil" value={concesionarioData?.estadoCivil ?? ""} />
+              <ReadonlyField label="Fecha Alta" value={concesionarioData?.fechaAlta ?? ""} />
+              <ReadonlyField label="Estatus" value={concesionarioData?.estatus ?? ""} />
             </div>
           </div>
 
-          <div className="mt-4 mb-6">
-            <label className="block text-xs font-medium text-gray-700 mb-1">Observaciones:</label>
-            <Input
-              value={concesionarioData.observacionesConcesionario}
-              readOnly
-              className="bg-gray-100 border border-gray-200 text-gray-800 rounded-md p-2 text-sm focus:outline-none focus:ring-0 focus:border-gray-200"
-            />
+          <div className="mb-6">
+            <ReadonlyField label="Observaciones" value={concesionarioData?.observacionesConcesionario ?? ""} />
           </div>
 
-          {/* Acordeón debajo de observaciones */}
-          <div className="border rounded-md overflow-hidden">
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="beneficiarios">
-                <AccordionTrigger className="text-left px-4 py-2 font-medium bg-white border-b">Beneficiarios Registrados</AccordionTrigger>
-                <AccordionContent className="p-4 bg-gray-50 space-y-3">
-                  {concesionarioData.beneficiarios?.map((b, i) => (
-                    <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-3 rounded-md bg-white">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Nombre</label>
-                        <Input readOnly className="bg-gray-100" value={b.nombre} placeholder="Nombre" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Parentesco</label>
-                        <Input readOnly className="bg-gray-100" value={b.parentesco} placeholder="Parentesco" />
-                      </div>
-                    </div>
-                  ))}
-                </AccordionContent>
-              </AccordionItem>
+          <Accordion type="multiple" className="w-full space-y-2">
+            <AccordionItem value="beneficiarios" className="border rounded-lg overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gray-50">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Beneficiarios Registrados</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="p-4 bg-white">
+                {(concesionarioData?.beneficiarios ?? []).map((b, i) => (
+                  <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                    <ReadonlyField label="Nombre" value={b.nombre} />
+                    <ReadonlyField label="Parentesco" value={b.parentesco} />
+                  </div>
+                ))}
+              </AccordionContent>
+            </AccordionItem>
 
-              <AccordionItem value="domicilio">
-                <AccordionTrigger className="text-left px-4 py-2 font-medium bg-white border-b">
-                  Domicilio Registrado
-                </AccordionTrigger>
-                <AccordionContent className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Calle</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.calle} placeholder="Calle" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Colonia</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.colonia} placeholder="Colonia" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Cruza con</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.cruzaCon} placeholder="Cruza con" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Referencia</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.referencia} placeholder="Referencia" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Número Exterior</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.numeroExterior} placeholder="Número Exterior" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Número Interior</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.numeroInterior} placeholder="Número Interior" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Estado</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.estado} placeholder="Estado" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Código Postal</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.codigoPostal} placeholder="Código Postal" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Municipio</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.municipio} placeholder="Municipio" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Localidad</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.localidad} placeholder="Localidad" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Tipo de Dirección</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.tipoDireccion} placeholder="Tipo de Dirección" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">¿Es Fiscal?</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.esFiscal ? "Sí" : "No"} placeholder="¿Es Fiscal?" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Teléfono</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.telefono} placeholder="Teléfono" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Fax</label>
-                    <Input readOnly className="bg-gray-100" value={concesionarioData.domicilio?.fax} placeholder="Fax" />
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
+            <AccordionItem value="domicilio" className="border rounded-lg overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gray-50">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Domicilio Registrado</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ReadonlyField label="Calle" value={concesionarioData?.domicilio?.calle ?? ""} />
+                <ReadonlyField label="Colonia" value={concesionarioData?.domicilio?.colonia ?? ""} />
+                <ReadonlyField label="Cruza con" value={concesionarioData?.domicilio?.cruzaCon ?? ""} />
+                <ReadonlyField label="Referencia" value={concesionarioData?.domicilio?.referencia ?? ""} />
+                <ReadonlyField label="Número Exterior" value={concesionarioData?.domicilio?.numeroExterior ?? ""} />
+                <ReadonlyField label="Número Interior" value={concesionarioData?.domicilio?.numeroInterior ?? ""} />
+                <ReadonlyField label="Estado" value={concesionarioData?.domicilio?.estado ?? ""} />
+                <ReadonlyField label="Código Postal" value={concesionarioData?.domicilio?.codigoPostal ?? ""} />
+                <ReadonlyField label="Municipio" value={concesionarioData?.domicilio?.municipio ?? ""} />
+                <ReadonlyField label="Localidad" value={concesionarioData?.domicilio?.localidad ?? ""} />
+                <ReadonlyField label="Tipo de Dirección" value={concesionarioData?.domicilio?.tipoDireccion ?? ""} />
+                <ReadonlyField label="¿Es Fiscal?" value={concesionarioData?.domicilio?.esFiscal ? "Sí" : "No"} />
+                <ReadonlyField label="Teléfono" value={concesionarioData?.domicilio?.telefono ?? ""} />
+                <ReadonlyField label="Fax" value={concesionarioData?.domicilio?.fax ?? ""} />
+              </AccordionContent>
+            </AccordionItem>
 
-              <AccordionItem value="referencias">
-                <AccordionTrigger className="text-left px-4 py-2 font-medium bg-white border-b">
-                  Referencias Familiares
-                </AccordionTrigger>
-                <AccordionContent className="p-4 bg-gray-50 space-y-4">
-                  {concesionarioData.referencias?.map((r, i) => (
-                    <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded-md bg-white">
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Nombre Completo</label>
-                        <Input readOnly className="bg-gray-100" value={r.nombreCompleto} placeholder="Nombre Completo" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Parentesco</label>
-                        <Input readOnly className="bg-gray-100" value={r.parentesco} placeholder="Parentesco" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Calle</label>
-                        <Input readOnly className="bg-gray-100" value={r.calle} placeholder="Calle" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Colonia</label>
-                        <Input readOnly className="bg-gray-100" value={r.colonia} placeholder="Colonia" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Cruza con</label>
-                        <Input readOnly className="bg-gray-100" value={r.cruzaCon} placeholder="Cruza con" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Referencia</label>
-                        <Input readOnly className="bg-gray-100" value={r.referencia} placeholder="Referencia" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Número Exterior</label>
-                        <Input readOnly className="bg-gray-100" value={r.numeroExterior} placeholder="Número Exterior" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Número Interior</label>
-                        <Input readOnly className="bg-gray-100" value={r.numeroInterior} placeholder="Número Interior" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Estado</label>
-                        <Input readOnly className="bg-gray-100" value={r.estado} placeholder="Estado" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Código Postal</label>
-                        <Input readOnly className="bg-gray-100" value={r.codigoPostal} placeholder="Código Postal" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Municipio</label>
-                        <Input readOnly className="bg-gray-100" value={r.municipio} placeholder="Municipio" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Localidad</label>
-                        <Input readOnly className="bg-gray-100" value={r.localidad} placeholder="Localidad" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Tipo de Dirección</label>
-                        <Input readOnly className="bg-gray-100" value={r.tipoDireccion} placeholder="Tipo de Dirección" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Teléfono (Particular)</label>
-                        <Input readOnly className="bg-gray-100" value={r.telefonoParticular} placeholder="Teléfono (Particular)" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 mb-1 block">Fax</label>
-                        <Input readOnly className="bg-gray-100" value={r.fax} placeholder="Fax" />
-                      </div>
-                    </div>
-                  ))}
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </div>
-        </>
-      ),
-    }
-    ,
+            <AccordionItem value="referencias" className="border rounded-lg overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gray-50">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Referencias Familiares</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="p-4 bg-white space-y-4">
+                {(concesionarioData?.referencias ?? []).map((r, i) => (
+                  <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-md">
+                    <ReadonlyField label="Nombre Completo" value={r.nombreCompleto} />
+                    <ReadonlyField label="Parentesco" value={r.parentesco} />
+                    <ReadonlyField label="Calle" value={r.calle} />
+                    <ReadonlyField label="Colonia" value={r.colonia} />
+                    <ReadonlyField label="Cruza con" value={r.cruzaCon} />
+                    <ReadonlyField label="Referencia" value={r.referencia} />
+                    <ReadonlyField label="Número Exterior" value={r.numeroExterior} />
+                    <ReadonlyField label="Número Interior" value={r.numeroInterior} />
+                    <ReadonlyField label="Estado" value={r.estado} />
+                    <ReadonlyField label="Código Postal" value={r.codigoPostal} />
+                    <ReadonlyField label="Municipio" value={r.municipio} />
+                    <ReadonlyField label="Localidad" value={r.localidad} />
+                    <ReadonlyField label="Tipo de Dirección" value={r.tipoDireccion} />
+                    <ReadonlyField label="Teléfono (Particular)" value={r.telefonoParticular} />
+                    <ReadonlyField label="Fax" value={r.fax} />
+                  </div>
+                ))}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      )
+    },
     {
-      title: "Vehiculo",
+      title: "Vehículo",
+      icon: <FileText className="w-4 h-4 text-gray-600" />,
       content: (
-        <>
+        <div className="p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Clase</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.clase} placeholder="Clase" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Tipo</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.tipo} placeholder="Tipo" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Marca</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.marca} placeholder="Marca" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">SubMarca</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.subMarca} placeholder="SubMarca" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Versión</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.version} placeholder="Versión" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Modelo</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.modelo} placeholder="Modelo" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Tipo de Placa</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.tipoPlaca} placeholder="Tipo de Placa" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Tipo de Servicio</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.tipoServicio} placeholder="Tipo de Servicio" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Fecha Factura</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.fechaFactura} placeholder="Fecha Factura" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Folio Factura</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.folioFactura} placeholder="Folio Factura" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Importe Factura</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.importeFactura} placeholder="Importe Factura" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Número de Motor</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.numeroMotor} placeholder="Número de Motor" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Póliza de Seguro</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.polizaSeguro} placeholder="Póliza de Seguro" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Número de Serie</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.numeroSerie} placeholder="Número de Serie" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Origen</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.origen} placeholder="Origen" />
-              </div>
+              <ReadonlyField label="Clase" value={vehicleDetailsData?.clase ?? ""} />
+              <ReadonlyField label="Tipo" value={vehicleDetailsData?.tipo ?? ""} />
+              <ReadonlyField label="Marca" value={vehicleDetailsData?.marca ?? ""} />
+              <ReadonlyField label="SubMarca" value={vehicleDetailsData?.subMarca ?? ""} />
+              <ReadonlyField label="Versión" value={vehicleDetailsData?.version ?? ""} />
+              <ReadonlyField label="Modelo" value={vehicleDetailsData?.modelo ?? ""} />
+              <ReadonlyField label="Tipo de Placa" value={vehicleDetailsData?.tipoPlaca ?? ""} />
+              <ReadonlyField label="Tipo de Servicio" value={vehicleDetailsData?.tipoServicio ?? ""} />
+              <ReadonlyField label="Fecha Factura" value={vehicleDetailsData?.fechaFactura ?? ""} />
+              <ReadonlyField label="Folio Factura" value={vehicleDetailsData?.folioFactura ?? ""} />
+              <ReadonlyField label="Importe Factura" value={vehicleDetailsData?.importeFactura ?? ""} />
+              <ReadonlyField label="Número de Motor" value={vehicleDetailsData?.numeroMotor ?? ""} />
+              <ReadonlyField label="Póliza de Seguro" value={vehicleDetailsData?.polizaSeguro ?? ""} />
+              <ReadonlyField label="Número de Serie" value={vehicleDetailsData?.numeroSerie ?? ""} />
+              <ReadonlyField label="Origen" value={vehicleDetailsData?.origen ?? ""} />
             </div>
             <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Capacidad</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.capacidad} placeholder="Capacidad" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Estado de Procedencia</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.estadoProcedencia} placeholder="Estado de Procedencia" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Combustible</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.combustible} placeholder="Combustible" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Estatus</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.estatus} placeholder="Estatus" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Placa Anterior</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.placaAnterior} placeholder="Placa Anterior" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Categoría</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.categoria} placeholder="Categoría" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">RFV</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.rfv} placeholder="RFV" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Cilindros</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.cilindros} placeholder="Cilindros" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Número de Pasajeros</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.numeroPasajeros} placeholder="Número de Pasajeros" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Vigencia</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.vigencia} placeholder="Vigencia" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Número de Puertas</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.numeroPuertas} placeholder="Número de Puertas" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Número de Toneladas</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.numeroToneladas} placeholder="Número de Toneladas" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Centímetros Cúbicos</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.centimetrosCubicos} placeholder="Centímetros Cúbicos" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Color</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.color} placeholder="Color" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">NRPV</label>
-                <Input readOnly className="bg-gray-100" value={vehicleDetailsData.nrpv} placeholder="NRPV" />
-              </div>
+              <ReadonlyField label="Capacidad" value={vehicleDetailsData?.capacidad ?? ""} />
+              <ReadonlyField label="Estado de Procedencia" value={vehicleDetailsData?.estadoProcedencia ?? ""} />
+              <ReadonlyField label="Combustible" value={vehicleDetailsData?.combustible ?? ""} />
+              <ReadonlyField label="Estatus" value={vehicleDetailsData?.estatus ?? ""} />
+              <ReadonlyField label="Placa Anterior" value={vehicleDetailsData?.placaAnterior ?? ""} />
+              <ReadonlyField label="Categoría" value={vehicleDetailsData?.categoria ?? ""} />
+              <ReadonlyField label="RFV" value={vehicleDetailsData?.rfv ?? ""} />
+              <ReadonlyField label="Cilindros" value={vehicleDetailsData?.cilindros ?? ""} />
+              <ReadonlyField label="Número de Pasajeros" value={vehicleDetailsData?.numeroPasajeros ?? ""} />
+              <ReadonlyField label="Vigencia" value={vehicleDetailsData?.vigencia ?? ""} />
+              <ReadonlyField label="Número de Puertas" value={vehicleDetailsData?.numeroPuertas ?? ""} />
+              <ReadonlyField label="Número de Toneladas" value={vehicleDetailsData?.numeroToneladas ?? ""} />
+              <ReadonlyField label="Centímetros Cúbicos" value={vehicleDetailsData?.centimetrosCubicos ?? ""} />
+              <ReadonlyField label="Color" value={vehicleDetailsData?.color ?? ""} />
+              <ReadonlyField label="NRPV" value={vehicleDetailsData?.nrpv ?? ""} />
             </div>
           </div>
-          <div className="mt-4 flex justify-end">
+          <div className="mt-6 flex justify-end">
             <Button
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-sm transition-all duration-300 transform hover:-translate-y-0.5"
-              onClick={() => {
-                router.push("iv")
-              }}
+              className="bg-blue-500 hover:bg-blue-600 text-white"
+              onClick={() => router.push("iv")}
             >
               Realizar Inspección
             </Button>
           </div>
-
-        </>
-      ),
-    },
+        </div>
+      )
+    }
   ]
 
   return (
-    <div className="space-y-6 ">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Consultar Vehículo</h2>
-          <p className="text-muted-foreground">Modificar Datos del Vehículo</p>
-        </div>
-      </div>
+    <div className="max-w-full  mx-auto md:p-6">
+      <Card className="shadow-sm shadow-[#e2e8f0] border-x-gray-300 rounded-xl overflow-hidden">
+        <CardHeader className="border-b bg-[#f7fafc] p-6">
+          <div className="flex flex-col space-y-1.5">
+            <h1 className="text-2xl font-extrabold text-gray-800">Consultar Vehículo</h1>
+            <p className="text-sm">Modificar Datos del Vehículo</p>
+          </div>
+        </CardHeader>
 
-      {/* Card simple para la lista de expedientes */}
-      <Card className="border border-muted shadow-md">
-        <CardContent className="pt-6 pb-6 px-6">
-          <div className="mb-4 flex flex-col gap-2">
-            <h2 className="text-lg font-semibold text-foreground">Datos de búsqueda</h2>
-            <label className="text-sm font-medium text-muted-foreground">
-              NÚMERO DE AUTORIZACIÓN:
-            </label>
-            <div className="relative w-full">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Buscar Número de Expediente..."
-                className="pl-8 w-full"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+        <CardContent className="p-6  space-y-6">
+          {/* Sección de búsqueda */}
+          <div className="space-y-3">
+            <h2 className="text-lg font-medium text-gray-800">Datos de búsqueda</h2>
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+              <div className="flex-1 w-full">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Número de autorización:
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    type="search"
+                    placeholder="Buscar por número de expediente, placa o folio..."
+                    className="pl-10 w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+              <Button
+                onClick={handleSearch}
+                className="rounded-lg bg-blue-500 hover:bg-blue-600 text-white"
+                disabled={isSearching || !searchTerm.trim()}
+              >
+                {isSearching ? "Buscando..." : "Buscar"}
+              </Button>
             </div>
           </div>
 
-          <div className="rounded-md shadow-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="font-bold text-gray-900">Elegir</TableHead>
-                  <TableHead className="font-bold text-gray-900">Documento</TableHead>
-                  <TableHead className="font-bold text-gray-900">Folio</TableHead>
-                  <TableHead className="font-bold text-gray-900">Serie</TableHead>
-                  <TableHead className="font-bold text-gray-900">Placa</TableHead>
-                  <TableHead className="font-bold text-gray-900">Número Expediente</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredExpedientes.length > 0 ? (
-                  filteredExpedientes.map((exp, idx) => (
-                    <TableRow key={exp.id}>
-                      <TableCell>
-                        <div className="relative group flex justify-center">
-                          <button
-                            type="button"
-                            className="p-1 rounded hover:bg-accent focus:outline-none"
-                            aria-label="Seleccionar"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width={20}
-                              height={20}
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              className="text-muted-foreground"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M3 8.5V19a2 2 0 002 2h14a2 2 0 002-2V8.5M3 8.5L12 3l9 5.5M3 8.5l9 5.5 9-5.5"
-                              />
-                            </svg>
-                            <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 opacity-0 group-hover:opacity-100 pointer-events-none transition bg-black text-white text-xs rounded py-1 px-2 z-10 whitespace-nowrap">
-                              Seleccionar
-                            </span>
-                          </button>
-                        </div>
-                      </TableCell>
-                      <TableCell> {exp.concesion}</TableCell>
-                      <TableCell>{exp.id}</TableCell>
-                      <TableCell>{exp.tipo}</TableCell>
-                      <TableCell>{exp.titular}</TableCell>
-                      <TableCell>{exp.id}</TableCell>
-                      {/* <TableCell className="text-right">
-              <div className="flex justify-end gap-2">
-                <Button variant="ghost" size="icon">
-                <FileText className="h-4 w-4" />
-                <span className="sr-only">Ver detalles</span>
-                </Button>
-                <Button variant="ghost" size="icon">
-                <Download className="h-4 w-4" />
-                <span className="sr-only">Descargar</span>
+          {/* Resultados o estado vacío */}
+          {!selectedExpediente ? (
+            <div className="flex flex-col items-center justify-center py-20 space-y-6 text-center bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="p-4 bg-gray-100 rounded-full">
+                <Search className="h-8 w-8 text-gray-500" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800">
+                No hay resultados para mostrar
+              </h3>
+              <p className="text-base text-gray-600 max-w-md leading-relaxed">
+                {searchTerm.trim()
+                  ? "No se encontraron coincidencias con tu búsqueda. Intenta con otro término."
+                  : "Ingresa un número de expediente, placa o folio para buscar información del vehículo."}
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Tabla de resultados */}
+              <div className="bg-white rounded-lg border border-gray-200 mb-6 overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-[#f7fafc]">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Elegir</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Documento</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Folio</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serie Placa</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Número Expediente</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    <tr>
+                      <td className="px-4 py-3">
+                        <input
+                          type="radio"
+                          checked
+                          readOnly
+                          className="accent-blue-600"
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">Concesión</td>
+                      <td className="px-4 py-3 text-gray-700">{concessionData?.folio ?? ""}</td>
+                      <td className="px-4 py-3 text-gray-700">{concessionData?.seriePlaca ?? ""}</td>
+                      <td className="px-4 py-3 text-gray-700">{concessionData?.numeroExpediente ?? ""}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Botón para continuar */}
+              <div className="flex justify-end mb-6">
+                <Button
+                  variant="outline"
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors duration-200 px-4 py-2 rounded-md text-sm"
+                  onClick={() => {
+                    // Usar los IDs del estado en vez de variables locales
+                    console.log("ModificacionVehiculo params:", {
+                      idC: concessionData?.idC,
+                      idV: vehicleDetailsData?.idV,
+                    });
+                    router.push(
+                      `ModificacionVehiculo?idC=${concessionData?.idC ?? ""}&idV=${vehicleDetailsData?.idV ?? ""}`
+                    );
+                  }}
+                >
+                  Continuar modificación
                 </Button>
               </div>
-              </TableCell> */}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
-                      No se encontraron resultados.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          <CardFooter className="flex justify-between px-0 pt-4">
-            <div className="text-sm text-muted-foreground">
-              Mostrando {filteredExpedientes.length} de {expedientes.length} expedientes
-            </div>
-          </CardFooter>
+
+              {/* Sistema de Tabs y Contenido */}
+              <div className="bg-white rounded-lg border border-gray-200">
+                {/* Pestañas */}
+                <div className="flex border-b bg-[#f7fafc] border-gray-200 px-4">
+                  {cardSections.map((section, index) => (
+                    <button
+                      key={index}
+                      className={`
+                  px-5 py-3 font-medium text-sm relative transition-colors duration-200
+                  ${activeTab === index
+                          ? 'text-blue-600 border-b-2 border-blue-600'
+                          : 'text-gray-700 hover:text-blue-500'
+                        }
+                  ${index === 0 ? 'ml-0' : '-ml-px'}
+                  `}
+                      onClick={() => setActiveTab(index)}
+                    >
+                      {section.title}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Contenido de la Tab activa */}
+                <div className="p-6 bg-white max-h-[500px] overflow-y-auto">
+                  {cardSections[activeTab]?.content || (
+                    <p className="text-gray-500 italic text-base">
+                      Seleccione una pestaña para ver su contenido.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
-
-      {cardSections.map((section, idx) => (
-        <Card key={section.title} className="border border-muted shadow-sm overflow-hidden">
-          <button
-            type="button"
-            className="w-full flex items-center justify-between px-2 py-2  border-b border-blue-200 hover:bg-muted bg-blue-50  transition-colors rounded-t-lg focus:outline-none"
-            onClick={() => setOpenCard(openCard === idx ? null : idx)}
-            aria-expanded={openCard === idx}
-            aria-controls={`section-content-${idx}`}
-          >
-            <span className="text-lg font-semibold text-blue-800">{section.title}</span>
-            <span
-              className={`transition-transform duration-200 text-muted-foreground ${openCard === idx ? "rotate-90" : ""}`}
-            >
-              ▶
-            </span>
-          </button>
-          <div
-            id={`section-content-${idx}`}
-            style={{
-              maxHeight: openCard === idx ? 2000 : 0,
-              transition: "max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-              overflow: "hidden",
-              opacity: openCard === idx ? 1 : 0,
-              pointerEvents: openCard === idx ? "auto" : "none",
-            }}
-            aria-hidden={openCard !== idx}
-          >
-            {openCard === idx && (
-              <CardContent className="pt-0 pb-6 px-6 animate-fade-in">
-                {section.content}
-              </CardContent>
-            )}
-          </div>
-        </Card>
-      ))}
     </div>
   )
 }

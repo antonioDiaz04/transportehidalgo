@@ -9,24 +9,47 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Eye, EyeOff, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import axios from "axios";
 
 export default function LoginPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [currentPage, setCurrentPage] = useState(0) // 0 = contenido, 1 = formulario
-
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
+  
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
-      router.push("/dashboard")
-    }, 1500)
-  }
+    try {
+      const { data } = await axios.post("http://localhost:3000/api/auth/login", {
+        username,
+        password
+      }, {
+        headers: { "Content-Type": "application/json" },
+        withCredentials: true // Si usas cookies/tokens
+      });
 
+      // ✅ Guardar token si es necesario (ejemplo)
+      // localStorage.setItem("token", data.token);
+
+      router.push("/dashboard");
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        alert(
+          error.response?.data?.message ||
+          error.message ||
+          "Error al iniciar sesión"
+        );
+      } else {
+        alert("Error desconocido");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
   const handleSwipe = (direction: 'left' | 'right') => {
     if (direction === 'left' && currentPage < 1) {
       setCurrentPage(currentPage + 1)
@@ -64,14 +87,14 @@ export default function LoginPage() {
 
       {/* Main Content with Pagination (Mobile/Tablet) */}
       <div className="lg:hidden w-full pt-28 flex-grow relative overflow-hidden">
-      
+
         {/* Content Container */}
-        <div 
+        <div
           className="flex transition-transform duration-300 ease-in-out"
           style={{ transform: `translateX(-${currentPage * 100}%)` }}
         >
           {/* Left Section: Large Image and Description (Page 0) */}
-          <div 
+          <div
             className="w-full flex-shrink-0 px-4 flex flex-col items-center text-center animate-fadeInLeft"
             onTouchStart={(e) => {
               const touchStartX = e.touches[0].clientX
@@ -113,12 +136,12 @@ export default function LoginPage() {
             <Card className="w-full max-w-md bg-white text-gray-900 shadow-3xl p-6 md:p-8 transform transition-all duration-500 ease-out hover:scale-[1.02] relative z-20 animate-fadeInRight">
               <CardHeader className="text-center pb-6">
                 <div className="flex justify-center mb-4">
-                  <Image 
-                    src="http://apps.transportehidalgo.gob.mx:8081/Imagenes/stch.png" 
-                    alt="Logo" 
-                    width={70} 
-                    height={70} 
-                    className="rounded-none" 
+                  <Image
+                    src="http://apps.transportehidalgo.gob.mx:8081/Imagenes/stch.png"
+                    alt="Logo"
+                    width={70}
+                    height={70}
+                    className="rounded-none"
                   />
                 </div>
                 <CardTitle className="text-3xl md:text-4xl font-extrabold text-[#80142c] leading-tight">
@@ -139,6 +162,8 @@ export default function LoginPage() {
                       type="text"
                       placeholder="Ej: JuanPerez2024"
                       required
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)} // ✅ Esto es lo que faltaba
                       className="w-full p-3 text-base md:text-lg border border-gray-300 rounded-lg 
                         focus:ring-2 focus:ring-[#bc1c44] focus:border-transparent 
                         transition-all duration-200 text-gray-800
@@ -156,6 +181,8 @@ export default function LoginPage() {
                         type={showPassword ? "text" : "password"}
                         placeholder="••••••••"
                         required
+                        value={password}
+                        onChange={(e) => setUsername(e.target.value)} // ✅ Esto es lo que faltaba
                         className="w-full p-3 text-base md:text-lg border border-gray-300 rounded-lg 
                           focus:ring-2 focus:ring-[#bc1c44] focus:border-transparent 
                           transition-all duration-200 pr-10 text-gray-800"
@@ -203,10 +230,10 @@ export default function LoginPage() {
             </Card>
           </div>
 
-           
+
 
         </div>
-         {/* Pagination Indicators */}
+        {/* Pagination Indicators */}
         <div className="flex justify-center gap-2 mt-4 mb-6 z-20">
           {[0, 1].map((page) => (
             <button
@@ -259,13 +286,16 @@ export default function LoginPage() {
                 <Input
                   id="username"
                   type="text"
-                  placeholder="Ej: JuanPerez2024"
+                  placeholder="Ej: JuanPerez202"
                   required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)} // ✅ Esto es lo que faltaba
                   className="w-full p-3 border border-gray-300 rounded-lg 
-                    focus:ring-2 focus:ring-[#bc1c44] focus:border-transparent 
-                    transition-all duration-200 text-gray-800
-                    hover:border-gray-400 placeholder-gray-400"
+    focus:ring-2 focus:ring-[#bc1c44] focus:border-transparent 
+    transition-all duration-200 text-gray-800
+    hover:border-gray-400 placeholder-gray-400"
                 />
+
               </div>
 
               <div>
@@ -276,8 +306,13 @@ export default function LoginPage() {
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     required
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#bc1c44] focus:border-transparent transition-all duration-200 pr-10 text-gray-800"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)} // ✅ Esto también
+                    className="w-full p-3 border border-gray-300 rounded-lg 
+    focus:ring-2 focus:ring-[#bc1c44] focus:border-transparent 
+    transition-all duration-200 pr-10 text-gray-800"
                   />
+
                   <Button
                     type="button"
                     variant="ghost"

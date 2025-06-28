@@ -5,7 +5,7 @@ import Image from "next/image";
 
 export default function DashboardPage() {
   return (
-    <div className="flex flex-col bg-gray-100 items-center justify-center min-h-[60vh] gap-6 text-center">
+    <div className="flex flex-col bg-[#f7fafc]   items-center justify-center min-h-[60vh] gap-6 text-center">
       <div className="">
         <Image
           src="https://res.cloudinary.com/dvvhnrvav/image/upload/v1749563496/transporte/oekxnggselolp5paxtev.jpg"

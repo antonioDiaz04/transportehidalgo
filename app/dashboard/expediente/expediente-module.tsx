@@ -565,24 +565,24 @@ export default function ExpedienteModule() {
       <Card className="border border-muted shadow-none">
         <CardContent className="pt-6 pb-6 px-6">
           <div className="mb-6 flex flex-col gap-4">
-  <h2 className="text-lg font-semibold text-foreground">Datos de búsqueda</h2>
+            <h2 className="text-lg font-semibold text-foreground">Datos de búsqueda</h2>
 
-  <div className="flex flex-col gap-2">
-    <label className="text-sm font-medium text-muted-foreground">Serie Placa:</label>
-    <Input
-      type="text"
-      placeholder="Ingrese la serie o placa..."
-    />
-  </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-muted-foreground">Serie Placa:</label>
+              <Input
+                type="text"
+                placeholder="Ingrese la serie o placa..."
+              />
+            </div>
 
-  <div className="flex flex-col gap-2">
-    <label className="text-sm font-medium text-muted-foreground">Folio:</label>
-    <Input
-      type="text"
-      placeholder="Ingrese el folio..."
-    />
-  </div>
-</div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-muted-foreground">Folio:</label>
+              <Input
+                type="text"
+                placeholder="Ingrese el folio..."
+              />
+            </div>
+          </div>
 
           <div className="rounded-md border">
             <Table>
