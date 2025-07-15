@@ -1,7 +1,7 @@
 "use client"
 import axios from "axios";
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Search, ChevronDown, ChevronUp, Folder, FileText, Download, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -170,6 +170,29 @@ export default function AutorizacionModule() {
     )
   })
 
+
+  // Prefetch de rutas comunes
+  useEffect(() => {
+    router.prefetch("/dashboard/ModificacionVehiculo");
+    router.prefetch("/dashboard/iv");
+  }, [router]);
+
+  // Navegación optimizada con useCallback
+  const navigateToModification = useCallback(() => {
+    if (!concessionData?.idC || !vehicleDetailsData?.idV) return;
+
+    const params = new URLSearchParams({
+      idC: concessionData.idC,
+      idV: vehicleDetailsData.idV
+    });
+    router.push(`/dashboard/ModificacionVehiculo?${params.toString()}`);
+  }, [concessionData?.idC, vehicleDetailsData?.idV, router]);
+
+  const navigateToInspection = useCallback(() => {
+    router.push("/dashboard/iv");
+  }, [router]);
+
+
   const handleSearch = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!searchTerm.trim()) return;
@@ -180,9 +203,9 @@ export default function AutorizacionModule() {
     try {
       // Buscar por folio
       const searchParams = new URLSearchParams();
-      searchParams.append("folio", searchTerm);
+      // searchParams.append("folio", searchTerm);
 
-      const { data } = await axios.get(`http://localhost:3000/api/concesion/folio?${searchParams.toString()}`, {
+      const { data } = await axios.get(`http://localhost:3000/api/concesion/autorizacion/${searchTerm.toString()}`, {
         headers: {
           "Content-Type": "application/json",
         },
@@ -216,12 +239,12 @@ export default function AutorizacionModule() {
           seriePlacaAnterior: data.data.SeriePlacaAnterior ?? "",
           fechaVencimiento: data.data.FechaVencimiento ?? "",
           observaciones: data.data.Observaciones ?? "",
-        };
+        }
 
         setConcessionData(concesion);
-        setSeguroData(null);
-        setConcesionarioData(null);
-        setVehicleDetailsData(null);
+        // setSeguroData(null);
+        // setConcesionarioData(null);
+        // setVehicleDetailsData(null);
         setSelectedExpediente({
           id: data.data.NumeroExpediente ?? "",
           concesion: data.data.Folio ?? "",
@@ -377,12 +400,31 @@ export default function AutorizacionModule() {
         setSearchResults(data.data);
         setOpenSections([0, 1, 2, 3]); // Abrir todas las secciones por defecto
         setActiveTab(0); // Reiniciar a la primera pestaña
-        setSearchTerm(""); // Limpiar el campo de búsqueda
+        // setSearchTerm(""); // Limpiar el campo de búsqueda
       }
+      else {
+        setError("No se encontraron datos para el folio proporcionado.");
+        // setSearchResults(null);
+        // setConcessionData(null);
+        // setSeguroData(null);
+        // setConcesionarioData(null);
+        // setVehicleDetailsData(null);
+      }
+
     } catch (err) {
       console.error("Error al buscar concesión:", err);
       setError("Error al buscar concesión. Por favor, intenta de nuevo.");
-    } finally {
+
+      // Limpieza en caso de error
+      setConcessionData(null);
+      setSeguroData(null);
+      setConcesionarioData(null);
+      setVehicleDetailsData(null);
+      setSelectedExpediente(null);
+      setSearchResults([]);
+      setOpenSections([]);
+    }
+    finally {
       setIsSearching(false);
 
 
@@ -605,11 +647,18 @@ export default function AutorizacionModule() {
               <ReadonlyField label="Color" value={vehicleDetailsData?.color ?? ""} />
               <ReadonlyField label="NRPV" value={vehicleDetailsData?.nrpv ?? ""} />
             </div>
-          </div>
-          <div className="mt-6 flex justify-end">
+            </div>
+            <div className="mt-6 flex justify-end">
             <Button
               className="bg-blue-500 hover:bg-blue-600 text-white"
-              onClick={() => router.push("iv")}
+              onClick={() => {
+              if (vehicleDetailsData?.idV) {
+                console.log("Sí hay idV:", vehicleDetailsData.idV);
+                router.push(`/dashboard/iv?idV=${vehicleDetailsData.idV}`);
+              } else {
+                console.log("No hay idV");
+              }
+              }}
             >
               Realizar Inspección
             </Button>
@@ -620,16 +669,16 @@ export default function AutorizacionModule() {
   ]
 
   return (
-    <div className="max-w-full  mx-auto md:p-6">
-      <Card className="shadow-sm shadow-[#e2e8f0] border-x-gray-300 rounded-xl overflow-hidden">
-        <CardHeader className="border-b bg-[#f7fafc] p-6">
-          <div className="flex flex-col space-y-1.5">
+    <div className="max-w-full  mx-auto md:p-2">
+      <Card className="bg-transparent items-start border-none shadow-none">
+        <div className="text-start items-start mb-4">
+          <div className="flex flex-col">
             <h1 className="text-2xl font-extrabold text-gray-800">Consultar Vehículo</h1>
             <p className="text-sm">Modificar Datos del Vehículo</p>
           </div>
-        </CardHeader>
+        </div>
 
-        <CardContent className="p-6  space-y-6">
+        <CardContent className="p-6 bg-white shadow-[#B4BFC2] rounded-xl overflow-hidden shadow-sm border-[#ECEFF0] space-y-6">
           {/* Sección de búsqueda */}
           <div className="space-y-3">
             <h2 className="text-lg font-medium text-gray-800">Datos de búsqueda</h2>
@@ -659,12 +708,15 @@ export default function AutorizacionModule() {
             </div>
           </div>
 
-          {/* Resultados o estado vacío */}
-          {!selectedExpediente ? (
+          {isSearching ? (
+            <div className="text-center py-20 text-gray-500">Buscando resultados...</div>
+          ) : !concessionData || !selectedExpediente ? (
             <div className="flex flex-col items-center justify-center py-20 space-y-6 text-center bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="p-4 bg-gray-100 rounded-full">
-                <Search className="h-8 w-8 text-gray-500" />
-              </div>
+              <img
+                src="https://img.freepik.com/premium-vector/vector-illustration-about-concept-no-result-data-document-file-found_675567-5734.jpg"
+                alt="Sin resultados"
+                className="w-60 h-60 object-cover"
+              />
               <h3 className="text-xl font-semibold text-gray-800">
                 No hay resultados para mostrar
               </h3>
@@ -711,17 +763,8 @@ export default function AutorizacionModule() {
               <div className="flex justify-end mb-6">
                 <Button
                   variant="outline"
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors duration-200 px-4 py-2 rounded-md text-sm"
-                  onClick={() => {
-                    // Usar los IDs del estado en vez de variables locales
-                    console.log("ModificacionVehiculo params:", {
-                      idC: concessionData?.idC,
-                      idV: vehicleDetailsData?.idV,
-                    });
-                    router.push(
-                      `ModificacionVehiculo?idC=${concessionData?.idC ?? ""}&idV=${vehicleDetailsData?.idV ?? ""}`
-                    );
-                  }}
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 px-4 py-2 rounded-md text-sm"
+                  onClick={navigateToModification}
                 >
                   Continuar modificación
                 </Button>

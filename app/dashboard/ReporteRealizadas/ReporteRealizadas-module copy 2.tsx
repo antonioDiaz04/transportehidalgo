@@ -27,6 +27,10 @@ export default function ReporteRealizadas() {
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Add missing state for filtered data and search status
+  const [filteredData, setFilteredData] = useState<any[]>([]);
+  const [hasSearched, setHasSearched] = useState(false);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -34,7 +38,27 @@ export default function ReporteRealizadas() {
       setPreviewUrl(url);
     }
   };
+  const fetchReporte = async () => {
+    if (!startDate || !endDate) {
+      setError("Selecciona ambas fechas");
+      return;
+    }
 
+    try {
+      const response = await axios.get('http://localhost:3000/api/reporte/inspecciones', {
+        params: { fechaInicio: startDate, fechaFin: endDate, page: 1 },
+        headers: { 'Content-Type': 'application/json' },
+        withCredentials: true
+      });
+
+      setFilteredData(response.data.data || []);
+      setError('');
+    } catch (error) {
+      setError("Error al obtener el reporte");
+    } finally {
+      setHasSearched(true);
+    }
+  };
   const generateReport = async (format: 'json' | 'excel' | 'pdf' = 'json') => {
     if (!startDate || !endDate) {
       setError("Selecciona ambas fechas");
@@ -119,6 +143,11 @@ export default function ReporteRealizadas() {
           />
         </div>
       </div>
+     
+     <div className="flex gap-4 justify-end mb-4">
+
+        <Button onClick={fetchReporte} className="bg-blue-600 text-white mb-4">Consultar</Button>
+      {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
       <Button
         onClick={() => setShowExportModal(true)}
@@ -136,12 +165,13 @@ export default function ReporteRealizadas() {
             Generar Reporte
           </>
         )}
-      {/* Fondo oscuro detrás del modal */}
-      {showExportModal && (
-        <div className="fixed inset-0 bg-stone-400 bg-opacity-10 z-40"></div>
-      )}
+        {/* Fondo oscuro detrás del modal */}
+        {showExportModal && (
+          <div className="fixed inset-0 bg-stone-400 bg-opacity-10 z-40"></div>
+        )}
       </Button>
 
+      </div>
 
 
       {/* Modal de exportación */}
@@ -151,7 +181,7 @@ export default function ReporteRealizadas() {
       >
         <DialogContent className="sm:max-w-[480px] bg-white border text-black">
           <DialogHeader>
-        <DialogTitle>Configurar Reporte</DialogTitle>
+            <DialogTitle>Configurar Reporte</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">

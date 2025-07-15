@@ -4,7 +4,11 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({
+  subsets: ["latin"], display: 'swap', // Esto ayuda si la fuente tarda en cargarse
+  // Agrega una fuente de sistema de respaldo
+  fallback: ['system-ui', 'arial', 'sans-serif'],
+})
 
 export const metadata: Metadata = {
   title: " System",
