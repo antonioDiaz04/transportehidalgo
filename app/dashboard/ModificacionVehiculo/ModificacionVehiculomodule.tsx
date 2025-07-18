@@ -446,24 +446,7 @@ export default function ModificacionVehiculo() {
     }, [vehiculoData.IdClase, formatOptions]); // Depende de IdClase
 
     useEffect(() => {
-        // La lógica para limpiar y resetear campos se activa si la ClaveCategoria cambia
-        // o si no estamos en la carga inicial y la ClaveCategoria está vacía.
-        // if (!vehiculoData.ClaveCategoria && !initialLoad.current) {
-        //     setCatalogos(prev => ({ ...prev, marcas: [], submarcas: [], versiones: [] }));
-        //     setVehiculoData(prev => ({
-        //         ...prev,
-        //         // IdMarca: "",
-        //         // Marca: "",
-        //         // IdSubMarca: "",
-        //         // Submarca: "",
-        //         // IdVersion: "",
-        //         // Version: ""
-        //     }));
-        //     return;
-        // }
-        // Si estamos en la carga inicial y no hay ClaveCategoria, no hacer nada
-        // if (!vehiculoData.ClaveCategoria && initialLoad.current) return;
-
+     
         const fetchMarcas = async () => {
             try {
                 const response = await axios.get(

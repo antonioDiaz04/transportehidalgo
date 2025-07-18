@@ -30,15 +30,28 @@ import {
 import { useDevice } from "@/hooks/use-device"
 import { cn } from "@/lib/utils"
 
+import { getUserSession, clearUserSession } from "@/lib/indexedDb"
+
+
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { isMobile, isTablet } = useDevice()
   const shouldCollapseSidebar = isMobile || isTablet
   const [sidebarOpen, setSidebarOpen] = useState(!shouldCollapseSidebar)
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [userName, setUserName] = useState("")
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      const session = await getUserSession()
+      if (session.length > 0) {
+        setUserName(session[0].name || "Usuario")
+      }
+    }
 
-
+    fetchUser()
+  }, [])
   useEffect(() => {
     if (shouldCollapseSidebar) {
       setSidebarOpen(false)
@@ -216,7 +229,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   className="flex items-center gap-2 rounded-md text-black font-medium hover:bg-gray-100 focus:outline-none border-none px-2 py-1"
                 >
                   <User className="h-5 w-5 text-[#bc1c44]" />
-                  <span className="text-sm">Pepe Alejandro Sanchez</span>
+                  <span className="text-sm">{userName}</span>
+
                   <ChevronDown className="h-4 w-4 text-gray-500" />
                 </Button>
               </DropdownMenuTrigger>
@@ -224,16 +238,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium">Usuario:</p>
-                    <p className="text-xs text-muted-foreground">Pepe Alejandro Sanchez</p>
+                    <p className="text-xs text-muted-foreground">{userName}</p>
+
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Cerrar sesión</span>
-                  </Link>
+                <DropdownMenuItem
+                  onClick={async () => {
+                    await clearUserSession()
+                    window.location.href = "/" // Redirigir después de limpiar
+                  }}
+                  className="cursor-pointer"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Cerrar sesión</span>
                 </DropdownMenuItem>
+
 
               </DropdownMenuContent>
             </DropdownMenu>

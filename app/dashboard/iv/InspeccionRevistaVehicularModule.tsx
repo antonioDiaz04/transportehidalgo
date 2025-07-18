@@ -40,11 +40,31 @@ interface ImageType {
   label: string;
 }
 
+interface ConcesionarioData {
+  IdConcesion: number;
+  Folio: string; // Este es el folio del concesionario/autorización
+  TipoServicio: string;
+  TipoPlaca: string;
+  Mnemotecnia: string;
+  Modalidad: string;
+  MunicipioAutorizado: string;
+  ClaseUnidad: string | null; // Puede ser null en tu ejemplo
+  VigenciaAnios: number | null; // Puede ser null en tu ejemplo
+  SeriePlacaActual: string; // La placa actual del vehículo
+  FechaExpedicion: string;
+  Observaciones: string;
+  // ** Campos del vehículo, mapeados a las propiedades de la respuesta original **
+  IdVehiculoActual: string; // Mapeado de IdVehiculoActual en la respuesta
+  Placa: string; // Mapeado de SeriePlacaActual en la respuesta
+  Propietario: string; // Mapeado de IdConcesionarioActual o IdPropietario en la respuesta
+  FolioVehiculo: string; // Mapeado de NumeroExpediente en la respuesta
+}
+
 const initialInspectionData = {
   placaDelantera: true,
   placaTrasera: true,
-  calcomaniaVerificacion: true,
-  calcomaniaTenencia: true,
+  calcaVerificacion: true,
+  calcaTenencia: true,
   pinturaCarroceria: true,
   estadoLlantas: true,
   defensas: true,
@@ -61,8 +81,8 @@ const initialInspectionData = {
   intermitentes: true,
   stop: true,
   timbre: true,
-  extinguidor: true,
-  herramienta: true,
+  estinguidor: true,
+  herramientas: true,
   sistemaFrenado: true,
   sistemaDireccion: true,
   sistemaSuspension: true,
@@ -75,8 +95,8 @@ const initialInspectionData = {
 const fieldLabels: Record<keyof typeof initialInspectionData, string> = {
   placaDelantera: 'Placa Delantera',
   placaTrasera: 'Placa Trasera',
-  calcomaniaVerificacion: 'Calcomanía de Verificación',
-  calcomaniaTenencia: 'Calcomanía de Tenencia',
+  calcaVerificacion: 'Calcomanía de Verificación',
+  calcaTenencia: 'Calcomanía de Tenencia',
   pinturaCarroceria: 'Pintura y Carrocería',
   estadoLlantas: 'Estado de Llantas',
   defensas: 'Defensas',
@@ -93,8 +113,8 @@ const fieldLabels: Record<keyof typeof initialInspectionData, string> = {
   intermitentes: 'Luces Intermitentes',
   stop: 'Luces de Stop',
   timbre: 'Timbre (si aplica)',
-  extinguidor: 'Extinguidor',
-  herramienta: 'Herramienta Básica',
+  estinguidor: 'estinguidor',
+  herramientas: 'herramientas Básica',
   sistemaFrenado: 'Sistema de Frenado',
   sistemaDireccion: 'Sistema de Dirección',
   sistemaSuspension: 'Sistema de Suspensión',
@@ -104,42 +124,11 @@ const fieldLabels: Record<keyof typeof initialInspectionData, string> = {
   imagenCromatica: 'Imagen Cromática',
 };
 
-const apiToStateMap: Record<string, keyof typeof initialInspectionData> = {
-  PlacaDelanteraVer: "placaDelantera",
-  PlacaTraseraVer: "placaTrasera",
-  CalcaVerificacionVer: "calcomaniaVerificacion",
-  CalcaTenenciaVer: "calcomaniaTenencia",
-  PinturaCarroceriaVer: "pinturaCarroceria",
-  EstadoLlantasVer: "estadoLlantas",
-  DefensasVer: "defensas",
-  VidriosVer: "vidrios",
-  LimpiadoresVer: "limpiadores",
-  EspejosVer: "espejos",
-  LlantaRefaccionVer: "llantaRefaccion",
-  ParabrisasMedallonVer: "parabrisasMedallon",
-  ClaxonVer: "claxon",
-  LuzBajaVer: "luzBaja",
-  LuzAltaVer: "luzAlta",
-  CuartosVer: "cuartos",
-  DireccionalesVer: "direccionales",
-  IntermitentesVer: "intermitentes",
-  StopVer: "stop",
-  TimbreVer: "timbre",
-  EstinguidorVer: "extinguidor",
-  HerramientasVer: "herramienta",
-  SistemaFrenadoVer: "sistemaFrenado",
-  SistemaDireccionVer: "sistemaDireccion",
-  SistemaSuspensionVer: "sistemaSuspension",
-  InterioresVer: "interiores",
-  BotiquinVer: "botiquin",
-  CinturonSeguridadVer: "cinturonSeguridad",
-  ImagenCromaticaVer: "imagenCromatica",
-};
 
 export default function InspeccionRevistaVehicularForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const idRVParam = searchParams.get("idV");
+  const idConcesionParam = searchParams.get("idC");
   const [inspectionData, setInspectionData] = useState(initialInspectionData);
   const [selectedImages, setSelectedImages] = useState<SelectedImage[]>([]);
   const [observaciones, setObservaciones] = useState('');
@@ -149,13 +138,91 @@ export default function InspeccionRevistaVehicularForm() {
   const { toast } = useToast();
   const [imageToDelete, setImageToDelete] = useState<{ id: string, idImagenRevistaVehicular?: number } | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  
-  // Estados para animaciones de carga
+
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [isSavingImages, setIsSavingImages] = useState(false);
+  const [isSavingImages, setIsSavingImages] = useState(false); // No se usa directamente para el botón de "Guardar nuevas imágenes" en esta versión, pero se mantiene si se planea una funcionalidad separada.
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [concesionarioData, setConcesionarioData] = useState<ConcesionarioData | null>(null);
+  const [isLoadingConcesion, setIsLoadingConcesion] = useState(false);
+
+
+  // Nuevo useEffect para cargar datos del concesionario automáticamente desde la URL
+  useEffect(() => {
+    const fetchConcesionarioData = async () => {
+      if (idConcesionParam) {
+        setIsLoadingConcesion(true);
+        try {
+          const { data } = await axios.get(`http://localhost:3000/api/concesion/autorizacion/${idConcesionParam}`, {
+            headers: {
+              "Content-Type": "application/json",
+            },
+            withCredentials: true
+          });
+
+          console.log("Respuesta de la API de concesionario/autorización:", data);
+
+          if (data && data.data) { // Si la respuesta tiene una propiedad 'data'
+            const apiData = data.data; // Accede a la propiedad 'data' dentro de la respuesta
+
+            // Mapea los datos de la API a tu interfaz ConcesionarioData
+            setConcesionarioData({
+              IdConcesion: apiData.IdConcesion,
+              Folio: apiData.Folio,
+              TipoServicio: apiData.TipoServicio,
+              TipoPlaca: apiData.TipoPlaca,
+              Mnemotecnia: apiData.Mnemotecnia,
+              Modalidad: apiData.Modalidad,
+              MunicipioAutorizado: apiData.MunicipioAutorizado,
+              ClaseUnidad: apiData.ClaseUnidad,
+              VigenciaAnios: apiData.VigenciaAnios,
+              SeriePlacaActual: apiData.SeriePlacaActual,
+              FechaExpedicion: apiData.FechaExpedicion,
+              Observaciones: apiData.Observaciones,
+              // Mapeo de los campos del vehículo desde la respuesta
+              IdVehiculoActual: apiData.IdVehiculoActual,
+              Placa: apiData.SeriePlacaActual, // La placa viene como SeriePlacaActual
+              Propietario: apiData.IdConcesionarioActual || apiData.IdPropietario, // Usa IdConcesionarioActual o IdPropietario
+              FolioVehiculo: apiData.Folio, // El folio del vehículo/expediente es NumeroExpediente
+            });
+            toast({
+              title: "Concesionario y Vehículo encontrados",
+              description: `Datos cargados para el ID de Concesión: ${idConcesionParam}`,
+            });
+          } else {
+            setConcesionarioData(null);
+            toast({
+              title: "No encontrado",
+              description: `No se encontraron datos para el ID de Concesión ${idConcesionParam}.`,
+              variant: "default",
+            });
+          }
+        } catch (err: any) {
+          console.error("Error al cargar concesionario/autorización:", err);
+          setConcesionarioData(null);
+          toast({
+            title: "Error de carga",
+            description: `Ocurrió un error al cargar los datos: ${err.response?.data?.error || err.message}`,
+            variant: "destructive",
+          });
+        } finally {
+          setIsLoadingConcesion(false);
+        }
+      } else {
+        setConcesionarioData(null);
+        toast({
+          title: "Advertencia",
+          description: "No se ha proporcionado un ID de Concesión en la URL. Ejemplo: `/tu-ruta?idC=123`",
+          variant: "default",
+        });
+      }
+    };
+    fetchConcesionarioData();
+  }, [idConcesionParam, toast]);
+
+
+  // Efecto para cargar los tipos de imagen disponibles (Este sigue siendo necesario)
   useEffect(() => {
     const fetchImageTypes = async () => {
       try {
@@ -195,60 +262,7 @@ export default function InspeccionRevistaVehicularForm() {
     fetchImageTypes();
   }, [toast]);
 
-  useEffect(() => {
-    if (!idRVParam) return;
-
-    const fetchInspeccionData = async () => {
-      try {
-        const inspectionRes = await axios.get(`http://localhost:3000/api/revista/${idRVParam}`, {
-          headers: { "Content-Type": "application/json" },
-          withCredentials: true,
-        });
-
-        console.log("Fetched inspection data:", inspectionRes.data);
-        if (inspectionRes.data?.data) {
-          const apiData = inspectionRes.data.data;
-          const newInspectionData = { ...initialInspectionData };
-          Object.entries(apiToStateMap).forEach(([apiKey, stateKey]) => {
-            const value = apiData[apiKey];
-            newInspectionData[stateKey] = value === true || value === 1;
-          });
-          setInspectionData(newInspectionData);
-          if (typeof apiData.Observaciones === "string") setObservaciones(apiData.Observaciones);
-          setAprobarRevistaVehicular(apiData.Aprobado === true || apiData.Aprobado === 1);
-        }
-
-        const imagesRes = await axios.get(`http://localhost:3000/api/revista/${idRVParam}/imagenes`, {
-          headers: { "Content-Type": "application/json" },
-          withCredentials: true,
-        });
-        console.log("Fetched images:", imagesRes.data);
-
-        if (imagesRes.data?.data && Array.isArray(imagesRes.data.data)) {
-          const existingImages = imagesRes.data.data.map((img: any) => ({
-            id: String(img.IdImagen),
-            idImagenRevistaVehicular: img.IdRevistaVehicular,
-            type: String(img.TipoImagen),
-            previewUrl: `data:${img.MimeType};base64,${img.ImagenBase64}`,
-            customName: img.NombreArchivo,
-            file: undefined
-          }));
-          setSelectedImages(existingImages);
-        }
-
-      } catch (error: any) {
-        console.error("Error fetching inspection or images:", error);
-        toast({
-          title: "Error al cargar detalles de la inspección",
-          description: `Ocurrió un error: ${error.response?.data?.error || error.message}`,
-          variant: "destructive",
-        });
-      }
-    };
-
-    fetchInspeccionData();
-  }, [idRVParam, toast]);
-
+  // Limpieza de URLs de objetos cuando las imágenes seleccionadas cambian
   useEffect(() => {
     return () => {
       selectedImages.forEach(img => {
@@ -295,7 +309,7 @@ export default function InspeccionRevistaVehicularForm() {
             extension = 'png';
           }
           const safeType = selectedTypeLabel.replace(/\s+/g, '_').toLowerCase();
-          const customName = `inspeccion_${safeType}${extension ? '.' + extension : ''}`;
+          const customName = `inspeccion_${safeType}_${Date.now()}${extension ? '.' + extension : ''}`;
           return { ...img, type: newTypeValue, customName };
         }
         return img;
@@ -317,8 +331,8 @@ export default function InspeccionRevistaVehicularForm() {
 
   const handleRemoveImage = async (idImagen: string, idImagenRevistaVehicular?: number) => {
     console.log('--- Starting handleRemoveImage Process ---');
-    console.log('Received IdImagen:', idImagen);
-    console.log('Received idImagenRevistaVehicular:', idImagenRevistaVehicular);
+    console.log('Received IdImagen (local):', idImagen);
+    console.log('Received idImagenRevistaVehicular (from DB):', idImagenRevistaVehicular);
 
     const imageToRemove = selectedImages.find(img =>
       img.idImagenRevistaVehicular
@@ -354,8 +368,17 @@ export default function InspeccionRevistaVehicularForm() {
 
     try {
       if (imageToDelete.idImagenRevistaVehicular) {
-        await axios.delete(`http://localhost:3000/api/revista/imagen/${imageToDelete.id}`, {
+        await axios.delete(`http://localhost:3000/api/revista/imagen/${imageToDelete.idImagenRevistaVehicular}`, {
           withCredentials: true,
+        });
+        toast({
+          title: "Imagen eliminada",
+          description: "Imagen eliminada del servidor y localmente.",
+        });
+      } else {
+        toast({
+          title: "Imagen eliminada",
+          description: "Imagen eliminada localmente (no estaba en el servidor).",
         });
       }
 
@@ -366,13 +389,6 @@ export default function InspeccionRevistaVehicularForm() {
             : img.id !== imageToDelete.id
         )
       );
-
-      toast({
-        title: "Imagen eliminada",
-        description: imageToDelete.idImagenRevistaVehicular
-          ? "Imagen eliminada del servidor y localmente."
-          : "Imagen eliminada localmente.",
-      });
 
     } catch (error: any) {
       console.error("Error deleting image:", error);
@@ -401,7 +417,7 @@ export default function InspeccionRevistaVehicularForm() {
     if (fileInputRef.current) fileInputRef.current.value = '';
     toast({
       title: "Imágenes vaciadas localmente",
-      description: "Todas las imágenes han sido eliminadas de la vista previa. Las imágenes ya guardadas en el servidor *no* se borran con este botón.",
+      description: "Las imágenes nuevas han sido eliminadas de la vista previa. Las imágenes ya guardadas en el servidor *no* se borran con este botón.",
       variant: "default",
     });
   };
@@ -412,7 +428,7 @@ export default function InspeccionRevistaVehicularForm() {
 
   const uploadNewImages = async (targetIdRV: number) => {
     setIsUploading(true);
-    const newImagesToUpload = selectedImages.filter(img => img.file && !img.idImagenRevistaVehicular);
+    const newImagesToUpload = selectedImages.filter(img => img.file && img.idImagenRevistaVehicular === undefined);
 
     if (newImagesToUpload.length === 0) {
       setIsUploading(false);
@@ -473,57 +489,12 @@ export default function InspeccionRevistaVehicularForm() {
 
   const handleSaveNewImages = async () => {
     setIsSavingImages(true);
-    if (!idRVParam) {
-      toast({
-        title: "Error",
-        description: "Primero debes guardar la inspección general para poder guardar imágenes.",
-        variant: "destructive",
-      });
-      setIsSavingImages(false);
-      return;
-    }
-
-    const newImagesToUploadCount = selectedImages.filter(img => img.file && !img.idImagenRevistaVehicular).length;
-    if (newImagesToUploadCount === 0) {
-      toast({
-        title: "Información",
-        description: "No hay imágenes nuevas para guardar.",
-      });
-      setIsSavingImages(false);
-      return;
-    }
-
-    const allTypesSelected = selectedImages
-      .filter(img => img.file && !img.idImagenRevistaVehicular)
-      .every(img => img.type !== '');
-    if (!allTypesSelected) {
-      toast({
-        title: "Error de validación",
-        description: "Por favor, selecciona un tipo para CADA imagen nueva antes de guardar.",
-        variant: "destructive",
-      });
-      setIsSavingImages(false);
-      return;
-    }
 
     toast({
-      title: "Guardando imágenes...",
-      description: "Subiendo las nuevas imágenes al servidor.",
+      title: "Error",
+      description: "Esta función solo se activa después de crear la inspección principal. Por favor, usa el botón 'Guardar Nueva Inspección'.",
+      variant: "destructive",
     });
-
-    const uploadResult = await uploadNewImages(parseInt(idRVParam, 10));
-    if (uploadResult.success) {
-      toast({
-        title: "Imágenes guardadas",
-        description: "Todas las imágenes nuevas se subieron correctamente.",
-      });
-    } else {
-      toast({
-        title: "Advertencia",
-        description: `Algunas imágenes no se pudieron guardar: ${uploadResult.message}`,
-        variant: "destructive",
-      });
-    }
     setIsSavingImages(false);
   };
 
@@ -531,7 +502,29 @@ export default function InspeccionRevistaVehicularForm() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const newImagesWithoutType = selectedImages.filter(img => img.file && !img.idImagenRevistaVehicular && img.type === '');
+    if (!concesionarioData) {
+      toast({
+        title: "Error de datos",
+        description: "Los datos del concesionario no se han cargado. Asegúrate de que el ID de concesión en la URL sea válido.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    // ** Validar que los datos del vehículo estén presentes desde la respuesta del concesionario **
+    // Ajustado para usar los nombres de propiedades correctos según tu API
+    if (!concesionarioData.IdVehiculoActual || !concesionarioData.Placa || !concesionarioData.Propietario || !concesionarioData.FolioVehiculo) {
+      toast({
+        title: "Error de datos del vehículo",
+        description: "Los datos del vehículo (ID, Placa, Propietario, Folio de Expediente) no se obtuvieron correctamente del concesionario. Por favor, verifica la respuesta del API.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    const newImagesWithoutType = selectedImages.filter(img => img.file && img.idImagenRevistaVehicular === undefined && img.type === '');
     if (newImagesWithoutType.length > 0) {
       toast({
         title: "Error de validación",
@@ -544,45 +537,23 @@ export default function InspeccionRevistaVehicularForm() {
 
     try {
       const payload = {
-        idConcesion: 1,
-        idPropietario: 1,
-        idTramite: 1,
-        idVehiculo: idRVParam ? parseInt(idRVParam, 10) : 0,
-        placa: "ABC-123",
-        propietario: "Nombre del Propietario",
-        placaDelanteraVer: inspectionData.placaDelantera,
-        placaTraseraVer: inspectionData.placaTrasera,
-        calcaVerificacionVer: inspectionData.calcomaniaVerificacion,
-        calcaTenenciaVer: inspectionData.calcomaniaTenencia,
-        pinturaCarroceriaVer: inspectionData.pinturaCarroceria,
-        estadoLlantasVer: inspectionData.estadoLlantas,
-        defensasVer: inspectionData.defensas,
-        vidriosVer: inspectionData.vidrios,
-        limpiadoresVer: inspectionData.limpiadores,
-        espejosVer: inspectionData.espejos,
-        llantaRefaccionVer: inspectionData.llantaRefaccion,
-        parabrisasMedallonVer: inspectionData.parabrisasMedallon,
-        claxonVer: inspectionData.claxon,
-        luzBajaVer: inspectionData.luzBaja,
-        luzAltaVer: inspectionData.luzAlta,
-        cuartosVer: inspectionData.cuartos,
-        direccionalesVer: inspectionData.direccionales,
-        intermitentesVer: inspectionData.intermitentes,
-        stopVer: inspectionData.stop,
-        timbreVer: inspectionData.timbre,
-        estinguidorVer: inspectionData.extinguidor,
-        herramientasVer: inspectionData.herramienta,
-        sistemaFrenadoVer: inspectionData.sistemaFrenado,
-        sistemaDireccionVer: inspectionData.sistemaDireccion,
-        sistemaSuspensionVer: inspectionData.sistemaSuspension,
-        interioresVer: inspectionData.interiores,
-        botiquinVer: inspectionData.botiquin,
-        cinturonSeguridadVer: inspectionData.cinturonSeguridad,
+        idConcesion: concesionarioData.IdConcesion,
+        idPropietario: parseInt(concesionarioData.Propietario), // Convertir a número si es string
+        idTramite: 1, // Este podría ser dinámico o fijo según tu lógica
+        idVehiculo: parseInt(concesionarioData.IdVehiculoActual), // Convertir a número
+        placa: concesionarioData.Placa,
+        propietario: concesionarioData.Propietario,
+        ...Object.keys(initialInspectionData).reduce((acc, key) => {
+          const apiName = key + "Ver";
+          acc[apiName] = inspectionData[key as keyof typeof initialInspectionData] ? 1 : 0;
+          return acc;
+        }, {} as Record<string, number | boolean>),
         observaciones: observaciones,
-        aprobado: aprobarRevistaVehicular,
-        imagenCromaticaVer: inspectionData.imagenCromatica,
-        folio: "REV-" + Date.now(),
+        aprobado: aprobarRevistaVehicular ? 1 : 0,
+        folio: concesionarioData.FolioVehiculo, // Usar el FolioVehiculo que mapea a NumeroExpediente
       };
+
+      console.log("Payload to send:", payload);
 
       const response = await axios.post('http://localhost:3000/api/revista', payload, {
         headers: {
@@ -595,12 +566,8 @@ export default function InspeccionRevistaVehicularForm() {
         const savedIdRV = response.data.idRV;
         toast({
           title: "Inspección guardada",
-          description: `Inspección guardada con éxito. ID de Revista: ${savedIdRV}`,
+          description: `Inspección del vehículo ID ${concesionarioData.IdVehiculoActual} guardada con éxito. ID de Revista: ${savedIdRV}`,
         });
-
-        if (!idRVParam) {
-          router.push(`/ruta-de-tu-formulario?idV=${savedIdRV}`);
-        }
 
         const uploadResult = await uploadNewImages(savedIdRV);
         if (uploadResult.success) {
@@ -608,10 +575,17 @@ export default function InspeccionRevistaVehicularForm() {
             title: "Imágenes subidas",
             description: "Todas las imágenes nuevas se subieron correctamente.",
           });
+          // Limpiar el formulario después de un guardado exitoso
+          setInspectionData(initialInspectionData);
+          setObservaciones('');
+          setAprobarRevistaVehicular(false);
+          setSelectedImages([]);
+          setConcesionarioData(null);
+          router.push(`/dashboard`); // Redirige al dashboard o a una página de éxito
         } else {
           toast({
             title: "Advertencia",
-            description: `Inspección guardada, pero ${uploadResult.message}`,
+            description: `Inspección guardada, pero ${uploadResult.message}.`,
             variant: "destructive",
           });
         }
@@ -643,9 +617,58 @@ export default function InspeccionRevistaVehicularForm() {
         <Button onClick={handleGoBack} variant="outline" className="flex items-center">
           <ArrowLeft className="mr-2 h-4 w-4" /> Volver
         </Button>
-        <h1 className="text-2xl font-bold text-gray-800">Inspección de Revista Vehicular</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Nueva Inspección de Revista Vehicular</h1>
         <div className="w-24"></div>
       </div>
+
+      <Card className="mb-8">
+        
+        <CardContent>
+          {isLoadingConcesion ? (
+            <div className="flex items-center justify-center p-4">
+              <Loader className="mr-2 h-6 w-6 animate-spin text-blue-500" />
+              <p className="text-gray-600">Cargando datos del concesionario...</p>
+            </div>
+          ) : concesionarioData ? (
+            <>
+
+              <CardTitle className="flex items-center text-xl mt-6">
+                <Car className="mr-2 h-5 w-5 text-blue-600" /> Datos del Vehículo Asociado
+              </CardTitle>
+              <CardDescription>
+                Información del vehículo obtenida a través del ID de concesión.
+              </CardDescription>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                <div>
+                  <Label htmlFor="idVehiculo">ID del Vehículo</Label>
+                  <Input id="idVehiculo" value={concesionarioData.IdVehiculoActual || 'N/A'} readOnly disabled />
+                </div>
+                <div>
+                  <Label htmlFor="placaVehiculo">Placa del Vehículo</Label>
+                  <Input id="placaVehiculo" value={concesionarioData.Placa || 'N/A'} readOnly disabled />
+                </div>
+                <div>
+                  <Label htmlFor="propietarioVehiculo">Propietario del Vehículo</Label>
+                  <Input id="propietarioVehiculo" value={concesionarioData.Propietario || 'N/A'} readOnly disabled />
+                </div>
+                <div>
+                  <Label htmlFor="folioVehiculo">Folio del Expediente (Vehículo)</Label>
+                  <Input id="folioVehiculo" value={concesionarioData.FolioVehiculo || 'N/A'} readOnly disabled />
+                </div>
+              </div>
+              {(!concesionarioData.IdVehiculoActual || !concesionarioData.Placa || !concesionarioData.Propietario || !concesionarioData.FolioVehiculo) && (
+                <p className="text-orange-500 text-sm mt-2">
+                  Advertencia: Algunos datos clave del vehículo no se cargaron correctamente. Por favor, verifica la respuesta del API.
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-gray-500 text-center p-4">
+              Esperando un ID de Concesión válido en la URL para cargar la información.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       <form onSubmit={handleSubmit} className="space-y-8">
         <Card>
@@ -698,7 +721,7 @@ export default function InspeccionRevistaVehicularForm() {
               <FileImage className="mr-2 h-5 w-5 text-green-600" /> Imágenes
             </CardTitle>
             <CardDescription>
-              Sube las imágenes requeridas para la inspección. Puedes guardar las imágenes nuevas por separado si ya existe la inspección, o eliminarlas individualmente.
+              Sube las imágenes requeridas para la inspección. Se guardarán junto con la inspección.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -711,11 +734,11 @@ export default function InspeccionRevistaVehicularForm() {
                 accept="image/jpeg,image/png"
                 className="flex-grow"
               />
-              <Button 
-                type="button" 
-                onClick={() => fileInputRef.current?.click()} 
+              <Button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
                 className="flex-shrink-0"
-                disabled={isUploading}
+                disabled={isUploading || isSubmitting}
               >
                 {isUploading ? (
                   <>
@@ -729,141 +752,123 @@ export default function InspeccionRevistaVehicularForm() {
                   </>
                 )}
               </Button>
-              <Button 
-                type="button" 
-                onClick={handleClearAllLocalImages} 
-                variant="outline" 
-                className="flex-shrink-0"
-              >
-                <XCircle className="mr-2 h-4 w-4" /> 
-                Limpiar Todo (Solo Local)
-              </Button>
               <Button
                 type="button"
-                onClick={handleSaveNewImages}
+                onClick={handleClearAllLocalImages}
+                variant="outline"
                 className="flex-shrink-0"
-                disabled={!idRVParam || selectedImages.filter(img => img.file && !img.idImagenRevistaVehicular).length === 0 || isSavingImages}
               >
-                {isSavingImages ? (
-                  <>
-                    <Loader className="mr-2 h-4 w-4 animate-spin" />
-                    Guardando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Guardar Imágenes (Nuevas)
-                  </>
-                )}
+                <XCircle className="mr-2 h-4 w-4" /> Limpiar Imágenes Locales
               </Button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {selectedImages.map((image) => {
-                const handleClick = () => {
-                  console.group('Objeto imagen seleccionado para eliminar');
-                  console.log('Imagen completa:', image);
-                  console.log('ID:', image.id);
-                  console.log('ID Revista Vehicular:', image.idImagenRevistaVehicular);
-                  console.log('Tipo:', image.type);
-                  console.log('Nombre:', image.customName || image.file?.name);
-                  console.log('¿Es imagen local?:', !!image.file);
-                  console.groupEnd();
-
-                  handleRemoveImage(image.id, image.idImagenRevistaVehicular);
-                };
-
-                return (
-                  <Card key={image.id || `img-${Math.random().toString(36).substr(2, 9)}`} className="relative group">
-                    <CardContent className="p-2">
-                      <div className="relative w-full h-40 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center">
-                        <Image
-                          src={image.previewUrl}
-                          alt={image.customName || image.file?.name || 'Imagen seleccionada'}
-                          layout="fill"
-                          objectFit="cover"
-                          className="rounded-md"
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={handleClick}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="mt-2 text-center text-sm text-gray-600 truncate">
-                        {image.customName || image.file?.name || 'Sin nombre'}
-                      </div>
-                      <Select value={image.type} onValueChange={(value) => handleTypeChange(image.id, value)}>
-                        <SelectTrigger className="w-full mt-2">
-                          <SelectValue placeholder="Selecciona tipo de imagen" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {fetchedImageTypes.length > 0 ? (
-                            fetchedImageTypes.map((type) => (
-                              <SelectItem key={type.value} value={type.value}>
-                                {type.label}
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <SelectItem value="" disabled>Cargando tipos de imagen...</SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+              {selectedImages.map((image) => (
+                <Card key={image.id} className="relative group overflow-hidden">
+                  <CardContent className="p-2">
+                    <div className="w-full h-32 relative mb-2">
+                      <Image
+                        src={image.previewUrl}
+                        alt={`Preview ${image.id}`}
+                        layout="fill"
+                        objectFit="cover"
+                        className="rounded-md"
+                      />
+                    </div>
+                    <Label htmlFor={`select-${image.id}`} className="text-xs mb-1 block">Tipo de Imagen:</Label>
+                    <Select
+                      value={image.type}
+                      onValueChange={(value) => handleTypeChange(image.id, value)}
+                      disabled={isSubmitting || image.idImagenRevistaVehicular !== undefined}
+                    >
+                      <SelectTrigger id={`select-${image.id}`} className="w-full text-xs">
+                        <SelectValue placeholder="Seleccionar Tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fetchedImageTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      onClick={() => handleRemoveImage(image.id, image.idImagenRevistaVehicular)}
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2 rounded-full w-8 h-8 p-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      disabled={isDeleting}
+                    >
+                      {isDeleting && imageToDelete?.id === image.id ? (
+                        <Loader className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                    {image.idImagenRevistaVehicular && (
+                      <span className="absolute bottom-2 left-2 text-xs text-white bg-blue-500 px-2 py-1 rounded-full">Guardada</span>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
             </div>
+            {selectedImages.filter(img => img.file && img.idImagenRevistaVehicular === undefined).length > 0 && (
+              <p className="text-sm text-gray-500 mt-4">
+                * Las imágenes nuevas se subirán cuando guardes la inspección principal.
+              </p>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center text-xl">
-              <CheckSquare className="mr-2 h-5 w-5 text-purple-600" /> Resultado Final
+              <CheckSquare className="mr-2 h-5 w-5 text-purple-600" /> Resumen y Aprobación
             </CardTitle>
             <CardDescription>
-              Determina si la revista vehicular es aprobada o no.
+              Revisa el progreso de la inspección y decide si aprobarla.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center space-x-4 mb-4">
+            <div className="mb-6">
+              <Label className="block text-sm font-medium mb-2">Progreso de la Inspección:</Label>
+              <Progress value={percentage} className={`${progressBarColor} transition-all duration-500`} />
+              <p className="text-right text-sm text-gray-600 mt-1">{percentage}% Completado</p>
+            </div>
+
+            <div className="flex items-center space-x-2 mt-4">
               <Checkbox
                 id="aprobarRevista"
                 checked={aprobarRevistaVehicular}
-                onCheckedChange={(checked) => setAprobarRevistaVehicular(Boolean(checked))}
+                onCheckedChange={() => setAprobarRevistaVehicular(prev => !prev)}
+                className="h-5 w-5"
               />
-              <Label htmlFor="aprobarRevista" className="text-base font-medium">
-                Aprobar Revista Vehicular
+              <Label htmlFor="aprobarRevista" className="text-base font-medium leading-none flex items-center">
+                <ShieldCheck className="mr-2 h-5 w-5 text-green-500" /> Aprobar Revista Vehicular
               </Label>
-              <Separator orientation="vertical" className="h-6 mx-4 hidden sm:block" />
-              <div className="flex items-center text-sm text-gray-700">
-                <Sparkles className="mr-1 h-4 w-4 text-blue-500" />
-                Progreso de Verificación: <span className="font-semibold ml-1">{percentage}%</span>
-              </div>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <Progress value={percentage} className={`h-2.5 ${progressBarColor}`} />
-            </div>
+            <p className="text-sm text-gray-500 mt-2">
+              Marca esta casilla si todos los criterios de inspección se cumplen y el vehículo es aprobado.
+            </p>
           </CardContent>
         </Card>
 
         <div className="flex justify-end gap-4">
-          <Button type="button" variant="outline" onClick={handleGoBack}>
+          <Button type="button" variant="outline" onClick={handleGoBack} disabled={isSubmitting}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting || isUploading || isDeleting || !concesionarioData}>
             {isSubmitting ? (
               <>
                 <Loader className="mr-2 h-4 w-4 animate-spin" />
-                Guardando...
+                Guardando Inspección...
               </>
             ) : (
-              'Guardar Inspección'
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Guardar Nueva Inspección
+              </>
             )}
           </Button>
         </div>
@@ -872,25 +877,24 @@ export default function InspeccionRevistaVehicularForm() {
       <AlertDialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro de eliminar esta imagen?</AlertDialogTitle>
+            <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción {imageToDelete?.idImagenRevistaVehicular ? "eliminará la imagen permanentemente del servidor" : "eliminará la imagen localmente"} y no podrá recuperarse.
+              Esta acción no se puede deshacer. Esto eliminará permanentemente la imagen.
+              {imageToDelete?.idImagenRevistaVehicular && (
+                <span className="font-bold text-red-600 block mt-2">Esta imagen ya está guardada en el servidor y será eliminada de forma permanente.</span>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelDeleteImage}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDeleteImage}
-              disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
+            <AlertDialogCancel onClick={cancelDeleteImage} disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteImage} disabled={isDeleting} className="bg-red-500 hover:bg-red-600">
               {isDeleting ? (
                 <>
                   <Loader className="mr-2 h-4 w-4 animate-spin" />
                   Eliminando...
                 </>
               ) : (
-                'Eliminar'
+                "Eliminar"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

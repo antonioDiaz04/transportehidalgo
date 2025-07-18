@@ -203,7 +203,7 @@ export default function AutorizacionModule() {
     try {
       // Buscar por folio
       const searchParams = new URLSearchParams();
-      // searchParams.append("folio", searchTerm);
+      // +.append("folio", searchTerm);
 
       const { data } = await axios.get(`http://localhost:3000/api/concesion/autorizacion/${searchTerm.toString()}`, {
         headers: {
@@ -652,9 +652,9 @@ export default function AutorizacionModule() {
             <Button
               className="bg-blue-500 hover:bg-blue-600 text-white"
               onClick={() => {
-              if (vehicleDetailsData?.idV) {
-                console.log("Sí hay idV:", vehicleDetailsData.idV);
-                router.push(`/dashboard/iv?idV=${vehicleDetailsData.idV}`);
+              if (concessionData?.idC) {
+                console.log("Sí hay idV:", concessionData.idC);
+                router.push(`/dashboard/iv?idC=${concessionData.idC}`);
               } else {
                 console.log("No hay idV");
               }

@@ -59,34 +59,42 @@ const config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
-    keyframes: {
-      fadeIn: {
-        '0%': { opacity: '0' },
-        '100%': { opacity: '1' },
+      // --- CORRECTED KEYFRAMES AND ANIMATION DEFINITION ---
+      keyframes: {
+        // Define the 'slide-in-right' keyframes as a JS object
+        'slide-in-right': {
+          'from': { transform: 'translateX(100%)', opacity: '0' },
+          'to': { transform: 'translateX(0)', opacity: '1' },
+        },
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        // Custom animations for the login page
+        fadeInLeft: {
+          '0%': { opacity: '0', transform: 'translateX(-20px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        fadeInRight: {
+          '0%': { opacity: '0', transform: 'translateX(20px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        'scroll-logos': {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
       },
-      "accordion-down": {
-        from: { height: "0" },
-        to: { height: "var(--radix-accordion-content-height)" },
-      },
-      "accordion-up": {
-        from: { height: "var(--radix-accordion-content-height)" },
-        to: { height: "0" },
-      },
-      // Custom animations for the login page
-      fadeInLeft: {
-        '0%': { opacity: '0', transform: 'translateX(-20px)' },
-        '100%': { opacity: '1', transform: 'translateX(0)' },
-      },
-      fadeInRight: {
-        '0%': { opacity: '0', transform: 'translateX(20px)' },
-        '100%': { opacity: '1', transform: 'translateX(0)' },
-      },
-      'scroll-logos': {
-        '0%': { transform: 'translateX(0)' },
-        '100%': { transform: 'translateX(-50%)' },
-      },
-    },
       animation: {
+        // Reference the defined keyframes with animation properties
+        'slide-in-right': 'slide-in-right 0.3s ease-out forwards', // Link to the keyframes here
         'fade-in': 'fadeIn 0.3s ease-out',
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
@@ -95,6 +103,7 @@ const config = {
         fadeInRight: 'fadeInRight 1s ease-out forwards',
         'scroll-logos': 'scroll-logos 30s linear infinite', // Adjust duration (30s) as needed for speed
       },
+      // --- END CORRECTION ---
     },
   },
   plugins: [require("tailwindcss-animate")],

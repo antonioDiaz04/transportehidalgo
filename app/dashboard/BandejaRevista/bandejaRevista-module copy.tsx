@@ -419,16 +419,16 @@ export default function BandejaRevistaModule() {
   };
 
   return (
-    <div className=" md:p-6  rounded-lg flex flex-col lg:flex-row gap-4 md:gap-6 h-[calc(100vh-2rem)]">
+    <div className="p-4 md:p-6 bg-gray-50 rounded-lg shadow-xl flex flex-col lg:flex-row gap-4 md:gap-6 h-[calc(100vh-2rem)]">
       {/* Main search and table section */}
       <div className="flex-1 overflow-hidden flex flex-col bg-white p-4 rounded-lg shadow-md">
         <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-gray-800">Búsqueda de Revista Vehicular</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-4">
-          <Input placeholder="No. Concesión" value={concession} onChange={e => setConcession(e.target.value)} className="h-10 border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
-          <Input placeholder="Placa" value={plate} onChange={e => setPlate(e.target.value)} className="h-10 border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+          <Input placeholder="No. Concesión" value={concession} onChange={e => setConcession(e.target.value)} className="h-10 border-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
+          <Input placeholder="Placa" value={plate} onChange={e => setPlate(e.target.value)} className="h-10 border-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
           <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="h-10 border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+            <SelectTrigger className="h-10 border-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-500">
               <SelectValue placeholder="Estatus" />
             </SelectTrigger>
             <SelectContent>
@@ -437,13 +437,13 @@ export default function BandejaRevistaModule() {
               <SelectItem value="all">Todos</SelectItem>
             </SelectContent>
           </Select>
-          <Input type="date" placeholder="Fecha inicial" value={startDate} onChange={e => setStartDate(e.target.value)} className="h-10 border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
-          <Input type="date" placeholder="Fecha final" value={endDate} onChange={e => setEndDate(e.target.value)} className="h-10 border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
-          <Input placeholder="Municipio" value={municipality} onChange={e => setMunicipality(e.target.value)} className="h-10 border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+          <Input type="date" placeholder="Fecha inicial" value={startDate} onChange={e => setStartDate(e.target.value)} className="h-10 border-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
+          <Input type="date" placeholder="Fecha final" value={endDate} onChange={e => setEndDate(e.target.value)} className="h-10 border-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
+          <Input placeholder="Municipio" value={municipality} onChange={e => setMunicipality(e.target.value)} className="h-10 border-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
         </div>
 
         <div className="flex gap-2 md:gap-3 mb-4 md:mb-6 justify-end">
-          <Button onClick={handleSearch} disabled={loading} className="h-9 md:h-10 bg-blue-600 hover:bg-blue-700 text-white shadow-md">
+          <Button onClick={handleSearch} disabled={loading} className="h-9 md:h-10 bg-purple-600 hover:bg-purple-700 text-white shadow-md">
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             {loading ? 'Buscando...' : 'Buscar'}
           </Button>
@@ -454,7 +454,7 @@ export default function BandejaRevistaModule() {
 
         {error && <p className="text-red-600 bg-red-50 p-3 rounded-md mb-4 text-center text-sm md:text-base border border-red-200">{error}</p>}
 
-        <div className="flex-1 overflow-auto border border-gray-200 shadow-sm">
+        <div className="flex-1 overflow-auto border border-gray-200 rounded-lg shadow-sm">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-100 sticky top-0 z-10">
               <tr>
@@ -483,18 +483,29 @@ export default function BandejaRevistaModule() {
                 filteredData.map((item) => (
                   <tr
                     key={item.IdRevistaVehicular}
-                    className={`cursor-pointer transition-colors ${selectedRowId === item.IdRevistaVehicular ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-gray-50'}`}
+                    className={`cursor-pointer transition-colors ${selectedRowId === item.IdRevistaVehicular ? 'bg-purple-50 hover:bg-purple-100' : 'hover:bg-gray-50'}`}
                     onClick={() => handleRowSelect(item)}
                   >
                     <td className="px-3 py-2 text-center">
                       {selectedRowId === item.IdRevistaVehicular ? (
-                        <Check className="h-4 w-4 text-blue-600 mx-auto" />
+                        <Check className="h-4 w-4 text-purple-600 mx-auto" />
                       ) : (
                         <span className="text-gray-400"></span>
                       )}
                     </td>
-
                     <td className="px-3 py-2 text-center">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => { e.stopPropagation(); handlePrintRevista(item.IdRevistaVehicular, item.Folio); }}
+                        disabled={item.Estatus === 'Impreso'}
+                        className={`h-7 w-7 p-0 ${item.Estatus === 'Impreso' ? "opacity-50 cursor-not-allowed text-gray-400" : "text-green-600 hover:bg-green-50 hover:text-green-800"}`}
+                        title={item.Estatus === 'Impreso' ? 'Ya impreso' : 'Imprimir'}
+                      >
+                        <Printer className="h-3 w-3" />
+                      </Button>
+                    </td>
+                      <td className="px-3 py-2 text-center">
                       <Button
                         size="sm"
                         variant="ghost"
@@ -502,9 +513,12 @@ export default function BandejaRevistaModule() {
                           e.stopPropagation()
                           handlePrintRevista(item.IdRevistaVehicular, item.Folio)
                         }}
-                        
-                        className={`h-7 w-7 p-0text-green-600 hover:bg-green-50 hover:text-green-800"
-                          `}
+                        disabled={item.Estatus === "Impreso" || pdfLoading === item.IdRevistaVehicular}
+                        className={`h-7 w-7 p-0 ${
+                          item.Estatus === "Impreso"
+                            ? "opacity-50 cursor-not-allowed text-gray-400"
+                            : "text-green-600 hover:bg-green-50 hover:text-green-800"
+                        }`}
                         title={item.Estatus === "Impreso" ? "Ya impreso" : "Imprimir"}
                       >
                         {pdfLoading === item.IdRevistaVehicular ? (
@@ -544,7 +558,7 @@ export default function BandejaRevistaModule() {
         <div className="w-full lg:w-2/5 p-4 md:p-6 bg-white rounded-lg shadow-xl border border-gray-100 flex flex-col h-[calc(100vh-6rem)] lg:h-auto">
           <div className="flex justify-between items-center mb-3 border-b pb-3 border-gray-100">
             <h2 className="text-lg md:text-xl font-bold text-gray-800">
-              Imágenes: <span className="text-blue-600">{selectedVehicle.Placa}</span>
+              Imágenes: <span className="text-purple-600">{selectedVehicle.Placa}</span>
             </h2>
             <Button
               variant="ghost"
@@ -560,7 +574,7 @@ export default function BandejaRevistaModule() {
             </Button>
           </div>
 
-          <div className="mb-3 p-2 md:p-3 bg-blue-50 rounded-md shadow-sm text-xs md:text-sm text-blue-800">
+          <div className="mb-3 p-2 md:p-3 bg-purple-50 rounded-md shadow-sm text-xs md:text-sm text-purple-800">
             <ul className="space-y-1">
               <li><strong>Folio:</strong> {selectedVehicle.Folio}</li>
               <li><strong>Propietario:</strong> {selectedVehicle.Propietario}</li>
@@ -569,10 +583,10 @@ export default function BandejaRevistaModule() {
           </div>
 
           <div
-            className="mb-3 border-2 border-dashed border-blue-300 rounded-lg p-3 md:p-4 text-center flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 transition-colors bg-blue-50/50"
+            className="mb-3 border-2 border-dashed border-purple-300 rounded-lg p-3 md:p-4 text-center flex flex-col items-center justify-center cursor-pointer hover:border-purple-500 transition-colors bg-purple-50/50"
             onClick={() => fileInputRef.current?.click()}
           >
-            <ImagePlus className="h-6 w-6 md:h-8 md:w-8 text-blue-600 mb-1 md:mb-2" />
+            <ImagePlus className="h-6 w-6 md:h-8 md:w-8 text-purple-600 mb-1 md:mb-2" />
             <p className="text-xs md:text-sm text-gray-700 font-semibold">Haz clic o arrastra para añadir imágenes</p>
             <p className="text-[0.65rem] md:text-xs text-gray-500 mt-1">Soporta: JPG, PNG, GIF</p>
             <input type="file" multiple accept="image/*" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
@@ -580,7 +594,7 @@ export default function BandejaRevistaModule() {
 
           {imageLoading && (
             <div className="flex justify-center items-center py-3 md:py-4">
-              <Loader2 className="h-5 w-5 md:h-6 md:w-6 animate-spin text-blue-500 mr-2" />
+              <Loader2 className="h-5 w-5 md:h-6 md:w-6 animate-spin text-purple-500 mr-2" />
               <p className="text-xs md:text-sm text-gray-600">Cargando imágenes...</p>
             </div>
           )}
@@ -632,7 +646,7 @@ export default function BandejaRevistaModule() {
                           {img.customName || img.file?.name || `Imagen ${img.id}`}
                         </p>
                         <Select value={img.type} onValueChange={(value) => handleTypeChange(img.id, value)} disabled={!img.isNew}>
-                          <SelectTrigger className={`h-8 text-xs md:text-sm ${!img.isNew ? 'opacity-70 cursor-not-allowed bg-gray-100' : 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'}`}>
+                          <SelectTrigger className={`h-8 text-xs md:text-sm ${!img.isNew ? 'opacity-70 cursor-not-allowed bg-gray-100' : 'border-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-500'}`}>
                             <SelectValue placeholder="Tipo de imagen" />
                           </SelectTrigger>
                           <SelectContent>

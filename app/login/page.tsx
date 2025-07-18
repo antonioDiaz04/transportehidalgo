@@ -10,6 +10,8 @@ import { Eye, EyeOff, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import axios from "axios";
+import { saveUserSession } from "@/lib/indexedDb"
+
 
 export default function LoginPage() {
   const router = useRouter()
@@ -18,38 +20,40 @@ export default function LoginPage() {
   const [currentPage, setCurrentPage] = useState(0) // 0 = contenido, 1 = formulario
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
-  
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
+    e.preventDefault()
+    setIsLoading(true)
 
     try {
       const { data } = await axios.post("http://localhost:3000/api/auth/login", {
         username,
-        password
+        password,
       }, {
         headers: { "Content-Type": "application/json" },
-        withCredentials: true // Si usas cookies/tokens
-      });
+        withCredentials: true
+      })
 
-      // ✅ Guardar token si es necesario (ejemplo)
-      // localStorage.setItem("token", data.token);
+      // ✅ Guardar usuario en sesión (IndexedDB)
+      await saveUserSession(data.user)
 
-      router.push("/dashboard");
+      // ✅ Redirigir al dashboard
+      router.push("/dashboard")
     } catch (error) {
       if (axios.isAxiosError(error)) {
         alert(
           error.response?.data?.message ||
           error.message ||
           "Error al iniciar sesión"
-        );
+        )
       } else {
-        alert("Error desconocido");
+        alert("Error desconocido")
       }
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
+
   const handleSwipe = (direction: 'left' | 'right') => {
     if (direction === 'left' && currentPage < 1) {
       setCurrentPage(currentPage + 1)
@@ -151,75 +155,75 @@ export default function LoginPage() {
                   Ingrese sus credenciales para continuar
                 </CardDescription>
               </CardHeader>
-                <CardContent>
+              <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div>
-                  <Label htmlFor="username" className="block text-gray-700 text-sm md:text-base font-semibold mb-2">
-                    Nombre de usuario
-                  </Label>
-                  <Input
-                    id="username"
-                    type="text"
-                    placeholder="Ej: JuanPerez2024"
-                    required
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="w-full p-3 text-base md:text-lg border border-gray-400 rounded-lg 
+                    <Label htmlFor="username" className="block text-gray-700 text-sm md:text-base font-semibold mb-2">
+                      Nombre de usuario
+                    </Label>
+                    <Input
+                      id="username"
+                      type="text"
+                      placeholder="Ej: JuanPerez2024"
+                      required
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="w-full p-3 text-base md:text-lg border border-gray-400 rounded-lg 
                     focus:border-gray-500 focus:ring-0
                     transition-all duration-200 text-gray-800
                     hover:border-gray-500 placeholder-gray-400"
-                  />
+                    />
                   </div>
 
                   <div>
-                  <Label htmlFor="password" className="block text-gray-700 text-sm md:text-base font-semibold mb-2">
-                    Contraseña
-                  </Label>
-                  <div className="relative">
-                    <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full p-3 text-base md:text-lg border border-gray-400 rounded-lg 
+                    <Label htmlFor="password" className="block text-gray-700 text-sm md:text-base font-semibold mb-2">
+                      Contraseña
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full p-3 text-base md:text-lg border border-gray-400 rounded-lg 
                       focus:border-gray-500 focus:ring-0
                       transition-all duration-200 pr-10 text-gray-800
                       hover:border-gray-500 placeholder-gray-400"
-                    />
-                    <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:bg-gray-100 p-1 rounded-full transition-all duration-200"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                    >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </Button>
-                  </div>
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:bg-gray-100 p-1 rounded-full transition-all duration-200"
+                        onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                      >
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </Button>
+                    </div>
                   </div>
 
                   <Button
-                  type="submit"
-                  className="w-full py-3 text-lg bg-gradient-to-r from-[#bc1c44] to-[#80142c] 
+                    type="submit"
+                    className="w-full py-3 text-lg bg-gradient-to-r from-[#bc1c44] to-[#80142c] 
                     hover:from-[#80142c] hover:to-[#bc1c44] text-white font-bold rounded-lg 
                     shadow-lg transition-all duration-300 transform hover:-translate-y-1 
                     flex items-center justify-center gap-2"
-                  disabled={isLoading}
+                    disabled={isLoading}
                   >
-                  {isLoading ? (
-                    <>
-                    <Loader2 className="animate-spin h-5 w-5" />
-                    Iniciando Sesión...
-                    </>
-                  ) : (
-                    "Iniciar Sesión"
-                  )}
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="animate-spin h-5 w-5" />
+                        Iniciando Sesión...
+                      </>
+                    ) : (
+                      "Iniciar Sesión"
+                    )}
                   </Button>
                 </form>
-                </CardContent>
+              </CardContent>
 
               {/* Back Button (Mobile) */}
               <button
