@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import axios from 'axios';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FileDown, Loader2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import apiClient from '@/lib/apiClient';
 
 interface VehicleData {
   IdRevistaVehicular: number;
@@ -49,15 +49,15 @@ export default function ReporteRealizadas() {
 
 
     try {
-      const response = await axios.get('http://localhost:3000/api/reporte/inspecciones', {
+      const response = await apiClient('/reporte/inspecciones', {
       params: { fechaInicio: startDate, fechaFin: endDate, page: 1, format: 'json' },
-      headers: { 'Content-Type': 'application/json' },
+      method:'GET',
       withCredentials: true
       });
       
       console.log(response)
 
-      setFilteredData(response.data.data || []);
+      setFilteredData(response.data || []);
       setError('');
     } catch (error) {
       setIsLoadingC(false)
@@ -100,19 +100,19 @@ export default function ReporteRealizadas() {
           allPages: 'true'
         }).toString();
 
-        response = await axios.post(
-          `http://localhost:3000/api/reporte/inspecciones?${params}`,
-          formData,
+        response = await apiClient(
+          `/reporte/inspecciones?${params}`,
           {
-            headers: { 'Content-Type': 'multipart/form-data' },
+            method:'POST',
+            data:formData,
             withCredentials: true,
             responseType: 'blob'
           }
         );
       } else {
         // Si no hay logo, usar GET normal
-        response = await axios.get(
-          'http://localhost:3000/api/reporte/inspecciones',
+        response = await apiClient(
+          '/reporte/inspecciones',
           {
             params: {
               fechaInicio: startDate,
@@ -120,7 +120,7 @@ export default function ReporteRealizadas() {
               format,
               allPages: 'true'
             },
-            headers: { 'Content-Type': 'application/json' },
+            method:'GET',
             withCredentials: true,
             responseType: 'blob'
           }

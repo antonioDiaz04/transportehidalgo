@@ -1,8 +1,8 @@
 'use client';
+import apiClient from '@/lib/apiClient'
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import axios from 'axios';
 import { X, ImagePlus, Trash2, Check, XCircle, Printer, Loader2, Save } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,72 +56,74 @@ export default function BandejaRevistaModule() {
   useEffect(() => {
     const fetchImageTypes = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/api/revista/tipos-imagen', {
+        const response = await apiClient('/revista/tipos-imagen', {
+          method: 'GET',
           withCredentials: true,
         });
 
-        const rawTypes = response.data.data;
+        const rawTypes = response.data;
         const formattedTypes = rawTypes.map((type: any) => ({
           value: type.IdTipoImagen.toString(),
           label: type.TipoImagen,
         }));
         setApiImageTypes(formattedTypes);
-      } catch (err) {
-        console.error('Error al obtener tipos de imagen:', err);
-        if (axios.isAxiosError(err) && err.response) {
-          toast.error(err.response.data.error || 'No se pudieron cargar los tipos de imagen.');
-        } else {
-          toast.error('No se pudieron cargar los tipos de imagen.');
-        }
+      } catch (err: any) {
+        console.error('Error al obtener tipos de imagen:', err)
+        const msg = err?.response?.data?.error || err?.message || 'No se pudieron cargar los tipos de imagen.'
+        toast.error(msg)
       }
-    };
-    fetchImageTypes();
-  }, []);
+    }
+
+    fetchImageTypes()
+  }, [])
+
 
   const fetchRevistas = async () => {
-    setLoading(true);
-    setError('');
+    setLoading(true)
+    setError('')
     try {
-      const params = new URLSearchParams();
-      if (concession) params.append('noConcesion', concession);
-      if (plate) params.append('placa', plate);
-      if (status && status !== 'all') params.append('estatus', status);
-      if (startDate) params.append('fechaInicio', startDate);
-      if (endDate) params.append('fechaFin', endDate);
-      if (municipality) params.append('municipio', municipality);
+      const params = new URLSearchParams()
+      if (concession) params.append('noConcesion', concession)
+      if (plate) params.append('placa', plate)
+      if (status && status !== 'all') params.append('estatus', status)
+      if (startDate) params.append('fechaInicio', startDate)
+      if (endDate) params.append('fechaFin', endDate)
+      if (municipality) params.append('municipio', municipality)
 
-      const response = await axios.get(`http://localhost:3000/api/revista/buscar?${params.toString()}`, {
+      const response = await apiClient(`/revista/buscar?${params.toString()}`, {
+        method: 'GET',
         withCredentials: true,
-      });
+      })
 
-      setFilteredData(response.data.data || []);
-      if (response.data.data && response.data.data.length > 0) {
-        toast.success(`Se encontraron ${response.data.data.length} registros.`);
+      setFilteredData(response.data || [])
+
+      if (response.data?.length > 0) {
+        toast.success(`Se encontraron ${response.data.length} registros.`)
       } else {
-        toast.info('No se encontraron registros.');
+        toast.info('No se encontraron registros.')
       }
-    } catch (err) {
-      console.error('Error en búsqueda:', err);
-      if (axios.isAxiosError(err) && err.response) {
-        setError(err.response.data.error || 'Error al buscar revistas vehiculares. Intente de nuevo.');
-        if (err.response.status === 404) {
-          setFilteredData([]);
-          toast.info('No se encontraron revistas vehiculares con los criterios de búsqueda.');
-        } else {
-          toast.error(err.response.data.error || 'Error al buscar revistas vehiculares.');
-        }
+    } catch (err: any) {
+      console.error('Error en búsqueda:', err)
+      const status = err?.response?.status
+      const msg = err?.response?.data?.error || err?.message || 'Error al buscar revistas vehiculares.'
+
+      setError(msg)
+
+      if (status === 404) {
+        setFilteredData([])
+        toast.info('No se encontraron revistas vehiculares con los criterios de búsqueda.')
       } else {
-        setError('Error al buscar revistas vehiculares. Intente de nuevo.');
-        toast.error('Error al buscar revistas vehiculares.');
+        toast.error(msg)
       }
-      setFilteredData([]);
+
+      setFilteredData([])
     } finally {
-      setLoading(false);
-      setSelectedRowId(null);
-      setSelectedVehicle(null);
-      setSelectedImages([]);
+      setLoading(false)
+      setSelectedRowId(null)
+      setSelectedVehicle(null)
+      setSelectedImages([])
     }
-  };
+  }
 
   const handleSearch = () => {
     fetchRevistas();
@@ -146,11 +148,12 @@ export default function BandejaRevistaModule() {
     setImageLoading(true);
     try {
       console.log('Fetching images for ID:', idRevistaVehicular);
-      const response = await axios.get(`http://localhost:3000/api/revista/${idRevistaVehicular}/imagenes`, {
+      const response = await apiClient(`/revista/${idRevistaVehicular}/imagenes`, {
+        method: 'GET',
         withCredentials: true,
       });
 
-      const rawImages = response.data.data;
+      const rawImages = response.data;
       console.log('Fetched images:', rawImages);
 
       if (!Array.isArray(rawImages)) {
@@ -179,21 +182,23 @@ export default function BandejaRevistaModule() {
 
       toast.success(`Se cargaron ${existingImages.length} imágenes existentes.`);
       return existingImages;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error al cargar imágenes existentes:', err);
-      if (axios.isAxiosError(err) && err.response) {
-        if (err.response.status === 404) {
-          toast.info('No se encontraron imágenes existentes para este vehículo.');
-          return [];
-        }
-        toast.error(err.response.data.error || 'Error al cargar las imágenes existentes.');
-      } else {
-        toast.error('Error al cargar las imágenes existentes.');
+
+      const status = err?.response?.status;
+      const message = err?.response?.data?.error || err?.message || 'Error al cargar las imágenes existentes.';
+
+      if (status === 404) {
+        toast.info('No se encontraron imágenes existentes para este vehículo.');
+        return [];
       }
+
+      toast.error(message);
       return [];
     } finally {
       setImageLoading(false);
     }
+
   }, [apiImageTypes]);
 
   useEffect(() => {
@@ -244,27 +249,37 @@ export default function BandejaRevistaModule() {
     if (!isNew && selectedVehicle) {
       const deleteToastId = toast.loading(`Eliminando imagen "${imageToRemove.customName || imageToRemove.id}"...`);
       try {
-        await axios.delete(`http://localhost:3000/api/revista/imagen/${id}`, {
+        await apiClient(`/revista/imagen/${id}`, {
+          method: 'DELETE',
           withCredentials: true,
         });
 
-        toast.success(`Imagen "${imageToRemove.customName || imageToRemove.id}" eliminada del servidor.`, { id: deleteToastId });
-      } catch (err) {
+        toast.success(
+          `Imagen "${imageToRemove.customName || imageToRemove.id}" eliminada del servidor.`,
+          { id: deleteToastId }
+        );
+      } catch (err: any) {
         console.error('Error al eliminar imagen del servidor:', err);
-        if (axios.isAxiosError(err) && err.response) {
-          toast.error(err.response.data.error || 'Error al eliminar la imagen del servidor.', { id: deleteToastId });
-        } else {
-          toast.error('Error al eliminar la imagen del servidor.', { id: deleteToastId });
-        }
+
+        const status = err?.response?.status;
+        const message = err?.response?.data?.error || err?.message || 'Error al eliminar imagen del servidor.';
+
+        toast.error(message, { id: deleteToastId });
+
         return; // Detener la eliminación local si falla la eliminación del servidor
       }
     }
 
+    // Eliminación local (tanto para nuevas como registradas si ya se eliminó en el backend)
     setSelectedImages(prev => {
       if (imageToRemove.isNew && imageToRemove.previewUrl) {
-        URL.revokeObjectURL(imageToRemove.previewUrl); // Liberar URL de objeto para nuevas imágenes
+        URL.revokeObjectURL(imageToRemove.previewUrl); // Liberar memoria
       }
-      toast.warning(`Imagen "${imageToRemove.customName || imageToRemove.file?.name || imageToRemove.id}" eliminada de la selección.`);
+
+      toast.warning(
+        `Imagen "${imageToRemove.customName || imageToRemove.file?.name || imageToRemove.id}" eliminada de la selección.`
+      );
+
       return prev.filter(img => img.id !== id);
     });
   };
@@ -323,12 +338,12 @@ export default function BandejaRevistaModule() {
           throw new Error('No se encontró el archivo para una imagen nueva.');
         }
 
-        await axios.post('http://localhost:3000/api/revista/imagen', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-          withCredentials: true,
+        await apiClient('/revista/imagen', {
+          method: 'POST',
+          data: formData,
+          withCredentials: true
         });
+
       });
 
       await Promise.all(uploadPromises);
@@ -338,16 +353,16 @@ export default function BandejaRevistaModule() {
       // Volver a cargar las imágenes para actualizar la vista y marcar las subidas como no nuevas
       await fetchExistingImages(selectedVehicle.IdRevistaVehicular);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error al guardar imágenes:', err);
-      if (axios.isAxiosError(err) && err.response) {
-        toast.error(err.response.data.error || 'Error al guardar las imágenes. Intente de nuevo.', { id: saveToastId });
-      } else {
-        toast.error('Error al guardar las imágenes. Intente de nuevo.', { id: saveToastId });
-      }
+
+      const message = err?.response?.data?.error || err?.message || 'Error al guardar las imágenes. Intente de nuevo.';
+
+      toast.error(message, { id: saveToastId });
     } finally {
       setImageLoading(false);
     }
+
   };
   const handlePrintRevista = async (idRevistaVehicular: string, folio: string) => {
     setPdfLoading(idRevistaVehicular)
@@ -380,7 +395,7 @@ export default function BandejaRevistaModule() {
   // const handlePrintRevista = async (idRevistaVehicular: string, currentFolio: string) => {
   //   toast.loading(`Registrando impresión para Folio: ${currentFolio}...`, { id: 'print-toast' });
   //   try {
-  //     const response = await axios.post('http://localhost:3000/api/revista/imprimir', {
+  //     const response = await axios.post('/revista/imprimir', {
   //       idRV: parseInt(idRevistaVehicular, 10),
   //       folio: currentFolio
   //     }, {
@@ -502,7 +517,7 @@ export default function BandejaRevistaModule() {
                           e.stopPropagation()
                           handlePrintRevista(item.IdRevistaVehicular, item.Folio)
                         }}
-                        
+
                         className={`h-7 w-7 p-0text-green-600 hover:bg-green-50 hover:text-green-800"
                           `}
                         title={item.Estatus === "Impreso" ? "Ya impreso" : "Imprimir"}

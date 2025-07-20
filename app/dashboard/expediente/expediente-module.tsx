@@ -1,6 +1,5 @@
 "use client"
-import axios from "axios";
-
+import apiClient from "@/lib/apiClient";
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Search, ChevronDown, ChevronUp, Folder, FileText, Download, Plus } from "lucide-react"
@@ -221,17 +220,15 @@ export default function ExpedienteModule() {
       if (seriePlaca.trim()) searchParams.append("seriePlaca", seriePlaca)
       if (folio.trim()) searchParams.append("folio", folio)
 
-      const  data  = await axios.get(`http://localhost:3000/api/concesion/expediente?${searchParams.toString()}`, {
-        headers: {
-          "Content-Type": "application/json",
-        },
+      const data = await apiClient(`/concesion/expediente?${searchParams.toString()}`, {
+        method: 'GET',
         withCredentials: true
       });
 
       console.log("Respuesta de la API:", data);
 
       // El API regresa los datos en data.data.data (arreglo)
-      const concesionArr = data?.data?.data;
+      const concesionArr = data?.data;
       console.log("Concesiones encontradas:", concesionArr);
       if (Array.isArray(concesionArr) && concesionArr.length > 0) {
         const concesion = {
@@ -256,10 +253,8 @@ export default function ExpedienteModule() {
         // Nueva consulta para obtener la información completa de la concesión por su ID
         if (concesion.idC) {
           try {
-            const detalle = await axios.get(`http://localhost:3000/api/concesion/${concesion.idC}`, {
-              headers: {
-                "Content-Type": "application/json",
-              },
+            const detalle = await apiClient(`/concesion/${concesion.idC}`, {
+              method: 'GET',
               withCredentials: true
             });
             // const detalle = detalleResp.data?.data;
@@ -267,142 +262,142 @@ export default function ExpedienteModule() {
             // Mapear datos relacionados si existen
             // El API regresa los datos anidados en .data.data, por lo que hay que desestructurar correctamente
             console.log("Respuesta de la API 2:", detalle);
-            const detalleData = detalle.data;
+            const detalleData = detalle;
             console.log("Respuesta de la API 3:", detalleData);
             if (detalleData) {
               // Concesión
               if (detalleData.concesion?.data) {
-              setConcessionData({
-                idC: detalleData.concesion.data.IdConcesion,
-                folio: detalleData.concesion.data.Folio,
-                seriePlaca: detalleData.concesion.data.SeriePlacaActual,
-                numeroExpediente: detalleData.concesion.data.NumeroExpediente,
-                tipoServicio: detalleData.concesion.data.TipoServicio,
-                tipoPlaca: detalleData.concesion.data.TipoPlaca,
-                mnemotecnia: detalleData.concesion.data.Mnemotecnia,
-                modalidad: detalleData.concesion.data.Modalidad,
-                municipioAutorizado: detalleData.concesion.data.MunicipioAutorizado,
-                claseUnidad: detalleData.concesion.data.ClaseUnidad,
-                vigencia: detalleData.concesion.data.VigenciaAnios?.toString(),
-                estatus: detalleData.concesion.data.IdEstatus?.toString(),
-                fechaRegistro: detalleData.concesion.data.FechaExpedicion,
-                fechaRenovacion: detalleData.concesion.data.FechaRenovacion,
-                submodalidad: detalleData.concesion.data.SubModalidad,
-                localidadAutorizada: detalleData.concesion.data.LocalidadAutorizada,
-                tipoUnidad: detalleData.concesion.data.TipoUnidad,
-                seriePlacaAnterior: detalleData.concesion.data.SeriePlacaAnterior,
-                fechaVencimiento: detalleData.concesion.data.FechaVencimiento,
-                observaciones: detalleData.concesion.data.Observaciones,
-              });
+                setConcessionData({
+                  idC: detalleData.concesion.data.IdConcesion,
+                  folio: detalleData.concesion.data.Folio,
+                  seriePlaca: detalleData.concesion.data.SeriePlacaActual,
+                  numeroExpediente: detalleData.concesion.data.NumeroExpediente,
+                  tipoServicio: detalleData.concesion.data.TipoServicio,
+                  tipoPlaca: detalleData.concesion.data.TipoPlaca,
+                  mnemotecnia: detalleData.concesion.data.Mnemotecnia,
+                  modalidad: detalleData.concesion.data.Modalidad,
+                  municipioAutorizado: detalleData.concesion.data.MunicipioAutorizado,
+                  claseUnidad: detalleData.concesion.data.ClaseUnidad,
+                  vigencia: detalleData.concesion.data.VigenciaAnios?.toString(),
+                  estatus: detalleData.concesion.data.IdEstatus?.toString(),
+                  fechaRegistro: detalleData.concesion.data.FechaExpedicion,
+                  fechaRenovacion: detalleData.concesion.data.FechaRenovacion,
+                  submodalidad: detalleData.concesion.data.SubModalidad,
+                  localidadAutorizada: detalleData.concesion.data.LocalidadAutorizada,
+                  tipoUnidad: detalleData.concesion.data.TipoUnidad,
+                  seriePlacaAnterior: detalleData.concesion.data.SeriePlacaAnterior,
+                  fechaVencimiento: detalleData.concesion.data.FechaVencimiento,
+                  observaciones: detalleData.concesion.data.Observaciones,
+                });
               }
               // Seguro
               if (detalleData.seguro?.data) {
-              setSeguroData({
-                aseguradora: detalleData.seguro.data.NombreAseguradora ?? "",
-                folioPago: detalleData.seguro.data.FolioPago ?? "",
-                fechaVencimiento: detalleData.seguro.data.FechaVencimiento ?? "",
-                numeroPoliza: detalleData.seguro.data.NumeroPoliza ?? "",
-                fechaExpedicion: detalleData.seguro.data.FechaExpedicion ?? "",
-                observaciones: detalleData.seguro.data.Observaciones ?? "",
-              });
+                setSeguroData({
+                  aseguradora: detalleData.seguro.data.NombreAseguradora ?? "",
+                  folioPago: detalleData.seguro.data.FolioPago ?? "",
+                  fechaVencimiento: detalleData.seguro.data.FechaVencimiento ?? "",
+                  numeroPoliza: detalleData.seguro.data.NumeroPoliza ?? "",
+                  fechaExpedicion: detalleData.seguro.data.FechaExpedicion ?? "",
+                  observaciones: detalleData.seguro.data.Observaciones ?? "",
+                });
               }
               // Concesionario
               if (detalleData.concesionario?.data) {
-              setConcesionarioData({
-                tipoPersona: detalleData.concesionario.data.TipoPersona ?? "",
-                nombre: detalleData.concesionario.data.Nombre ?? "",
-                apellidoPaterno: detalleData.concesionario.data.ApellidoPaterno ?? "",
-                apellidoMaterno: detalleData.concesionario.data.ApellidoMaterno ?? "",
-                fechaNacimiento: detalleData.concesionario.data.FechaNacimiento ?? "",
-                lugarNacimiento: detalleData.concesionario.data.LugarNacimiento ?? "",
-                identificador: detalleData.concesionario.data.IdConcesionario ?? "",
-                genero: detalleData.concesionario.data.Genero ?? "",
-                rfc: detalleData.concesionario.data.RFC ?? "",
-                nacionalidad: detalleData.concesionario.data.Nacionalidad ?? "",
-                correoElectronico: detalleData.concesionario.data.Mail ?? "",
-                estadoCivil: detalleData.concesionario.data.EstadoCivil ?? "",
-                fechaAlta: detalleData.concesionario.data.FechaAlta ?? "",
-                estatus: detalleData.concesionario.data.Estatus ?? "",
-                observacionesConcesionario: detalleData.concesionario.data.Observaciones ?? "",
-                domicilio: {
-                calle: detalleData.direcciones?.data?.[0]?.Calle ?? "",
-                colonia: detalleData.direcciones?.data?.[0]?.Colonia ?? "",
-                cruzaCon: detalleData.direcciones?.data?.[0]?.CruceCalles ?? "",
-                referencia: detalleData.direcciones?.data?.[0]?.Referencia ?? "",
-                numeroExterior: detalleData.direcciones?.data?.[0]?.NumExterior ?? "",
-                numeroInterior: detalleData.direcciones?.data?.[0]?.NumInterior ?? "",
-                estado: detalleData.direcciones?.data?.[0]?.Estado ?? "",
-                codigoPostal: detalleData.direcciones?.data?.[0]?.CodigoPostal ?? "",
-                municipio: detalleData.direcciones?.data?.[0]?.Municipio ?? "",
-                localidad: detalleData.direcciones?.data?.[0]?.Localidad ?? "",
-                tipoDireccion: detalleData.direcciones?.data?.[0]?.TipoDireccion ?? "",
-                esFiscal: detalleData.direcciones?.data?.[0]?.EsFiscal ?? false,
-                telefono: detalleData.direcciones?.data?.[0]?.Telefono ?? "",
-                fax: detalleData.direcciones?.data?.[0]?.Fax ?? "",
-                },
-                beneficiarios: Array.isArray(detalleData.beneficiarios?.data)
-                ? detalleData.beneficiarios.data.map((b: any) => ({
-                  nombre: b.NombreCompleto ?? "",
-                  parentesco: b.Parentesco ?? "",
-                  }))
-                : [],
-                referencias: Array.isArray(detalleData.referencias?.data)
-                ? detalleData.referencias.data.map((r: any) => ({
-                  nombreCompleto: r.NombreCompleto ?? "",
-                  parentesco: r.Parentesco ?? "",
-                  calle: r.Calle ?? "",
-                  colonia: r.Colonia ?? "",
-                  cruzaCon: r.CruceCalles ?? "",
-                  referencia: r.Referencia ?? "",
-                  numeroExterior: r.NumExterior ?? "",
-                  numeroInterior: r.NumInterior ?? "",
-                  estado: r.Estado ?? "",
-                  codigoPostal: r.CodigoPostal ?? "",
-                  municipio: r.Municipio ?? "",
-                  localidad: r.Localidad ?? "",
-                  tipoDireccion: r.TipoDireccion ?? "",
-                  telefonoParticular: r.Telefono ?? "",
-                  fax: r.Fax ?? "",
-                  }))
-                : [],
-              });
+                setConcesionarioData({
+                  tipoPersona: detalleData.concesionario.data.TipoPersona ?? "",
+                  nombre: detalleData.concesionario.data.Nombre ?? "",
+                  apellidoPaterno: detalleData.concesionario.data.ApellidoPaterno ?? "",
+                  apellidoMaterno: detalleData.concesionario.data.ApellidoMaterno ?? "",
+                  fechaNacimiento: detalleData.concesionario.data.FechaNacimiento ?? "",
+                  lugarNacimiento: detalleData.concesionario.data.LugarNacimiento ?? "",
+                  identificador: detalleData.concesionario.data.IdConcesionario ?? "",
+                  genero: detalleData.concesionario.data.Genero ?? "",
+                  rfc: detalleData.concesionario.data.RFC ?? "",
+                  nacionalidad: detalleData.concesionario.data.Nacionalidad ?? "",
+                  correoElectronico: detalleData.concesionario.data.Mail ?? "",
+                  estadoCivil: detalleData.concesionario.data.EstadoCivil ?? "",
+                  fechaAlta: detalleData.concesionario.data.FechaAlta ?? "",
+                  estatus: detalleData.concesionario.data.Estatus ?? "",
+                  observacionesConcesionario: detalleData.concesionario.data.Observaciones ?? "",
+                  domicilio: {
+                    calle: detalleData.direcciones?.data?.[0]?.Calle ?? "",
+                    colonia: detalleData.direcciones?.data?.[0]?.Colonia ?? "",
+                    cruzaCon: detalleData.direcciones?.data?.[0]?.CruceCalles ?? "",
+                    referencia: detalleData.direcciones?.data?.[0]?.Referencia ?? "",
+                    numeroExterior: detalleData.direcciones?.data?.[0]?.NumExterior ?? "",
+                    numeroInterior: detalleData.direcciones?.data?.[0]?.NumInterior ?? "",
+                    estado: detalleData.direcciones?.data?.[0]?.Estado ?? "",
+                    codigoPostal: detalleData.direcciones?.data?.[0]?.CodigoPostal ?? "",
+                    municipio: detalleData.direcciones?.data?.[0]?.Municipio ?? "",
+                    localidad: detalleData.direcciones?.data?.[0]?.Localidad ?? "",
+                    tipoDireccion: detalleData.direcciones?.data?.[0]?.TipoDireccion ?? "",
+                    esFiscal: detalleData.direcciones?.data?.[0]?.EsFiscal ?? false,
+                    telefono: detalleData.direcciones?.data?.[0]?.Telefono ?? "",
+                    fax: detalleData.direcciones?.data?.[0]?.Fax ?? "",
+                  },
+                  beneficiarios: Array.isArray(detalleData.beneficiarios?.data)
+                    ? detalleData.beneficiarios.data.map((b: any) => ({
+                      nombre: b.NombreCompleto ?? "",
+                      parentesco: b.Parentesco ?? "",
+                    }))
+                    : [],
+                  referencias: Array.isArray(detalleData.referencias?.data)
+                    ? detalleData.referencias.data.map((r: any) => ({
+                      nombreCompleto: r.NombreCompleto ?? "",
+                      parentesco: r.Parentesco ?? "",
+                      calle: r.Calle ?? "",
+                      colonia: r.Colonia ?? "",
+                      cruzaCon: r.CruceCalles ?? "",
+                      referencia: r.Referencia ?? "",
+                      numeroExterior: r.NumExterior ?? "",
+                      numeroInterior: r.NumInterior ?? "",
+                      estado: r.Estado ?? "",
+                      codigoPostal: r.CodigoPostal ?? "",
+                      municipio: r.Municipio ?? "",
+                      localidad: r.Localidad ?? "",
+                      tipoDireccion: r.TipoDireccion ?? "",
+                      telefonoParticular: r.Telefono ?? "",
+                      fax: r.Fax ?? "",
+                    }))
+                    : [],
+                });
               }
               // Vehículo
               if (detalleData.vehiculo?.data) {
-              const vehiculo = {
-                idV: detalleData.vehiculo.data.IdVehiculo ?? "",
-                clase: detalleData.vehiculo.data.ClaseVehiculo ?? "",
-                placaAnterior: detalleData.vehiculo.data.PlacaAnterior ?? "",
-                tipo: detalleData.vehiculo.data.TipoVehiculo ?? "",
-                categoria: detalleData.vehiculo.data.Categoria ?? "",
-                marca: detalleData.vehiculo.data.Marca ?? "",
-                rfv: detalleData.vehiculo.data.RegFedVeh ?? "",
-                subMarca: detalleData.vehiculo.data.SubMarca ?? "",
-                cilindros: detalleData.vehiculo.data.NumeroCilindros?.toString() ?? "",
-                version: detalleData.vehiculo.data.Version ?? "",
-                numeroPasajeros: detalleData.vehiculo.data.NumeroPasajeros?.toString() ?? "",
-                modelo: detalleData.vehiculo.data.Modelo?.toString() ?? "",
-                vigencia: detalleData.vehiculo.data.Vigencia ?? "",
-                tipoPlaca: detalleData.vehiculo.data.TipoPlaca ?? "",
-                numeroPuertas: detalleData.vehiculo.data.NumeroPuertas?.toString() ?? "",
-                tipoServicio: detalleData.vehiculo.data.TipoServicio ?? "",
-                numeroToneladas: detalleData.vehiculo.data.NumeroToneladas ?? "",
-                fechaFactura: detalleData.vehiculo.data.FechaFactura ?? "",
-                centimetrosCubicos: detalleData.vehiculo.data.CentrimetrosCubicos ?? "",
-                folioFactura: detalleData.vehiculo.data.NumeroFactura ?? "",
-                color: detalleData.vehiculo.data.Color ?? "",
-                importeFactura: detalleData.vehiculo.data.ImporteFactura?.toString() ?? "",
-                numeroMotor: detalleData.vehiculo.data.Motor ?? "",
-                polizaSeguro: detalleData.vehiculo.data.PolizaSeguro ?? "",
-                numeroSerie: detalleData.vehiculo.data.SerieNIV ?? "",
-                origen: detalleData.vehiculo.data.VehiculoOrigen ?? "",
-                capacidad: detalleData.vehiculo.data.Capacidad ?? "",
-                estadoProcedencia: detalleData.vehiculo.data.EstadoProcedencia ?? "",
-                combustible: detalleData.vehiculo.data.Combustible ?? "",
-                estatus: detalleData.vehiculo.data.IdEstatus?.toString() ?? "",
-                nrpv: detalleData.vehiculo.data.NRPV ?? "",
-              };
-              setVehicleDetailsData(vehiculo);
+                const vehiculo = {
+                  idV: detalleData.vehiculo.data.IdVehiculo ?? "",
+                  clase: detalleData.vehiculo.data.ClaseVehiculo ?? "",
+                  placaAnterior: detalleData.vehiculo.data.PlacaAnterior ?? "",
+                  tipo: detalleData.vehiculo.data.TipoVehiculo ?? "",
+                  categoria: detalleData.vehiculo.data.Categoria ?? "",
+                  marca: detalleData.vehiculo.data.Marca ?? "",
+                  rfv: detalleData.vehiculo.data.RegFedVeh ?? "",
+                  subMarca: detalleData.vehiculo.data.SubMarca ?? "",
+                  cilindros: detalleData.vehiculo.data.NumeroCilindros?.toString() ?? "",
+                  version: detalleData.vehiculo.data.Version ?? "",
+                  numeroPasajeros: detalleData.vehiculo.data.NumeroPasajeros?.toString() ?? "",
+                  modelo: detalleData.vehiculo.data.Modelo?.toString() ?? "",
+                  vigencia: detalleData.vehiculo.data.Vigencia ?? "",
+                  tipoPlaca: detalleData.vehiculo.data.TipoPlaca ?? "",
+                  numeroPuertas: detalleData.vehiculo.data.NumeroPuertas?.toString() ?? "",
+                  tipoServicio: detalleData.vehiculo.data.TipoServicio ?? "",
+                  numeroToneladas: detalleData.vehiculo.data.NumeroToneladas ?? "",
+                  fechaFactura: detalleData.vehiculo.data.FechaFactura ?? "",
+                  centimetrosCubicos: detalleData.vehiculo.data.CentrimetrosCubicos ?? "",
+                  folioFactura: detalleData.vehiculo.data.NumeroFactura ?? "",
+                  color: detalleData.vehiculo.data.Color ?? "",
+                  importeFactura: detalleData.vehiculo.data.ImporteFactura?.toString() ?? "",
+                  numeroMotor: detalleData.vehiculo.data.Motor ?? "",
+                  polizaSeguro: detalleData.vehiculo.data.PolizaSeguro ?? "",
+                  numeroSerie: detalleData.vehiculo.data.SerieNIV ?? "",
+                  origen: detalleData.vehiculo.data.VehiculoOrigen ?? "",
+                  capacidad: detalleData.vehiculo.data.Capacidad ?? "",
+                  estadoProcedencia: detalleData.vehiculo.data.EstadoProcedencia ?? "",
+                  combustible: detalleData.vehiculo.data.Combustible ?? "",
+                  estatus: detalleData.vehiculo.data.IdEstatus?.toString() ?? "",
+                  nrpv: detalleData.vehiculo.data.NRPV ?? "",
+                };
+                setVehicleDetailsData(vehiculo);
               }
             }
           }

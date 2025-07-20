@@ -11,6 +11,7 @@ import Image from "next/image"
 import Link from "next/link"
 import axios from "axios";
 import { saveUserSession } from "@/lib/indexedDb"
+import apiClient from "@/lib/apiClient"
 
 
 export default function LoginPage() {
@@ -26,12 +27,13 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      const { data } = await axios.post("http://localhost:3000/api/auth/login", {
-        username,
-        password,
-      }, {
-        headers: { "Content-Type": "application/json" },
-        withCredentials: true
+      const data = await apiClient("/auth/login", {
+        method: 'POST',
+        withCredentials: true,
+        data: {
+          username,
+          password,
+        },
       })
 
       // ✅ Guardar usuario en sesión (IndexedDB)

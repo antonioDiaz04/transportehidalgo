@@ -1,12 +1,14 @@
 // Asegúrate de que jsPDF esté instalado: npm install jspdf
 // Asegúrate de que axios esté instalado: npm install axios
 import jsPDF from 'jspdf';
-import axios from 'axios';
+import axios from 'axios'; // Aunque uses apiClient, axios se importa para tipado o si lo usas directamente en otro lugar.
+import apiClient from "@/lib/apiClient"; // Tu instancia de Axios personalizada
 
-// Helper function to format boolean values for display
+// Helper function to format boolean and specific numeric values for display
 const formatBoolean = (value: boolean | number | null | undefined) => {
-    if (value === true || value === 1) return 'SI';
-    if (value === false || value === 0) return 'NO';
+    if (value === 2 || value === true) return 'BIEN'; // Corresponds to value="2" or true
+    if (value === 1) return 'MAL';  // Corresponds to value="1"
+    if (value === 0 || value === false) return ''; // Corresponds to value="0" or false, now returns empty string
     return 'N/A'; // Not Applicable or Unknown
 };
 
@@ -22,47 +24,29 @@ export async function generarPDF(idRV: string) { // Accept idRV as parameter
 
     try {
         // 1. Fetch Inspection Data
-        const response = await axios.get(`http://localhost:3000/api/revista/${idRV}`, {
-            headers: { "Content-Type": "application/json" },
+        // apiClient ya devuelve response.data directamente, no necesitas .data de nuevo
+        const responseData = await apiClient(`/revista/${idRV}`, { // Endpoint ajustado, asumiendo que es /api/revista/:idRV
+            method: 'GET',
             withCredentials: true,
         });
+        console.log("Respuesta completa de la API:", responseData); // Log para ver la estructura real
 
-        if (!response.data || !response.data.data) {
+        // Accede a la propiedad 'data' si tu API la anida, de lo contrario usa responseData directamente
+        // Basado en tu ejemplo, parece que la data relevante está anidada en 'data'
+        const inspectionData = responseData.data; 
+
+        if (!inspectionData) {
             throw new Error('No se encontraron datos para la revista vehicular.');
         }
 
-        const inspectionData = response.data.data;
-
-        // 2. Fetch Images for Motor and Serie
-        let motorImageBase64 = '';
-        let serieImageBase64 = '';
-
-        try {
-            const imagesResponse = await axios.get(`http://localhost:3000/api/revista/${idRV}/imagenes`, {
-                headers: { "Content-Type": "application/json" },
-                withCredentials: true,
-            });
-
-            if (imagesResponse.data?.data && Array.isArray(imagesResponse.data.data)) {
-                imagesResponse.data.data.forEach((img: any) => {
-                    // Assuming IdTipoImagen 1 is 'Serie' and 2 is 'Motor' based on your defaultImageTypes
-                    if (String(img.IdTipoImagen) === '2') { // Motor
-                        motorImageBase64 = `data:${img.MimeType};base64,${img.ImagenBase64}`;
-                    } else if (String(img.IdTipoImagen) === '1') { // Serie
-                        serieImageBase64 = `data:${img.MimeType};base64,${img.ImagenBase64}`;
-                    }
-                });
-            }
-        } catch (imageError) {
-            console.warn('[PDF] No se pudieron cargar las imágenes de motor/serie:', imageError);
-            // Continue PDF generation even if images fail
-        }
+        console.log("Datos de inspección procesados:", inspectionData);
+        // 2. NO SE CARGAN NI SE USAN IMÁGENES (esto es una nota, no una funcionalidad)
 
 
         doc.setFont('helvetica');
         doc.setFontSize(12);
 
-        // Logos
+        // Logos (comentados, si no quieres que se generen)
         const logoIzquierdo = "https://res.cloudinary.com/dvvhnrvav/image/upload/v1750179371/transporte/ydrefbxmpld29lrcskkt.png";
         doc.addImage(logoIzquierdo, "PNG", 15, 10, 40, 20);
 
@@ -73,22 +57,26 @@ export async function generarPDF(idRV: string) { // Accept idRV as parameter
         doc.setTextColor(255, 0, 0);
         doc.text('No:', 185, 35);
         doc.setTextColor(0, 0, 0);
-        doc.text(inspectionData.Folio || 'N/A', 195, 35); // Use dynamic folio
+        doc.text(inspectionData.IdRevistaVehicular || 'N/A', 195, 35); // Usar IdRevistaVehicular como Folio
 
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
 
         // Información básica dinámica
         let y = 40;
-        doc.text(`FECHA DE INSPECCIÓN: ${inspectionData.FechaInspeccion ? new Date(inspectionData.FechaInspeccion).toLocaleDateString() : 'N/A'}`, 15, y);
-        doc.text(`NÚMERO DE AUTORIZACIÓN: ${inspectionData.IdAutorizacion || 'N/A'}`, 120, y); // Assuming IdAutorizacion field
+        // Construir FechaInspeccion a partir de Dia, Mes, Anio
+        const fechaInspeccion = inspectionData.DiaInspeccion && inspectionData.MesInspeccion && inspectionData.AnioInspeccion
+            ? `${inspectionData.DiaInspeccion}/${inspectionData.MesInspeccion}/${inspectionData.AnioInspeccion}`
+            : 'N/A';
+        doc.text(`FECHA DE INSPECCIÓN: ${fechaInspeccion}`, 15, y);
+        doc.text(`NÚMERO DE AUTORIZACIÓN: ${inspectionData.IdConsesion || 'N/A'}`, 120, y); // Usar IdConsesion
 
         y += 6;
-        doc.text(`NOMBRE DEL PROPIETARIO: ${inspectionData.Propietario || 'N/A'}`, 15, y);
-        doc.text(`TELÉFONO: ${inspectionData.TelefonoPropietario || 'N/A'}`, 120, y); // Assuming TelefonoPropietario field
+        doc.text(`NOMBRE DEL PROPIETARIO: ${inspectionData.NombreCompletoNA || 'N/A'}`, 15, y); // Usar NombreCompletoNA
+        doc.text(`TELÉFONO: ${inspectionData.Telefono || 'N/A'}`, 120, y); // Usar Telefono
 
         y += 6;
-        doc.text(`PARA TRÁMITE DE: ${inspectionData.TipoTramite || 'N/A'}`, 15, y); // Assuming TipoTramite field
+        doc.text(`PARA TRÁMITE DE: ${inspectionData.Tramite || 'N/A'}`, 15, y); // Usar Tramite
         doc.text(`MUNICIPIO: ${inspectionData.Municipio || 'N/A'}`, 120, y);
 
         y += 6;
@@ -97,31 +85,30 @@ export async function generarPDF(idRV: string) { // Accept idRV as parameter
         // Características Vehiculares
         y += 10;
         doc.setFont('helvetica', 'bold');
-        doc.text('CARACTERÍSTICAS VEHICULARES', 115, 70, { align: 'center' });
+        doc.text('CARACTERÍSTICAS VEHICULARES', doc.internal.pageSize.width / 2, y, { align: 'center' }); // Centrado horizontal
         doc.setFont('helvetica', 'normal');
 
         y += 10;
         doc.text(`MARCA: ${inspectionData.Marca || 'N/A'}`, 15, y);
-        doc.text(`TIPO DE VEHÍCULO: ${inspectionData.TipoVehiculo || 'N/A'}`, 120, y); // Assuming TipoVehiculo field
+        doc.text(`TIPO DE VEHÍCULO: ${inspectionData.TipoVehiculo || 'N/A'}`, 120, y);
 
         y += 6;
-        doc.text(`No. DE MOTOR: ${inspectionData.NoMotor || 'N/A'}`, 15, y);
-        doc.text(`SUBMARCA: ${inspectionData.Submarca || 'N/A'}`, 120, y);
+        doc.text(`No. DE MOTOR: ${inspectionData.NumeroMotor || 'N/A'}`, 15, y);
+        doc.text(`SUBMARCA: ${inspectionData.SubMarca || 'N/A'}`, 120, y);
 
         y += 6;
         doc.text(`IMAGEN CROMÁTICA: ${formatBoolean(inspectionData.ImagenCromaticaVer)}`, 15, y);
-        doc.text(`No. DE OCUPANTES: ${inspectionData.NoOcupantes || 'N/A'}`, 120, y); // Assuming NoOcupantes field
+        doc.text(`MODELO: ${inspectionData.Modelo || 'N/A'}`, 120, y); // Ajustado para usar Modelo
 
         y += 6;
-        doc.text(`MODELO: ${inspectionData.Modelo || 'N/A'}`, 15, y);
-        doc.text(`PLACA DELANTERA: ${formatBoolean(inspectionData.PlacaDelanteraVer)}`, 120, y);
+        doc.text(`No. DE SERIE: ${inspectionData.NumeroSerie || 'N/A'}`, 15, y);
+        doc.text(`PLACA DELANTERA: ${formatBoolean(inspectionData.PlacaDelantera)}`, 120, y); // Usar PlacaDelantera (boolean)
 
         y += 6;
-        doc.text(`No. DE SERIE: ${inspectionData.NoSerie || 'N/A'}`, 15, y);
-        doc.text(`PLACA TRASERA: ${formatBoolean(inspectionData.PlacaTraseraVer)}`, 120, y);
+        doc.text(`PLACAS ASIG.: ${inspectionData.PlacaAsignada || 'N/A'}`, 15, y); // Usar PlacaAsignada
+        doc.text(`PLACA TRASERA: ${formatBoolean(inspectionData.PlacaTrasera)}`, 120, y); // Usar PlacaTrasera (boolean)
 
         y += 6;
-        doc.text(`PLACAS ASIG.: ${inspectionData.PlacasAsig || 'N/A'}`, 15, y); // Assuming PlacasAsig field
         doc.text(`CALCOMANÍA DE VERIFICACIÓN: ${formatBoolean(inspectionData.CalcaVerificacionVer)}`, 120, y);
 
         y += 6;
@@ -129,10 +116,16 @@ export async function generarPDF(idRV: string) { // Accept idRV as parameter
 
         // Tabla compacta dinámica (Ponderación)
         y += 10;
+        doc.setFontSize(9); // Smaller font for checklist
+        let positiveChecksCount = 0;
+        // Solo contamos los elementos que realmente se muestran en el checklist
+        // Hay 8 filas * 3 columnas = 24 posibles checks.
+        const totalChecks = 24; 
+
         const checklistItems = [
             // [Label1, DataField1, Label2, DataField2, Label3, DataField3]
             ['PINTURA Y CARROCERÍA', 'PinturaCarroceriaVer', 'CLAXON', 'ClaxonVer', 'EXTINTOR', 'EstinguidorVer'],
-            ['ESTADO DE LLANTAS', 'EstadoLlantasVer', 'LUZ BAJA', 'LuzBajaVer', 'HERRAMIENTA', 'HerramientasVer'],
+            ['ESTADO DE LLANTAS', 'EstadoLlantasVer', 'LUZ BAJA', 'LuzBajaVer', 'HERRAMIENTA', 'HerramientaVer'], // Corregido HerramientaVer
             ['DEFENSAS', 'DefensasVer', 'LUZ ALTA', 'LuzAltaVer', 'SISTEMA DE FRENADO', 'SistemaFrenadoVer'],
             ['VIDRIOS', 'VidriosVer', 'CUARTOS', 'CuartosVer', 'SISTEMA DE DIRECCIÓN', 'SistemaDireccionVer'],
             ['LIMPIADORES', 'LimpiadoresVer', 'DIRECCIONALES', 'DireccionalesVer', 'SISTEMA DE SUSPENSIÓN', 'SistemaSuspensionVer'],
@@ -141,72 +134,85 @@ export async function generarPDF(idRV: string) { // Accept idRV as parameter
             ['PARABRISAS MEDALLÓN', 'ParabrisasMedallonVer', 'TIMBRE', 'TimbreVer', 'CINTURÓN DE SEGURIDAD', 'CinturonSeguridadVer']
         ];
 
-        doc.setFontSize(9); // Smaller font for checklist
         checklistItems.forEach((row) => {
             doc.text(row[0], 15, y);
-            doc.text(formatBoolean(inspectionData[row[1] as keyof typeof inspectionData]), 80, y); // Dynamic value 1
+            const val1 = inspectionData[row[1] as keyof typeof inspectionData];
+            doc.text(formatBoolean(val1), 80, y);
+            // La lógica de conteo sigue siendo para "SI:BIEN" (valor 2 o true)
+            if (val1 === 2 || val1 === true) positiveChecksCount++; 
 
             doc.text(row[2], 95, y);
-            doc.text(formatBoolean(inspectionData[row[3] as keyof typeof inspectionData]), 130, y); // Dynamic value 2
+            const val2 = inspectionData[row[3] as keyof typeof inspectionData];
+            doc.text(formatBoolean(val2), 130, y);
+            if (val2 === 2 || val2 === true) positiveChecksCount++;
 
             doc.text(row[4], 145, y);
-            doc.text(formatBoolean(inspectionData[row[5] as keyof typeof inspectionData]), 200, y); // Dynamic value 3
+            const val3 = inspectionData[row[5] as keyof typeof inspectionData];
+            doc.text(formatBoolean(val3), 200, y);
+            if (val3 === 2 || val3 === true) positiveChecksCount++;
 
             y += 6;
         });
         doc.setFontSize(10); // Reset font size
 
         y += 2;
-        doc.text(`CUENTA ASEGURADORA: ${inspectionData.CuentaAseguradora || 'N/A'}`, 15, y); // Assuming CuentaAseguradora
-        doc.text(`NÚMERO DE PÓLIZA: ${inspectionData.NumeroPoliza || 'N/A'}`, 80, y); // Assuming NumeroPoliza
-        doc.text(`VIGENCIA: ${inspectionData.VigenciaPoliza ? new Date(inspectionData.VigenciaPoliza).toLocaleDateString() : 'N/A'}`, 150, y); // Assuming VigenciaPoliza
+        doc.text(`CIA. ASEGURADORA: ${inspectionData.ciaAseguradora || 'N/A'}`, 15, y); // Usar ciaAseguradora
+        doc.text(`NÚMERO DE PÓLIZA: ${inspectionData.NumeroPoliza || 'N/A'}`, 80, y);
+        doc.text(`VIGENCIA: ${inspectionData.FechaVencimiento ? new Date(inspectionData.FechaVencimiento).toLocaleDateString() : 'N/A'}`, 150, y); // Usar FechaVencimiento
 
-        // Images for Motor and Serie (if found)
-        y += 6;
+        // --- Ponderación / Calificación del Vehículo ---
+        y += 10;
         doc.setFont('helvetica', 'bold');
-        doc.text('IMAGENES DE IDENTIFICACIÓN VEHICULAR', 115, y + 5, { align: 'center' }); // Adjusted Y for title
+        doc.text('PONDERACIÓN DEL VEHÍCULO', doc.internal.pageSize.width / 2, y, { align: 'center' });
+        doc.setFont('helvetica', 'normal'); // Reset font to normal for the text content
+        y += 7; // Espacio después del título de la sección
+
+        let ratingLabel = ''; // La etiqueta especial (DEFICIENTE, REGULAR, ÓPTIMO)
+        let displayRatingText = ''; // El texto que se mostrará (PRIME o el porcentaje/conteo)
+        let ratingDescription = ''; // Nueva variable para la descripción
+        
+        // Calcular el porcentaje de ponderación
+        const ponderacionPercentage = totalChecks > 0 ? Math.round((positiveChecksCount / totalChecks) * 100) : 0;
+
+        // Los umbrales de ponderación se basan en el total de 24 checks (8 filas * 3 columnas)
+        if (positiveChecksCount < 9) { // Menos de 9 checks "SI:BIEN" o true
+            ratingLabel = 'DEFICIENTE';
+            displayRatingText = `${ratingLabel} (${ponderacionPercentage}%)`; // Incluir porcentaje
+            ratingDescription = 'Requiere atención inmediata para cumplir los estándares mínimos.'; 
+        } else if (positiveChecksCount >= 9 && positiveChecksCount <= 18) { // Entre 9 y 18 checks "SI:BIEN" o true
+            ratingLabel = 'REGULAR';
+            displayRatingText = `${ratingLabel} (${ponderacionPercentage}%)`; // Incluir porcentaje
+            ratingDescription = 'Condiciones aceptables, con áreas identificadas para mejora.'; 
+        } else if (positiveChecksCount > 18) { // Más de 18 checks "SI:BIEN" o true
+            ratingLabel = 'ÓPTIMO';
+            displayRatingText = `PRIME (${ponderacionPercentage}%)`; // PRIME ahora incluye porcentaje
+            ratingDescription = 'Vehículo en excelentes condiciones, superando los estándares de seguridad y operación.'; // Descripción específica para PRIME
+        } else {
+            // Fallback en caso de que no caiga en ninguna categoría (aunque debería)
+            ratingLabel = 'N/A';
+            displayRatingText = `N/A (${ponderacionPercentage}%)`; // Incluir porcentaje
+            ratingDescription = 'No se pudo determinar la calificación por falta de datos.';
+        }
+
+        // Muestra el texto de la calificación (siempre en negro)
+        doc.setTextColor(0, 0, 0); // Establecer color de texto a negro
+        doc.setFontSize(10); // Tamaño de fuente para el texto principal de la calificación
+        doc.text(displayRatingText, doc.internal.pageSize.width / 2, y, { align: 'center' }); 
+
+        // Muestra la descripción si está disponible
+        if (ratingDescription) {
+            doc.setFontSize(8); // Tamaño de fuente más pequeño para la descripción
+            doc.text(ratingDescription, doc.internal.pageSize.width / 2, y + 5, { align: 'center' }); 
+            y += 15; // Incrementar Y para acomodar el texto principal y la descripción
+        } else {
+            y += 10; // Espacio original si no hay descripción
+        }
+        doc.setFontSize(10); // Restablecer tamaño de fuente para el contenido subsiguiente
         doc.setFont('helvetica', 'normal');
+        // --- Fin Ponderación ---
 
-        y += 15; // Move down for images
-        doc.text('No. DE MOTOR:', 15, y);
-        if (motorImageBase64) {
-            try {
-                // Adjust width/height as needed. Max width for a 85mm column is ~70mm
-                // Scale image to fit, maintaining aspect ratio
-                const imgProps = doc.getImageProperties(motorImageBase64);
-                const imgWidth = 60; // Desired width for image
-                const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-                doc.addImage(motorImageBase64, 'JPEG', 15, y + 2, imgWidth, imgHeight);
-                y += imgHeight + 5; // Adjust y after adding image
-            } catch (e) {
-                console.error("Error adding motor image to PDF:", e);
-                doc.text('No se pudo cargar imagen de motor.', 15, y + 5);
-                y += 10;
-            }
-        } else {
-            doc.text('No se encontró imagen de motor.', 15, y + 5);
-            y += 10;
-        }
-
-        y = y - (motorImageBase64 ? doc.getImageProperties(motorImageBase64).height : 0) - 5; // Reset y to align next image
-        doc.text('No. DE SERIE:', 120, y);
-        if (serieImageBase64) {
-            try {
-                const imgProps = doc.getImageProperties(serieImageBase64);
-                const imgWidth = 60;
-                const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-                doc.addImage(serieImageBase64, 'JPEG', 120, y + 2, imgWidth, imgHeight);
-                y += Math.max(imgHeight, (motorImageBase64 ? doc.getImageProperties(motorImageBase64).height : 0)) + 5; // Advance Y based on taller image
-            } catch (e) {
-                console.error("Error adding serie image to PDF:", e);
-                doc.text('No se pudo cargar imagen de serie.', 120, y + 5);
-                y += 10;
-            }
-        } else {
-            doc.text('No se encontró imagen de serie.', 120, y + 5);
-            y += 10;
-        }
-        y = Math.max(y, doc.internal.pageSize.height / 2 + 30); // Ensure Y is past the middle, adjust as needed
+        // Ajuste de Y para el resto del contenido
+        y = Math.max(y, doc.internal.pageSize.height / 2 + 30); // Asegurarse de que Y esté por debajo de la mitad de la página
 
 
         doc.setFont('helvetica', 'bold');
@@ -219,7 +225,7 @@ export async function generarPDF(idRV: string) { // Accept idRV as parameter
 
         y = Math.max(y, 212); // Ensure APROBADO starts at least at 212 if observations are short
 
-        doc.text(`APROBADO: ${formatBoolean(inspectionData.Aprobado)}`, 110, y, { align: 'center' }); // Dynamic Aprobado
+        doc.text(`APROBADO: ${formatBoolean(inspectionData.Aprobado)}`, doc.internal.pageSize.width / 2, y, { align: 'center' }); // Dynamic Aprobado, centrado
 
         y += 10;
         doc.setFontSize(9);
@@ -232,7 +238,7 @@ export async function generarPDF(idRV: string) { // Accept idRV as parameter
         doc.text('INSPECTOR', 45, y);
         doc.text(inspectionData.Inspector || 'N/A', 30, y + 5); // Dynamic Inspector name
         doc.text('INTERESADO', 140, y);
-        doc.text(inspectionData.Propietario || 'N/A', 130, y + 5); // Dynamic Interesado name (using Propietario)
+        doc.text(inspectionData.NombreCompletoNA || 'N/A', 130, y + 5); // Dynamic Interesado name (using NombreCompletoNA)
 
         doc.line(30, y + 15, 80, y + 15);
         doc.text('NOMBRE Y FIRMA', 40, y + 20);

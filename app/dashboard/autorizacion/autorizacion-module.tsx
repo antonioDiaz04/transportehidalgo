@@ -1,5 +1,5 @@
 "use client"
-import axios from "axios";
+import apiClient from '@/lib/apiClient'
 
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
@@ -205,40 +205,38 @@ export default function AutorizacionModule() {
       const searchParams = new URLSearchParams();
       // +.append("folio", searchTerm);
 
-      const { data } = await axios.get(`http://localhost:3000/api/concesion/autorizacion/${searchTerm.toString()}`, {
-        headers: {
-          "Content-Type": "application/json",
-        },
+      const { data } = await apiClient(`/concesion/autorizacion/${searchTerm.toString()}`, {
+        method: "GET",
         withCredentials: true
       });
 
       console.log("Respuesta de la API:", data);
 
-      if (data?.data) {
+      if (data) {
         // idVehiculo: data.vehiculo.data.IdVehiculo || "",
 
         // Mapear los datos recibidos a la estructura esperada por la UI
         const concesion = {
-          idC: data?.data.IdConcesion,
-          folio: data.data.Folio ?? "",
-          tipoServicio: data.data.TipoServicio ?? "",
-          tipoPlaca: data.data.TipoPlaca ?? "",
-          mnemotecnia: data.data.Mnemotecnia ?? "",
-          modalidad: data.data.Modalidad ?? "",
-          municipioAutorizado: data.data.MunicipioAutorizado ?? "",
-          claseUnidad: data.data.ClaseUnidad ?? "",
-          vigencia: data.data.VigenciaAnios ? `${data.data.VigenciaAnios} años` : "",
+          idC: data.IdConcesion,
+          folio: data.Folio ?? "",
+          tipoServicio: data.TipoServicio ?? "",
+          tipoPlaca: data.TipoPlaca ?? "",
+          mnemotecnia: data.Mnemotecnia ?? "",
+          modalidad: data.Modalidad ?? "",
+          municipioAutorizado: data.MunicipioAutorizado ?? "",
+          claseUnidad: data.ClaseUnidad ?? "",
+          vigencia: data.VigenciaAnios ? `${data.VigenciaAnios} años` : "",
           estatus: "", // No viene en la respuesta, dejar vacío o mapear si existe
-          seriePlaca: data.data.SeriePlacaActual ?? "",
-          fechaRegistro: data.data.FechaExpedicion ?? "",
-          fechaRenovacion: data.data.FechaRenovacion ?? "",
-          numeroExpediente: data.data.NumeroExpediente ?? "",
-          submodalidad: data.data.SubModalidad ?? "",
-          localidadAutorizada: data.data.LocalidadAutorizada ?? "",
-          tipoUnidad: data.data.TipoUnidad ?? "",
-          seriePlacaAnterior: data.data.SeriePlacaAnterior ?? "",
-          fechaVencimiento: data.data.FechaVencimiento ?? "",
-          observaciones: data.data.Observaciones ?? "",
+          seriePlaca: data.SeriePlacaActual ?? "",
+          fechaRegistro: data.FechaExpedicion ?? "",
+          fechaRenovacion: data.FechaRenovacion ?? "",
+          numeroExpediente: data.NumeroExpediente ?? "",
+          submodalidad: data.SubModalidad ?? "",
+          localidadAutorizada: data.LocalidadAutorizada ?? "",
+          tipoUnidad: data.TipoUnidad ?? "",
+          seriePlacaAnterior: data.SeriePlacaAnterior ?? "",
+          fechaVencimiento: data.FechaVencimiento ?? "",
+          observaciones: data.Observaciones ?? "",
         }
 
         setConcessionData(concesion);
@@ -246,20 +244,18 @@ export default function AutorizacionModule() {
         // setConcesionarioData(null);
         // setVehicleDetailsData(null);
         setSelectedExpediente({
-          id: data.data.NumeroExpediente ?? "",
-          concesion: data.data.Folio ?? "",
+          id: data.NumeroExpediente ?? "",
+          concesion: data.Folio ?? "",
           titular: "", // No viene en la respuesta
-          tipo: data.data.TipoServicio ?? ""
+          tipo: data.TipoServicio ?? ""
         });
         console.log("Respuesta de la API:", concesion.idC);
 
         // Nueva consulta para obtener la información completa de la concesión por su ID
         if (concesion.idC) {
           try {
-            const detalle = await axios.get(`http://localhost:3000/api/concesion/${concesion.idC}`, {
-              headers: {
-                "Content-Type": "application/json",
-              },
+            const detalle = await apiClient(`/concesion/${concesion.idC}`, {
+              method: "GET",
               withCredentials: true
             });
             // const detalle = detalleResp.data?.data;
@@ -267,7 +263,7 @@ export default function AutorizacionModule() {
             // Mapear datos relacionados si existen
             // El API regresa los datos anidados en .data.data, por lo que hay que desestructurar correctamente
             console.log("Respuesta de la API 2:", detalle);
-            const detalleData = detalle.data;
+            const detalleData = detalle;
             console.log("Respuesta de la API 3:", detalleData);
             if (detalleData) {
               // Seguro
@@ -647,17 +643,17 @@ export default function AutorizacionModule() {
               <ReadonlyField label="Color" value={vehicleDetailsData?.color ?? ""} />
               <ReadonlyField label="NRPV" value={vehicleDetailsData?.nrpv ?? ""} />
             </div>
-            </div>
-            <div className="mt-6 flex justify-end">
+          </div>
+          <div className="mt-6 flex justify-end">
             <Button
               className="bg-blue-500 hover:bg-blue-600 text-white"
               onClick={() => {
-              if (concessionData?.idC) {
-                console.log("Sí hay idV:", concessionData.idC);
-                router.push(`/dashboard/iv?idC=${concessionData.idC}`);
-              } else {
-                console.log("No hay idV");
-              }
+                if (concessionData?.idC) {
+                  console.log("Sí hay idV:", concessionData.idC);
+                  router.push(`/dashboard/iv?idC=${concessionData.idC}`);
+                } else {
+                  console.log("No hay idV");
+                }
               }}
             >
               Realizar Inspección

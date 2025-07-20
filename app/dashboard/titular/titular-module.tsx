@@ -13,6 +13,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import apiClient from "@/lib/apiClient";
 
 // Define interfaces for your data structures
 interface Expediente {
@@ -250,23 +251,21 @@ export default function TitularModule() {
         pageSize,
       });
 
-      const { data } = await axios.get(
-        `http://localhost:3000/api/concesion/titular?${searchParams.toString()}`,
+      const { data } = await apiClient(
+        `/concesion/titular?${searchParams.toString()}`,
         {
-          headers: {
-            "Content-Type": "application/json",
-          },
+          method: 'GET',
           withCredentials: true,
         }
       );
 
       console.log("Respuesta de la API (búsqueda de titular):", data);
 
-      if (data && Array.isArray(data.data) && data.data.length > 0) {
-        setConcesionariosEncontrados(data.data);
-        console.log("Concesionarios encontrados:", data.data);
+      if (data) {
+        setConcesionariosEncontrados(data);
+        console.log("Concesionarios encontrados:", data);
         // If only one result, automatically select it and load details
-        if (data.data.length === 1) {
+        if (data.length === 1) {
           console.log("Solo un concesionario encontrado, seleccionando automáticamente:", data.data[0]);
           handleSelectConcesionario(data.data[0]);
         }
@@ -293,8 +292,8 @@ export default function TitularModule() {
 
     try {
       // Make a single API call to the comprehensive endpoint
-      const response = await axios.get(
-        `http://localhost:3000/api/concesion/concesionario/${idConcesionario}`,
+      const response = await apiClient(
+        `/concesion/concesionario/${idConcesionario}`,
 
         {
           headers: {
@@ -304,30 +303,30 @@ export default function TitularModule() {
         }
       );
       console.log("Respuesta de la API para concesionario seleccionado:", response.data);
-      const primeraConcesion = response.data.data[0];
+      const primeraConcesion = response.data[0];
       const idC = Number(primeraConcesion.idConcesion); // Asegúrate que el campo se llama idConcesion (minúscula según tu respuesta)
 
       console.log("ID de concesión a buscar:", idC);
 
       // Make a single API call to the comprehensive endpoint
-      const { data: fullConcessionData } = await axios.get(
-        `http://localhost:3000/api/concesion/${idC}`,
+      const resdata = await apiClient(
+        `/concesion/${idC}`,
         {
-          headers: {
-            "Content-Type": "application/json",
-          },
+          method: 'GET',
+
           withCredentials: true,
         }
       );
+      const fullConcessionData = resdata;
       console.log("Respuesta de la API para detalle de concesión (full data):", fullConcessionData);
 
       // El objeto real está en fullConcessionData.data
       // fullConcessionData.data is an array of concessions
       // For backward compatibility, pick the first concession as "main" data
-      const data = Array.isArray(fullConcessionData.data) && fullConcessionData.data.length > 0
-        ? fullConcessionData.data[0]
-        : fullConcessionData.data;
-      console.log("Datos de la concesión obtenidos:", fullConcessionData.data);
+      // const data = Array.isArray(fullConcessionData.data) && fullConcessionData.data.length > 0
+      //   ? fullConcessionData.data[0]
+      //   : fullConcessionData.data;
+      console.log("Datos de la concesión obtenidos:", fullConcessionData);
       // fullConcessionData.data is now an array of concessions
       // Adapt to new API response structure (object with .concesion, .concesionario, etc.)
       const concesionItem = fullConcessionData.concesion?.data;
@@ -550,10 +549,10 @@ export default function TitularModule() {
       const params = new URLSearchParams();
       params.append("folio", folio);
 
-      const { data: basicData } = await axios.get(
-        `http://localhost:3000/api/concesion/folio?${params.toString()}`,
+      const { data: basicData } = await apiClient(
+        `/concesion/folio?${params.toString()}`,
         {
-          headers: { "Content-Type": "application/json" },
+          method: 'GET',
           withCredentials: true,
         }
       );
@@ -598,8 +597,8 @@ export default function TitularModule() {
 
       // 2. SEGUNDA PETICIÓN: Obtener detalles por IdConcesion
       if (concesion.idC) {
-        const { data: detailData } = await axios.get(
-          `http://localhost:3000/api/concesion/${concesion.idC}`,
+        const { data: detailData } = await apiClient(
+          `/concesion/${concesion.idC}`,
           {
             headers: { "Content-Type": "application/json" },
             withCredentials: true,
@@ -1077,16 +1076,16 @@ export default function TitularModule() {
               </div>
             )
           )}
-           {/* Botón para continuar */}
-                        <div className="flex justify-end mb-6">
-                          <Button
-                            variant="outline"
-                            className="border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 px-4 py-2 rounded-md text-sm"
-                            onClick={navigateToModification}
-                          >
-                            Continuar modificación
-                          </Button>
-                        </div>
+          {/* Botón para continuar */}
+          <div className="flex justify-end mb-6">
+            <Button
+              variant="outline"
+              className="border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 px-4 py-2 rounded-md text-sm"
+              onClick={navigateToModification}
+            >
+              Continuar modificación
+            </Button>
+          </div>
           {/* Sistema de Tabs y  FContenido */}
           <div className="bg-white rounded-lg border border-gray-200">
             {/* Pestañas */}

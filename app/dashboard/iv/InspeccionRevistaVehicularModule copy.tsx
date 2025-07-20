@@ -302,7 +302,9 @@ export default function InspeccionRevistaVehicularForm() {
           method: "GET",
           withCredentials: true,
         })
-        const typesArray = response.data
+        // Asumiendo que response.data ya es el array o el objeto que contiene el array
+        const typesArray = response.data; // <--- POSIBLE CAMBIO AQUÍ si tu API anida en 'data'
+        console.log("Respuesta de la API de tipos de imagen:", typesArray)
         if (!Array.isArray(typesArray)) {
           console.error(
             "Error: Image types response is not an array or does not contain a 'data' property that is an array.",
@@ -347,7 +349,8 @@ export default function InspeccionRevistaVehicularForm() {
   }, [selectedImages])
 
   const toggleField = (field: keyof typeof initialInspectionData) => {
-    if (selectFields.includes(field)) return // No permitir toggle en campos select
+    // Se eliminó la validación 'selectFields.includes(field)' aquí porque los campos select
+    // ahora se manejan con un componente Select separado y no con Checkbox.
     setInspectionData((prev) => ({ ...prev, [field]: !prev[field] }))
   }
 
@@ -387,7 +390,8 @@ export default function InspeccionRevistaVehicularForm() {
             extension = "png"
           }
           const safeType = selectedTypeLabel.replace(/\s+/g, "_").toLowerCase()
-          const customName = `inspeccion_${safeType}_${Date.now()}${extension ? "." + extension : ""}`
+          // Se cambió customName para usar el tipo de imagen y el ID de la imagen local para mayor unicidad
+          const customName = `inspeccion_${safeType}_${img.id.split('-')[0]}_${Date.now()}${extension ? "." + extension : ""}`
           return { ...img, type: newTypeValue, customName }
         }
         return img
@@ -562,6 +566,7 @@ export default function InspeccionRevistaVehicularForm() {
       return { success: false, message: `${failedCount} imagen(es) fallaron al subir.` };
     }
   };
+
 
   const calculatePonderacion = () => {
     const selectFieldsCount = selectFields.length
@@ -868,12 +873,7 @@ export default function InspeccionRevistaVehicularForm() {
                       checked={inspectionData[key as keyof typeof initialInspectionData] as boolean}
                       onCheckedChange={() => toggleField(key as keyof typeof initialInspectionData)}
                     />
-                    <Label
-                      htmlFor={key}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Verificado
-                    </Label>
+                    <Label htmlFor={key}>Cumple</Label>
                   </div>
                 )}
               </div>
@@ -884,30 +884,41 @@ export default function InspeccionRevistaVehicularForm() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center text-xl">
-              <Lightbulb className="mr-2 h-5 w-5 text-yellow-600" /> Observaciones
+              <Lightbulb className="mr-2 h-5 w-5 text-yellow-600" /> Observaciones y Aprobación
             </CardTitle>
-            <CardDescription>Añade cualquier comentario o nota adicional sobre la inspección.</CardDescription>
+            <CardDescription>Añade cualquier observación adicional y decide si la revista es aprobada.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <Textarea
-              placeholder="Escribe tus observaciones aquí..."
-              value={observaciones}
-              onChange={(e) => setObservaciones(e.target.value)}
-              rows={4}
-            />
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="observaciones">Observaciones Adicionales</Label>
+              <Textarea
+                id="observaciones"
+                placeholder="Escribe aquí cualquier observación relevante..."
+                value={observaciones}
+                onChange={(e) => setObservaciones(e.target.value)}
+                rows={4}
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="aprobarRevista"
+                checked={aprobarRevistaVehicular}
+                onCheckedChange={(checked) => setAprobarRevistaVehicular(checked as boolean)}
+              />
+              <Label htmlFor="aprobarRevista">Aprobar Revista Vehicular</Label>
+              <ShieldCheck className="ml-2 h-5 w-5 text-green-600" />
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center text-xl">
-              <FileImage className="mr-2 h-5 w-5 text-green-600" /> Imágenes
+              <FileImage className="mr-2 h-5 w-5 text-purple-600" /> Gestión de Imágenes
             </CardTitle>
-            <CardDescription>
-              Sube las imágenes requeridas para la inspección. Se guardarán junto con la inspección.
-            </CardDescription>
+            <CardDescription>Sube y gestiona las imágenes relevantes para la inspección.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
             <div className="flex items-center space-x-4">
               <Button
                 type="button"
@@ -936,37 +947,44 @@ export default function InspeccionRevistaVehicularForm() {
                 </Button>
               )}
             </div>
-            <div className="flex justify-between items-center sticky top-0 bg-white z-10 py-1">
-              <h3 className="text-sm md:text-base font-semibold text-gray-800">
-                Imágenes ({selectedImages.length})
-                {selectedImages.some((img) => img) && (
-                  <span className="ml-2 text-xs text-orange-500">( Las imágenes nuevas se subirán cuando guardes la inspección principal.)</span>
-                )}
-              </h3>
-            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {selectedImages.map((image) => (
-                <Card key={image.id} className="relative group overflow-hidden">
-                  <CardContent className="p-2">
-                    <div className="w-full h-32 relative mb-2">
-                      <Image
-                        src={image.previewUrl || "/placeholder.svg"}
-                        alt={`Preview ${image.id}`}
-                        layout="fill"
-                        objectFit="cover"
-                        className="rounded-md"
-                      />
-                    </div>
-                    <Label htmlFor={`select-${image.id}`} className="text-xs mb-1 block">
-                      Tipo de Imagen:
+                <Card key={image.id} className="relative overflow-hidden">
+                  <div className="aspect-w-16 aspect-h-9 w-full overflow-hidden rounded-md">
+                    <Image
+                      src={image.previewUrl}
+                      alt={image.customName || image.file?.name || "Vista previa de imagen"}
+                      width={200}
+                      height={150}
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 rounded-full z-10"
+                    onClick={() => handleRemoveImage(image.id, image.idImagenRevistaVehicular)}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting && imageToDelete?.id === image.id ? (
+                      <Loader className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <CardContent className="p-2 pt-4 space-y-2">
+                    <Label htmlFor={`image-type-${image.id}`} className="sr-only">
+                      Tipo de Imagen
                     </Label>
                     <Select
                       value={image.type}
                       onValueChange={(value) => handleTypeChange(image.id, value)}
-                      disabled={isSubmitting || image.idImagenRevistaVehicular !== undefined}
+                      disabled={image.idImagenRevistaVehicular !== undefined} // Disable if already saved to backend
                     >
-                      <SelectTrigger id={`select-${image.id}`} className="w-full text-xs">
-                        <SelectValue placeholder="Seleccionar Tipo" />
+                      <SelectTrigger id={`image-type-${image.id}`}>
+                        <SelectValue placeholder="Seleccionar tipo" />
                       </SelectTrigger>
                       <SelectContent>
                         {fetchedImageTypes.map((type) => (
@@ -976,37 +994,16 @@ export default function InspeccionRevistaVehicularForm() {
                         ))}
                       </SelectContent>
                     </Select>
-                    {image && !image.type && (
-                      <p className="text-red-500 text-[0.6rem] mt-1 flex items-center">
-                        <XCircle className="h-3 w-3 mr-1" /> Requiere tipo
-                      </p>
-                    )}
-                    <Button
-                      type="button"
-                      onClick={() => handleRemoveImage(image.id, image.idImagenRevistaVehicular)}
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2 rounded-full w-8 h-8 p-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      disabled={isDeleting}
-                    >
-                      {isDeleting && imageToDelete?.id === image.id ? (
-                        <Loader className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                    </Button>
                     {image.idImagenRevistaVehicular && (
-                      <span className="absolute bottom-2 left-2 text-xs text-white bg-blue-500 px-2 py-1 rounded-full">
-                        Guardada
-                      </span>
+                      <p className="text-xs text-gray-500 mt-1">Guardado en servidor.</p>
                     )}
                   </CardContent>
                 </Card>
               ))}
             </div>
-            {selectedImages.filter((img) => img.file && img.idImagenRevistaVehicular === undefined).length > 0 && (
-              <p className="text-sm text-gray-500 mt-4">
-                * Las imágenes nuevas se subirán cuando guardes la inspección principal.
+            {selectedImages.length === 0 && (
+              <p className="text-gray-500 text-center p-4 border rounded-md">
+                No hay imágenes seleccionadas. Haz clic en "Seleccionar Archivos" para añadir.
               </p>
             )}
           </CardContent>
@@ -1015,79 +1012,46 @@ export default function InspeccionRevistaVehicularForm() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center text-xl">
-              <CheckSquare className="mr-2 h-5 w-5 text-purple-600" /> Resumen y Aprobación
+              <CheckSquare className="mr-2 h-5 w-5 text-green-600" /> Resumen de Inspección
             </CardTitle>
-            <CardDescription>Revisa el progreso de la inspección y decide si aprobarla.</CardDescription>
+            <CardDescription>Porcentaje de cumplimiento de la inspección.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="mb-6">
-              <Label className="block text-sm font-medium mb-2">Progreso de la Inspección:</Label>
-              <Progress value={percentage} className={`${progressBarColor} transition-all duration-500`} />
-              <p className="text-right text-sm text-gray-600 mt-1">{percentage}% Completado</p>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Progreso General:</Label>
+              <span className="text-lg font-bold">{percentage}% Completo</span>
             </div>
-
-            {/* Nueva sección de ponderación */}
-            <div className="mb-6">
-              <Label className="block text-sm font-medium mb-2">Ponderación de la Inspección Vehicular:</Label>
+            <Progress value={percentage} className={`${progressBarColor}`} />
+            <div className="mt-4">
+              <Label className="text-sm font-medium">Ponderación de Campos Select:</Label>
               {(() => {
                 const ponderacion = calculatePonderacion()
                 return (
-                  <div className="space-y-3">
-                    <div
-                      className={`${ponderacion.color} ${ponderacion.textColor} p-4 rounded-lg text-center font-bold text-lg`}
-                    >
-                      {ponderacion.category}
-                    </div>
-                    <div className="text-sm text-gray-600 space-y-1">
-                      <p>
-                        Campos "SI:BIEN": {ponderacion.siBienCount} de {ponderacion.totalSelectFields}
-                      </p>
-                      <p>Porcentaje de calidad: {ponderacion.percentage}%</p>
-                      <div className="text-xs text-gray-500 mt-2">
-                        <p>• DEFICIENTE: Menos del 35% (Rojo)</p>
-                        <p>• REGULAR: 35% - 70% (Amarillo)</p>
-                        <p>• ÓPTIMO (PRIME): Más del 70% (Verde)</p>
-                      </div>
-                    </div>
+                  <div className={`mt-1 p-2 rounded-md ${ponderacion.color} ${ponderacion.textColor} font-semibold`}>
+                    Categoría: {ponderacion.category} ({ponderacion.percentage}% SI:BIEN - {ponderacion.siBienCount} de{" "}
+                    {ponderacion.totalSelectFields} campos)
                   </div>
                 )
               })()}
             </div>
-            <div className="flex items-center space-x-2 mt-4">
-              <Checkbox
-                id="aprobarRevista"
-                checked={aprobarRevistaVehicular}
-                onCheckedChange={() => setAprobarRevistaVehicular((prev) => !prev)}
-                className="h-5 w-5"
-              />
-              <Label htmlFor="aprobarRevista" className="text-base font-medium leading-none flex items-center">
-                <ShieldCheck className="mr-2 h-5 w-5 text-green-500" /> Aprobar Revista Vehicular
-              </Label>
-            </div>
-            <p className="text-sm text-gray-500 mt-2">
-              Marca esta casilla si todos los criterios de inspección se cumplen y el vehículo es aprobado.
-            </p>
           </CardContent>
         </Card>
 
-        <div className="flex justify-end gap-4">
-          <Button type="button" variant="outline" onClick={handleGoBack} disabled={isSubmitting}>
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={isSubmitting || isUploading || isDeleting || !concesionarioData}>
-            {isSubmitting ? (
-              <>
-                <Loader className="mr-2 h-4 w-4 animate-spin" />
-                Guardando Inspección...
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Guardar Nueva Inspección
-              </>
-            )}
-          </Button>
-        </div>
+        <Button
+          type="submit"
+          className="w-full flex items-center justify-center py-3"
+          disabled={isSubmitting || isLoadingConcesion || isLoadingTramites || isUploading || isDeleting}
+        >
+          {isSubmitting ? (
+            <>
+              <Loader className="mr-2 h-5 w-5 animate-spin" /> Guardando Inspección...
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-5 w-5" /> Guardar Inspección
+            </>
+          )}
+        </Button>
       </form>
 
       <AlertDialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
@@ -1095,31 +1059,17 @@ export default function InspeccionRevistaVehicularForm() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente la imagen.
-              {imageToDelete?.idImagenRevistaVehicular && (
-                <span className="font-bold text-red-600 block mt-2">
-                  Esta imagen ya está guardada en el servidor y será eliminada de forma permanente.
-                </span>
-              )}
+              Esta acción no se puede deshacer. Esto eliminará la imagen
+              {imageToDelete?.idImagenRevistaVehicular ? " permanentemente del servidor" : " localmente de tu vista previa"}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={cancelDeleteImage} disabled={isDeleting}>
               Cancelar
             </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDeleteImage}
-              disabled={isDeleting}
-              className="bg-red-500 hover:bg-red-600"
-            >
-              {isDeleting ? (
-                <>
-                  <Loader className="mr-2 h-4 w-4 animate-spin" />
-                  Eliminando...
-                </>
-              ) : (
-                "Eliminar"
-              )}
+            <AlertDialogAction onClick={confirmDeleteImage} disabled={isDeleting}>
+              {isDeleting ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Sí, eliminar imagen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

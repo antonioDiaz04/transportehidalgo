@@ -14,6 +14,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import apiClient from "@/lib/apiClient";
 
 type Expediente = {
   concesion: string
@@ -225,16 +226,17 @@ export default function VehiculoModule() {
       // const [numSerie, setNumSerie] = useState('')
       // const [numMotor, setNumMotor] = useState('')
 
-      const { data } = await axios.get(`http://localhost:3000/api/vehiculo/buscar?${searchParams.toString()}`, {
-        headers: {
-          "Content-Type": "application/json",
-        },
+      const { data } = await apiClient(`http://localhost:3000/api/vehiculo/buscar?${searchParams.toString()}`, {
+                 method:'GET',
+
         withCredentials: true
       });
 
       console.log("Respuesta de la API:", data);
-      const expData = data?.data[0];
-      if (data?.data) {
+      const expData = data[0];
+
+      console.log("Respuesta de la API2:", expData);
+      if (expData) {
         // idVehiculo: data.vehiculo.data.IdVehiculo || "",
 
         // Mapear los datos recibidos a la estructura esperada por la UI
@@ -256,20 +258,18 @@ export default function VehiculoModule() {
         // setConcesionarioData(null);
         // setVehicleDetailsData(null);
         setSelectedExpediente({
-          id: data.data.NumeroExpediente ?? "",
-          concesion: data.data.Folio ?? "",
+          id:expData.NumeroExpediente ?? "",
+          concesion:expData.Folio ?? "",
           titular: "", // No viene en la respuesta
-          tipo: data.data.TipoServicio ?? ""
+          tipo:expData.TipoServicio ?? ""
         });
         console.log("Respuesta de la API:", expediente.idC);
 
         // Nueva consulta para obtener la información completa de la concesión por su ID
         if (expediente.idC) {
           try {
-            const detalle = await axios.get(`http://localhost:3000/api/concesion/${expediente.idC}`, {
-              headers: {
-                "Content-Type": "application/json",
-              },
+            const detalle = await apiClient(`http://localhost:3000/api/concesion/${expediente.idC}`, {
+                        method:'GET',
               withCredentials: true
             });
             // const detalle = detalleResp.data?.data;
@@ -277,12 +277,13 @@ export default function VehiculoModule() {
             // Mapear datos relacionados si existen
             // El API regresa los datos anidados en .data.data, por lo que hay que desestructurar correctamente
             console.log("Respuesta de la API 2:", detalle);
-            const detalleData = detalle.data;
+            const detalleData = detalle;
             console.log("Respuesta de la API 3:", detalleData);
             if (detalleData) {
               // consesion
-              if (detalleData.concesion?.data) {
-                const dataC = detalleData.concesion?.data
+              if (detalleData.concesion.data) {
+                const dataC = detalleData.concesion.data
+                console.log(dataC)
                 const concesion = {
                   idC: dataC.IdConcesion,
                   folio: dataC.Folio ?? "",

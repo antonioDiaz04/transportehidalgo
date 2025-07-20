@@ -1,8 +1,7 @@
 "use client";
-
+import apiClient from "@/lib/apiClient";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -183,12 +182,13 @@ export default function ModificacionVehiculo() {
         const fetchInitialData = async () => {
             setLoading(true);
             try {
-                const response = await axios.get(
-                    `http://localhost:3000/api/concesion/${idConcesion}/vehiculo/${idVehiculo}`,
-                    { withCredentials: true }
+                const response = await apiClient(
+                    `/concesion/${idConcesion}/vehiculo/${idVehiculo}`,
+                   
+                    {  method: 'GET',withCredentials: true }
                 );
 
-                const { vehiculo, aseguradora } = response.data?.data || {};
+                const { vehiculo, aseguradora } = response.data || {};
                 console.log("Vehículo recibido:", vehiculo);
                 console.log("Aseguradora recibida:", aseguradora);
 
@@ -281,13 +281,11 @@ export default function ModificacionVehiculo() {
                 // Si es complementaria, asegúrate de fusionar los datos, no sobrescribirlos.
                 if (idConcesion) {
                     try {
-                        const detalle = await axios.get(`http://localhost:3000/api/concesion/${idConcesion}`, {
-                            headers: {
-                                "Content-Type": "application/json",
-                            },
+                        const detalle = await apiClient(`/concesion/${idConcesion}`, {
+                            method: 'GET',
                             withCredentials: true
                         });
-                        const detalleData = detalle.data?.data;
+                        const detalleData = detalle.data;
                         if (detalleData?.seguro?.data) {
                             setSeguroData(prev => ({
                                 ...prev, // Mantener los datos ya cargados
@@ -326,12 +324,12 @@ export default function ModificacionVehiculo() {
     useEffect(() => {
         const fetchClases = async () => {
             try {
-                const response = await axios.get(
-                    "http://localhost:3000/api/vehiculo/clases",
+                const response = await apiClient(
+                    "/vehiculo/clases",
                     { withCredentials: true }
                 );
 
-                const formatted = formatOptions(response.data?.data || [], "IdClase", "Clase");
+                const formatted = formatOptions(response.data || [], "IdClase", "Clase");
                 setCatalogos(prev => ({
                     ...prev,
                     clases: formatted,
@@ -350,13 +348,14 @@ export default function ModificacionVehiculo() {
     useEffect(() => {
         const fetchTipos = async () => {
             try {
-                const response = await axios.get(
-                    "http://localhost:3000/api/vehiculo/tipos",
-                    { withCredentials: true }
+                const response = await apiClient(
+                    "/vehiculo/tipos",
+
+                    { method: 'GET', withCredentials: true }
                 );
 
                 console.log(response.data.data);
-                const formatted = formatOptions(response.data?.data || [], "IdTipoVehiculo", "TipoVehiculo");
+                const formatted = formatOptions(response.data || [], "IdTipoVehiculo", "TipoVehiculo");
                 setCatalogos(prev => ({
                     ...prev,
                     tipos: formatted,
@@ -375,11 +374,11 @@ export default function ModificacionVehiculo() {
     useEffect(() => {
         const fetchEstatus = async () => {
             try {
-                const response = await axios.get(
-                    "http://localhost:3000/api/vehiculo/estatus",
-                    { withCredentials: true }
+                const response = await apiClient(
+                    "/vehiculo/estatus",
+                    { method: 'GET', withCredentials: true }
                 );
-                const formatted = formatOptions(response.data?.data || [], "IdEstatus", "Estatus");
+                const formatted = formatOptions(response.data || [], "IdEstatus", "Estatus");
                 setCatalogos(prev => ({
                     ...prev,
                     estatus: formatted,
@@ -418,12 +417,12 @@ export default function ModificacionVehiculo() {
 
         const fetchCategorias = async () => {
             try {
-                const response = await axios.get(
-                    `http://localhost:3000/api/vehiculo/categorias?idClase=${vehiculoData.IdClase}`, // Usar IdClase
-                    { withCredentials: true }
+                const response = await apiClient(
+                    `/vehiculo/categorias?idClase=${vehiculoData.IdClase}`, // Usar IdClase
+                    { method: 'GET', withCredentials: true }
                 );
                 const formatted = formatOptions(
-                    response.data?.data || [],
+                    response.data || [],
                     "IdCategoria",
                     "Categoria",
                     "ClaveCategoria"
@@ -446,15 +445,15 @@ export default function ModificacionVehiculo() {
     }, [vehiculoData.IdClase, formatOptions]); // Depende de IdClase
 
     useEffect(() => {
-     
+
         const fetchMarcas = async () => {
             try {
-                const response = await axios.get(
-                    `http://localhost:3000/api/vehiculo/marcas?claveCategoria=${vehiculoData.IdCategoria}`,
-                    { withCredentials: true }
+                const response = await apiClient(
+                    `/vehiculo/marcas?claveCategoria=${vehiculoData.IdCategoria}`,
+                    { method: 'GET', withCredentials: true }
                 );
 
-                const formatted = formatOptions(response.data?.data || [], "IdMarca", "Marca");
+                const formatted = formatOptions(response.data || [], "IdMarca", "Marca");
                 setCatalogos(prev => ({
                     ...prev,
                     marcas: formatted,
@@ -485,12 +484,12 @@ export default function ModificacionVehiculo() {
 
         const fetchSubmarcas = async () => {
             try {
-                const response = await axios.get(
-                    `http://localhost:3000/api/vehiculo/submarcas?idMarca=${vehiculoData.IdMarca}&idCategoria=${vehiculoData.IdCategoria}`,
-                    { withCredentials: true }
+                const response = await apiClient(
+                    `/vehiculo/submarcas?idMarca=${vehiculoData.IdMarca}&idCategoria=${vehiculoData.IdCategoria}`,
+                    { method: 'GET', withCredentials: true }
                 );
 
-                const formatted = formatOptions(response.data?.data || [], "IdSubMarca", "SubMarca");
+                const formatted = formatOptions(response.data || [], "IdSubMarca", "SubMarca");
                 setCatalogos(prev => ({
                     ...prev,
                     submarcas: formatted,
@@ -520,12 +519,12 @@ export default function ModificacionVehiculo() {
 
         const fetchVersiones = async () => {
             try {
-                const response = await axios.get(
-                    `http://localhost:3000/api/vehiculo/versiones?idClase=${vehiculoData.IdClase}&idSubMarca=${vehiculoData.IdSubMarca}`,
-                    { withCredentials: true }
+                const response = await apiClient(
+                    `/vehiculo/versiones?idClase=${vehiculoData.IdClase}&idSubMarca=${vehiculoData.IdSubMarca}`,
+                    { method: 'GET', withCredentials: true }
                 );
 
-                const formatted = formatOptions(response.data?.data || [], "IdVersion", "Version");
+                const formatted = formatOptions(response.data || [], "IdVersion", "Version");
                 setCatalogos(prev => ({
                     ...prev,
                     versiones: formatted,
@@ -682,10 +681,9 @@ export default function ModificacionVehiculo() {
                 }
             };
 
-            const response = await axios.put(
-                `http://localhost:3000/api/concesion/${idConcesion}/vehiculo/${idVehiculo}`,
-                payload,
-                { withCredentials: true }
+            const response = await apiClient(
+                `/concesion/${idConcesion}/vehiculo/${idVehiculo}`,
+                { method: 'PUT', data: payload, withCredentials: true }
             );
 
             setToast({ message: "Cambios guardados exitosamente", type: "success" });
