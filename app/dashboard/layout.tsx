@@ -52,6 +52,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     fetchUser()
   }, [])
+
   useEffect(() => {
     if (shouldCollapseSidebar) {
       setSidebarOpen(false)
@@ -71,7 +72,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Sidebar */}
       <aside
         className={cn(
-          "z-40 inset-y-0 left-0 bg-[#fafbfb]   border-r border-x-gray-200 flex flex-col",
+          "z-40 inset-y-0 left-0 bg-[#fafbfb] border-r border-x-gray-200 flex flex-col",
+          "transition-all duration-300 ease-in-out", // Added for smooth transition
           !shouldCollapseSidebar && [
             "h-screen sticky top-0",
             isCollapsed ? "w-20" : "w-full md:w-44 lg:w-72 xl:w-80 2xl:w-72",
@@ -132,7 +134,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Sidebar Navigation */}
         <div className="flex-1 overflow-y-auto flex flex-col justify-between">
           <div className={cn("flex flex-col gap-4 p-4", isCollapsed && "items-center px-2")}>
-            <span className={cn("px-3 py-2  font-bold text-black text-lg", isCollapsed ? "hidden" : "block")}>
+            <span className={cn("px-3 py-2 font-bold text-black text-lg", isCollapsed ? "hidden" : "block")}>
               Realiza reportes y búsquedas
             </span>
             {["autorizacion", "expediente", "titular", "vehiculo", "BandejaRevista", "ReporteRealizadas"].map((route, i) => {
@@ -160,7 +162,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   )}
                   onClick={() => shouldCollapseSidebar && setSidebarOpen(false)}
                 >
-                  <Icon className={cn("h-6 w-6 mt-0.5", pathname === `/dashboard/${route}` ? "text-zinc-950" : "text-gray-500")} />
+                  {/* Changed h-6 w-6 to h-5 w-5 for smaller icons */}
+                  <Icon className={cn("h-5 w-5 mt-0.5", pathname === `/dashboard/${route}` ? "text-zinc-950" : "text-gray-500")} />
                   <span className={cn("min-w-0 flex-1 text-sm", isCollapsed ? "hidden" : "block")}>{labels[i]}</span>
                 </Link>
               )
@@ -175,11 +178,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             >
               <Link href="/" className="flex flex-row items-center w-full justify-center gap-2">
                 <LogOut className="h-5 w-5" />
-                <span className="text-sm font-medium">Cerrar sesión</span>
+                <span className={cn("text-sm font-medium", isCollapsed ? "hidden" : "block")}>Cerrar sesión</span>
               </Link>
             </Button>
             <div className={cn("mt-2 text-xs text-gray-500 text-center w-full", isCollapsed ? "hidden" : "block")}>
-              Información adicional o mensaje aquí
+               Plataforma interna para la gestión del transporte en el estado de Hidalgo.
             </div>
           </div>
         </div>
@@ -187,7 +190,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {sidebarOpen && shouldCollapseSidebar && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          className="fixed inset-0 z-30 bg-black/50 md:hidden transition-opacity duration-300 ease-in-out" // Added transition here for the overlay
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -195,7 +198,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Content Area */}
       <div className={cn(
         "flex-1 flex flex-col bg-gray-50 min-w-0",
-        !shouldCollapseSidebar && [isCollapsed ? "ml-0" : "ml-34"],
+        !shouldCollapseSidebar && [isCollapsed ? "ml-0" : "ml-34"], // Adjusting ml if needed based on sidebar width
         shouldCollapseSidebar && "ml-0"
       )}>
         <header className={cn(

@@ -40,7 +40,7 @@ export default function LoginPage() {
       await saveUserSession(data.user)
 
       // ✅ Redirigir al dashboard
-      router.push("/dashboard")
+      router.push("/dashboard/autorizacion")
     } catch (error) {
       if (axios.isAxiosError(error)) {
         alert(
@@ -65,21 +65,21 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex  bg-gray-100 flex-col items-center justify-between text-[#b01639] p-4 overflow-hidden">
+    <div className="min-h-screen flex bg-gray-100 flex-col items-center justify-between text-[#b01639] overflow-hidden">
       {/* Header with brand colors */}
-      <header className="w-full absolute top-0 py-4 px-6 flex justify-between items-center z-10">
+      <header className="w-full absolute top-0 py-2 px-2 flex justify-between items-center z-10">
         <Image
           src="https://res.cloudinary.com/dvvhnrvav/image/upload/v1749563496/transporte/afhhpxszzwtttnfyyg6r.jpg"
           alt="Logo"
-          width={220}
-          height={150}
+          width={250}
+          height={200}
           className="z-20"
         />
 
         {/* Paralelogramo pegado al borde derecho */}
-        <div className="absolute right-0 top-0 w-[170%] h-[60px] bg-[#b01639] 
-          transform -skew-x-12 origin-right
-          translate-x-[70%] z-0" />
+        {/* Adjusted width to w-1/2 and removed translate-x for right alignment */}
+        <div className="absolute right-0 top-0 w-1/2 h-[60px] bg-[#b01639]
+          transform -skew-x-11  origin-bottom-right z-" />
 
         <nav className="relative z-10">
           <Link
@@ -170,10 +170,10 @@ export default function LoginPage() {
                       required
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      className="w-full p-3 text-base md:text-lg border border-gray-400 rounded-lg 
-                    focus:border-gray-500 focus:ring-0
-                    transition-all duration-200 text-gray-800
-                    hover:border-gray-500 placeholder-gray-400"
+                      className="w-full p-3 text-base md:text-lg border border-gray-400 rounded-lg
+                       focus:border-gray-500 focus:ring-0
+                       transition-all duration-200 text-gray-800
+                       hover:border-gray-500 placeholder-gray-400"
                     />
                   </div>
 
@@ -189,10 +189,10 @@ export default function LoginPage() {
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full p-3 text-base md:text-lg border border-gray-400 rounded-lg 
-                      focus:border-gray-500 focus:ring-0
-                      transition-all duration-200 pr-10 text-gray-800
-                      hover:border-gray-500 placeholder-gray-400"
+                        className="w-full p-3 text-base md:text-lg border border-gray-400 rounded-lg
+                       focus:border-gray-500 focus:ring-0
+                       transition-all duration-200 pr-10 text-gray-800
+                       hover:border-gray-500 placeholder-gray-400"
                       />
                       <Button
                         type="button"
@@ -209,10 +209,10 @@ export default function LoginPage() {
 
                   <Button
                     type="submit"
-                    className="w-full py-3 text-lg bg-gradient-to-r from-[#bc1c44] to-[#80142c] 
-                    hover:from-[#80142c] hover:to-[#bc1c44] text-white font-bold rounded-lg 
-                    shadow-lg transition-all duration-300 transform hover:-translate-y-1 
-                    flex items-center justify-center gap-2"
+                    className="w-full py-3 text-lg bg-gradient-to-r from-[#bc1c44] to-[#80142c]
+                     hover:from-[#80142c] hover:to-[#bc1c44] text-white font-bold rounded-lg
+                     shadow-lg transition-all duration-300 transform hover:-translate-y-1
+                     flex items-center justify-center gap-2"
                     disabled={isLoading}
                   >
                     {isLoading ? (
@@ -254,7 +254,7 @@ export default function LoginPage() {
       </div>
 
       {/* Desktop Layout (hidden on mobile) */}
-      <div className="hidden lg:flex flex-col lg:flex-row items-center justify-center w-full max-w-7xl gap-12 p-8 pt-28 lg:pt-8 flex-grow">
+      <div className="hidden lg:flex flex-col lg:flex-row items-center justify-center w-full max-w-5xl mx-auto gap-12 p-8 pt-28 lg:pt-8 flex-grow">
         {/* Left Section: Large Image and Description */}
         <div className="flex flex-col items-center lg:items-start text-center lg:text-left lg:w-1/2 animate-fadeInLeft">
           <Image
@@ -297,8 +297,8 @@ export default function LoginPage() {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)} // ✅ Esto es lo que faltaba
-                  className="w-full p-3 border border-gray-300 rounded-lg 
-    focus:ring-2 focus:ring-[#bc1c44] focus:border-transparent 
+                  className="w-full p-3 border border-gray-300 rounded-lg
+    focus:ring-2 focus:ring-[#bc1c44] focus:border-transparent
     transition-all duration-200 text-gray-800
     hover:border-gray-400 placeholder-gray-400"
                 />
@@ -315,8 +315,8 @@ export default function LoginPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)} // ✅ Esto también
-                    className="w-full p-3 border border-gray-300 rounded-lg 
-    focus:ring-2 focus:ring-[#bc1c44] focus:border-transparent 
+                    className="w-full p-3 border border-gray-300 rounded-lg
+    focus:ring-2 focus:ring-[#bc1c44] focus:border-transparent
     transition-all duration-200 pr-10 text-gray-800"
                   />
 
@@ -378,9 +378,10 @@ export default function LoginPage() {
         </div>
       </div>
 
+
       {/* Footer */}
       <footer className="relative w-full">
-        <div className="relative w-full h-20 overflow-hidden">
+        <div className="relative w-full h-10 overflow-hidden">
           <Image
             src="https://res.cloudinary.com/dvvhnrvav/image/upload/v1749563496/transporte/fjr7hbdptzspaa9bfcsa.jpg"
             alt="Imagen decorativa del footer"

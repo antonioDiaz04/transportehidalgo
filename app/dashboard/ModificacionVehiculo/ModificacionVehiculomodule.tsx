@@ -90,7 +90,7 @@ export default function ModificacionVehiculo() {
         Capacidad: "",
         NumeroToneladas: "",
         NumeroMotor: "", // Corresponde a Motor del backend
-
+        ClaveCategoria: "", // Corresponde a ClaveCategoria del backend, usado para obtener IdCategoria
         // Nombres de Catálogo (strings, usados por el backend para obtener IDs)
         Clase: "", // Corresponde a ClaseVehiculo del backend
         Color: "", // Corresponde a Color del backend
@@ -184,8 +184,8 @@ export default function ModificacionVehiculo() {
             try {
                 const response = await apiClient(
                     `/concesion/${idConcesion}/vehiculo/${idVehiculo}`,
-                   
-                    {  method: 'GET',withCredentials: true }
+
+                    { method: 'GET', withCredentials: true }
                 );
 
                 const { vehiculo, aseguradora } = response.data || {};
@@ -198,7 +198,7 @@ export default function ModificacionVehiculo() {
                         IdConcesion: String(aseguradora.IdConcesion ?? ""), // Si vehiculo trae su propia IdConcesion
                         IdVehiculo: String(vehiculo.IdVehiculo ?? ""),
                         NumeroSerie: String(vehiculo.SerieNIV ?? ""), // API SerieNIV -> State NumeroSerie (usado en WHERE del backend)
-
+                        ClaveCategoria: String(vehiculo.ClaveCategoria ?? ""), // API ClaveCategoria -> State ClaveCategoria (para obtener IdCategoria)
                         // Atributos Básicos del Vehículo
                         Anio: String(vehiculo.Modelo ?? ""), // API Modelo (año) -> State Anio (para payload)
                         NumeroPasajeros: String(vehiculo.NumeroPasajeros ?? ""),
@@ -354,7 +354,7 @@ export default function ModificacionVehiculo() {
                     { method: 'GET', withCredentials: true }
                 );
 
-                console.log(response.data.data);
+                console.log(response.data);
                 const formatted = formatOptions(response.data || [], "IdTipoVehiculo", "TipoVehiculo");
                 setCatalogos(prev => ({
                     ...prev,
@@ -452,7 +452,7 @@ export default function ModificacionVehiculo() {
                     `/vehiculo/marcas?claveCategoria=${vehiculoData.IdCategoria}`,
                     { method: 'GET', withCredentials: true }
                 );
-
+                console.log(response)
                 const formatted = formatOptions(response.data || [], "IdMarca", "Marca");
                 setCatalogos(prev => ({
                     ...prev,

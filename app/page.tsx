@@ -14,7 +14,7 @@ export default function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   return (
-    <div className="min-h-screen text-gray-800 font-sans flex flex-col">
+    <div className="min-h-screen text-gray-800 bg-gray-100 font-sans flex flex-col">
       {/* Header (Navbar) - Simplificado */}
       <header className="sticky top-0 z-50 w-full">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex h-20 items-center justify-between">
@@ -72,15 +72,7 @@ export default function Home() {
       {/* Main Content - Hero Section enfocado en login */}
       <main className="flex-grow flex items-center justify-center py-16 md:py-24">
         <section id="inicio" className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="absolute inset-0 z-0 opacity-10">
-            <Image
-              src="https://res.cloudinary.com/dvvhnrvav/image/upload/v1749563496/transporte/fjr7hbdptzspaa9bfcsa.jpg"
-              alt="Fondo decorativo de transporte"
-              layout="fill"
-              objectFit="cover"
-              className="filter grayscale"
-            />
-          </div>
+          
           <div className="relative z-10 grid gap-8 lg:grid-cols-2 lg:gap-12 items-center  p-8 md:p-12">
             {/* Contenido de texto */}
             <div className="flex flex-col justify-center space-y-6 text-center lg:text-left">
@@ -121,15 +113,9 @@ export default function Home() {
         {/* Div decorativo superior */}
         <div className="w-full h-3 bg-[#7b1e3b] absolute top-0 left-0" />
 
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center pt-4">
+        <div className=" mx-auto px-4 sm:px-6 lg:px-8 text-center pt-4">
           <div className="flex flex-col items-center space-y-4">
-            <Image
-              src="https://res.cloudinary.com/dvvhnrvav/image/upload/v1749563496/transporte/afhhpxszzwtttnfyyg6r.jpg"
-              alt="Logo Gobierno de Hidalgo Footer"
-              width={150}
-              height={50}
-              className="w-auto h-12 object-contain filter grayscale invert"
-            />
+          
             <p className="text-sm text-gray-400 max-w-prose">
               Plataforma interna para la gestión del transporte en el estado de Hidalgo. <br className="hidden sm:inline" />
               Desarrollada para el personal de la Secretaría de Movilidad y Transporte.
@@ -137,7 +123,7 @@ export default function Home() {
           </div>
 
           {/* Copyright */}
-          <div className="border-t border-gray-700 mt-6 pt-4 text-center text-gray-400 text-xs">
+          <div className="border-t border-stone-400 mt-6 pt-4 text-center text-gray-400 text-xs">
             © {new Date().getFullYear()} Secretaría de Movilidad y Transporte de Hidalgo. Todos los derechos reservados.
           </div>
         </div>
