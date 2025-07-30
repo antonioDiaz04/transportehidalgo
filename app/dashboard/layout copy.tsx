@@ -2,11 +2,23 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { Car, Circle, Folder, LogOut, Search, User, X, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react"
+import {
+  Car,
+  Circle,
+  Folder,
+  LogOut,
+  Search,
+  User,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,11 +29,13 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useDevice } from "@/hooks/use-device"
 import { cn } from "@/lib/utils"
+
 import { getUserSession, clearUserSession } from "@/lib/indexedDb"
+
+
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const router = useRouter()
   const { isMobile, isTablet } = useDevice()
   const shouldCollapseSidebar = isMobile || isTablet
   const [sidebarOpen, setSidebarOpen] = useState(!shouldCollapseSidebar)
@@ -35,6 +49,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setUserName(session[0].name || "Usuario")
       }
     }
+
     fetchUser()
   }, [])
 
@@ -52,48 +67,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }
 
-  const handleLogout = async () => {
-    try {
-      await clearUserSession()
-      // Limpiar cookie
-      document.cookie = "user-session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
-      // Redirigir al login
-      router.push("/")
-    } catch (error) {
-      console.error("Error durante logout:", error)
-      // Forzar redirección incluso si hay error
-      window.location.href = "/"
-    }
-  }
-
   return (
     <div className="min-h-screen bg-[#fafbfb] flex">
       {/* Sidebar */}
       <aside
         className={cn(
           "z-40 inset-y-0 left-0 bg-[#fafbfb] border-r border-x-gray-200 flex flex-col",
-          "transition-all duration-300 ease-in-out",
+          "transition-all duration-300 ease-in-out", // Added for smooth transition
           !shouldCollapseSidebar && [
             "h-screen sticky top-0",
             isCollapsed ? "w-20" : "w-full md:w-44 lg:w-72 xl:w-80 2xl:w-72",
           ],
           shouldCollapseSidebar && [
             "fixed w-[calc(100%-3rem)] max-w-sm",
-            sidebarOpen ? "translate-x-0" : "-translate-x-full",
-          ],
+            sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          ]
         )}
       >
         {/* Sidebar Header */}
         <div
           className={cn(
             "flex h-16 items-center border-b border-x-gray-200 px-4 shrink-0",
-            isCollapsed ? "justify-center px-0" : "justify-between",
+            isCollapsed ? "justify-center px-0" : "justify-between"
           )}
         >
           {!isCollapsed ? (
             <Link href="/dashboard" className="flex items-center gap-2">
               <Image
-                src="/imagens/afhhpxszzwtttnfyyg6r.jpg"
+                src="imagens/afhhpxszzwtttnfyyg6r.jpg"
                 alt="Logo"
                 width={200}
                 height={120}
@@ -104,6 +105,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           ) : (
             <div className="w-10" />
           )}
+
           <div className={cn(isCollapsed ? "absolute right-5" : "")}>
             <Button
               variant="ghost"
@@ -119,7 +121,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <ChevronLeft className="h-5 w-5" />
               )}
               <span className="sr-only">
-                {shouldCollapseSidebar ? "Cerrar menú" : isCollapsed ? "Expandir menú" : "Colapsar menú"}
+                {shouldCollapseSidebar
+                  ? "Cerrar menú"
+                  : isCollapsed
+                    ? "Expandir menú"
+                    : "Colapsar menú"}
               </span>
             </Button>
           </div>
@@ -131,57 +137,52 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <span className={cn("px-3 py-2 font-bold text-black text-lg", isCollapsed ? "hidden" : "block")}>
               Realiza reportes y búsquedas
             </span>
-            {["autorizacion", "expediente", "titular", "vehiculo", "BandejaRevista", "ReporteRealizadas"].map(
-              (route, i) => {
-                const icons = [Circle, Folder, User, Car, Search, Search]
-                const labels = [
-                  "Número de Autorización",
-                  "Expediente",
-                  "Titular",
-                  "Vehículo",
-                  "Búsqueda de Revista Vehicular",
-                  "Reporte de Inspecciones Realizadas",
-                ]
-                const Icon = icons[i]
-                return (
-                  <Link
-                    key={route}
-                    href={`/dashboard/${route}`}
-                    prefetch={false}
-                    className={cn(
-                      "flex items-start gap-3 rounded-md px-3 py-2 text-sm font-normal transition-transform duration-100 active:scale-95",
-                      pathname === `/dashboard/${route}`
-                        ? "bg-[#e3e7e8] text-zinc-950 font-bold"
-                        : "text-gray-800 hover:bg-[#eceff0] hover:text-gray-900",
-                      isCollapsed && "justify-center px-2",
-                    )}
-                    onClick={() => shouldCollapseSidebar && setSidebarOpen(false)}
-                  >
-                    <Icon
-                      className={cn(
-                        "h-5 w-5 mt-0.5",
-                        pathname === `/dashboard/${route}` ? "text-zinc-950" : "text-gray-500",
-                      )}
-                    />
-                    <span className={cn("min-w-0 flex-1 text-sm", isCollapsed ? "hidden" : "block")}>{labels[i]}</span>
-                  </Link>
-                )
-              },
-            )}
+            {["autorizacion", "expediente", "titular", "vehiculo", "BandejaRevista", "ReporteRealizadas"].map((route, i) => {
+              const icons = [Circle, Folder, User, Car, Search, Search]
+              const labels = [
+                "Número de Autorización",
+                "Expediente",
+                "Titular",
+                "Vehículo",
+                "Búsqueda de Revista Vehicular",
+                "Reporte de Inspecciones Realizadas"
+              ]
+              const Icon = icons[i]
+              return (
+                <Link
+                  key={route}
+                  href={`/dashboard/${route}`}
+                  prefetch={false}
+                  className={cn(
+                    "flex items-start gap-3 rounded-md px-3 py-2 text-sm font-normal transition-transform duration-100 active:scale-95",
+                    pathname === `/dashboard/${route}`
+                      ? "bg-[#e3e7e8] text-zinc-950 font-bold"
+                      : "text-gray-800 hover:bg-[#eceff0] hover:text-gray-900",
+                    isCollapsed && "justify-center px-2"
+                  )}
+                  onClick={() => shouldCollapseSidebar && setSidebarOpen(false)}
+                >
+                  {/* Changed h-6 w-6 to h-5 w-5 for smaller icons */}
+                  <Icon className={cn("h-5 w-5 mt-0.5", pathname === `/dashboard/${route}` ? "text-zinc-950" : "text-gray-500")} />
+                  <span className={cn("min-w-0 flex-1 text-sm", isCollapsed ? "hidden" : "block")}>{labels[i]}</span>
+                </Link>
+              )
+            })}
           </div>
-
-          {/* Botón de cerrar sesión */}
+          {/* Botón de cerrar sesión al fondo con icono y texto al lado (row) */}
           <div className={cn("p-4", isCollapsed && "flex flex-row items-center px-2")}>
             <Button
               variant="outline"
               className="bg-white border border-[#D0D7D9] text-black rounded-md h-10 w-full flex items-center justify-center gap-2 hover:bg-gray-100"
-              onClick={handleLogout}
+              asChild
             >
-              <LogOut className="h-5 w-5" />
-              <span className={cn("text-sm font-medium", isCollapsed ? "hidden" : "block")}>Cerrar sesión</span>
+              <Link href="/" className="flex flex-row items-center w-full justify-center gap-2">
+                <LogOut className="h-5 w-5" />
+                <span className={cn("text-sm font-medium", isCollapsed ? "hidden" : "block")}>Cerrar sesión</span>
+              </Link>
             </Button>
             <div className={cn("mt-2 text-xs text-gray-500 text-center w-full", isCollapsed ? "hidden" : "block")}>
-              Plataforma interna para la gestión del transporte en el estado de Hidalgo.
+               Plataforma interna para la gestión del transporte en el estado de Hidalgo.
             </div>
           </div>
         </div>
@@ -189,36 +190,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {sidebarOpen && shouldCollapseSidebar && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 md:hidden transition-opacity duration-300 ease-in-out"
+          className="fixed inset-0 z-30 bg-black/50 md:hidden transition-opacity duration-300 ease-in-out" // Added transition here for the overlay
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Main Content Area */}
-      <div
-        className={cn(
-          "flex-1 flex flex-col bg-gray-50 min-w-0",
-          !shouldCollapseSidebar && [isCollapsed ? "ml-0" : "ml-34"],
-          shouldCollapseSidebar && "ml-0",
-        )}
-      >
-        <header
-          className={cn(
-            "sticky top-0 z-30 flex items-center justify-between border-b border-x-gray-200 bg-[#fafbfb]",
-            "h-16 px-4",
-          )}
-        >
+      <div className={cn(
+        "flex-1 flex flex-col bg-gray-50 min-w-0",
+        !shouldCollapseSidebar && [isCollapsed ? "ml-0" : "ml-34"], // Adjusting ml if needed based on sidebar width
+        shouldCollapseSidebar && "ml-0"
+      )}>
+        <header className={cn(
+          "sticky top-0 z-30 flex items-center justify-between border-b border-x-gray-200 bg-[#fafbfb]",
+          "h-16 px-4"
+        )}>
           <div className="flex items-center">
+
             <div className="flex items-center">
               {shouldCollapseSidebar && (
-                <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)} className="mr-3">
-                  <svg
-                    className="w-6 h-6 text-gray-800"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    viewBox="0 0 24 24"
-                  >
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSidebarOpen(true)}
+                  className="mr-3"
+                >
+                  <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                   </svg>
                   <span className="sr-only">Abrir menú</span>
@@ -236,6 +233,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 >
                   <User className="h-5 w-5 text-[#bc1c44]" />
                   <span className="text-sm">{userName}</span>
+
                   <ChevronDown className="h-4 w-4 text-gray-500" />
                 </Button>
               </DropdownMenuTrigger>
@@ -244,19 +242,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium">Usuario:</p>
                     <p className="text-xs text-muted-foreground">{userName}</p>
+
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                <DropdownMenuItem
+                  onClick={async () => {
+                    await clearUserSession()
+                    window.location.href = "/" // Redirigir después de limpiar
+                  }}
+                  className="cursor-pointer"
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Cerrar sesión</span>
                 </DropdownMenuItem>
+
+
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </header>
+
         <main className="flex-1 overflow-x-hidden p-3 sm:p-4">
-          <div className="mx-auto w-full max-w-[1800px]">{children}</div>
+          <div className="mx-auto w-full max-w-[1800px]">
+            {children}
+          </div>
         </main>
       </div>
     </div>

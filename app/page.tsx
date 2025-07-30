@@ -1,131 +1,419 @@
-"use client" // Necesario si mantienes cualquier estado o interactividad mínima como el menú móvil
+"use client"
 
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import Image from "next/image"
-import {
-  Menu, // Icono para el menú hamburguesa (si se mantiene, aunque para login es menos común)
-  X,    // Icono para cerrar el menú
-} from "lucide-react"
+import type React from "react"
 import { useState } from "react"
-import { cn } from "@/lib/utils" // Asume que tienes un archivo utils.ts para 'cn'
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Eye, EyeOff, Loader2, ChevronRight } from "lucide-react"
+import Image from "next/image"
+import axios from "axios"
+import apiClient from "@/lib/apiClient"
+import { useEffect } from "react"
+import { getUserSession } from "@/lib/indexedDb"
+import { saveUserSession } from "@/lib/indexedDb"
 
-export default function Home() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+export default function LoginPage() {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [currentPage, setCurrentPage] = useState(0)
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+
+  // Verificar si ya está autenticado al cargar la página
+  useEffect(() => {
+    const verifyAuth = async () => {
+      try {
+        const session = await getUserSession()
+        if (session.length > 0) {
+          router.push("/dashboard/autorizacion")
+          return
+        }
+      } catch (error) {
+        console.error("Error verificando autenticación:", error)
+      } finally {
+        setIsCheckingAuth(false)
+      }
+    }
+
+    verifyAuth()
+  }, [router])
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    try {
+      const data = await apiClient("/auth/login", {
+        method: "POST",
+        withCredentials: true,
+        data: {
+          username,
+          password,
+        },
+      })
+
+      // ✅ Guardar usuario en sesión (IndexedDB)
+      await saveUserSession(data.user)
+
+      // ✅ Establecer cookie para el middleware
+      document.cookie = `user-session=${data.user.id || "authenticated"}; path=/; max-age=${60 * 60 * 24 * 7}` // 7 días
+
+      // ✅ Redirigir al dashboard
+      router.push("/dashboard/autorizacion")
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        alert(error.response?.data?.message || error.message || "Error al iniciar sesión")
+      } else {
+        alert("Error desconocido")
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Mostrar loading mientras verifica autenticación
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-[#bc1c44]" />
+          <p className="text-gray-600">Verificando sesión...</p>
+        </div>
+      </div>
+    )
+  }
+
+  const handleSwipe = (direction: "left" | "right") => {
+    if (direction === "left" && currentPage < 1) {
+      setCurrentPage(currentPage + 1)
+    } else if (direction === "right" && currentPage > 0) {
+      setCurrentPage(currentPage - 1)
+    }
+  }
 
   return (
-    <div className="min-h-screen text-gray-800 bg-gray-100 font-sans flex flex-col">
-      {/* Header (Navbar) - Simplificado */}
-      <header className="sticky top-0 z-50 w-full">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex h-20 items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center gap-2">
-            <Link href="/" className="flex items-center gap-2" aria-label="Inicio">
-              <Image
-                src="https://res.cloudinary.com/dvvhnrvav/image/upload/v1749563496/transporte/afhhpxszzwtttnfyyg6r.jpg"
-                alt="Logo Gobierno de Hidalgo"
-                width={160} // Ajustado para un tamaño más elegante
-                height={60} // Altura auto
-                priority // Carga más rápido el logo principal
-                className="w-auto h-12 md:h-16 object-contain"
-              />
-              <span className="sr-only">Plataforma Integral de Transporte Hidalgo</span>
-            </Link>
-          </div>
+    <div className="min-h-screen flex bg-gray-100 flex-col items-center justify-between text-[#b01639] overflow-hidden">
+      {/* Header with brand colors */}
+      <header className="w-full absolute top-0 py-2 px-2 flex justify-between items-center z-10">
+        <Image
+          src="imagens/afhhpxszzwtttnfyyg6r.jpg"
+          alt="Logo"
+          width={250}
+          height={200}
+          className="z-20"
+        />
 
-          {/* Botón Iniciar Sesión (visible en todas las pantallas) */}
-          <div>
-            <Button asChild className="bg-[#bc1c44] hover:bg-[#80142c] text-white px-6 py-2 rounded-lg shadow-md transition-all duration-300">
-              <Link href="/login">Acceder</Link>
-            </Button>
-          </div>
+        {/* Paralelogramo pegado al borde derecho */}
+        {/* Adjusted width to w-1/2 and removed translate-x for right alignment */}
+        <div className="absolute right-0 top-0 w-1/2 h-[60px] bg-[#b01639]
+            transform -skew-x-11  origin-bottom-right z-" />
 
-          {/* Si quieres un menú móvil con un enlace a login también, puedes mantener esto: */}
-          {/* <div className="md:hidden">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              aria-label="Abrir menú"
-              className="text-gray-700 hover:bg-gray-100"
-            >
-              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </Button>
-          </div> */}
-        </div>
 
-        {/* Menú Móvil (simplificado, si se mantiene) */}
-        {/* <div
-          className={cn(
-            "md:hidden absolute w-full bg-white shadow-lg transition-all duration-300 ease-in-out overflow-hidden",
-            isMobileMenuOpen ? "max-h-screen opacity-100 py-4" : "max-h-0 opacity-0"
-          )}
-        >
-          <nav className="flex flex-col items-center gap-4 py-4">
-            <Button asChild className="bg-[#bc1c44] hover:bg-[#80142c] text-white px-6 py-2 rounded-lg shadow-md w-3/4">
-              <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>Acceder a la Plataforma</Link>
-            </Button>
-          </nav>
-        </div> */}
       </header>
 
-      {/* Main Content - Hero Section enfocado en login */}
-      <main className="flex-grow flex items-center justify-center py-16 md:py-24">
-        <section id="inicio" className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          <div className="relative z-10 grid gap-8 lg:grid-cols-2 lg:gap-12 items-center  p-8 md:p-12">
-            {/* Contenido de texto */}
-            <div className="flex flex-col justify-center space-y-6 text-center lg:text-left">
-              <div className="space-y-4">
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 leading-tight">
-                  Bienvenido al Sistema de Gestión de <br className="hidden md:block"/>
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#b01639] to-[#dd0a3b] animation-gradient">
-                    Transporte Hidalgo
-                  </span>
-                </h1>
-                <p className="max-w-[700px] mx-auto lg:mx-0 text-lg md:text-xl text-gray-600 leading-relaxed">
-                  Acceso exclusivo para personal autorizado de la Secretaría de Movilidad y Transporte.
-                  Gestione eficientemente las operaciones, registros y trámites del sector en el estado de Hidalgo.
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Button asChild className="bg-[#bc1c44] hover:bg-[#80142c] text-white px-8 py-3 rounded-lg text-lg shadow-lg transition-all duration-300 transform hover:scale-105">
-                  <Link href="/login">Acceder al Sistema</Link>
-                </Button>
-              </div>
-            </div>
-            {/* Imagen */}
-            <div className="flex items-center justify-center p-6 lg:p-0">
-              <Image
-                src="http://apps.transportehidalgo.gob.mx:8081/Imagenes/stch.png" // Esta imagen parece un diagrama/dashboard
-                width={500}
-                height={500}
-                alt="Interfaz de la plataforma"
-                className="rounded-xl object-cover w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-none transform transition-transform duration-500 hover:scale-100"
-              />
-            </div>
+      {/* Main Content with Pagination (Mobile/Tablet) */}
+      <div className="lg:hidden w-full pt-28 flex-grow relative overflow-hidden">
+
+        {/* Content Container */}
+        <div
+          className="flex transition-transform duration-300 ease-in-out"
+          style={{ transform: `translateX(-${currentPage * 100}%)` }}
+        >
+          {/* Left Section: Large Image and Description (Page 0) */}
+          <div
+            className="w-full flex-shrink-0 px-4 flex flex-col items-center text-center animate-fadeInLeft"
+            onTouchStart={(e) => {
+              const touchStartX = e.touches[0].clientX
+              const handleTouchEnd = (e: TouchEvent) => {
+                const touchEndX = e.changedTouches[0].clientX
+                if (touchStartX - touchEndX > 50) handleSwipe('left')
+                if (touchEndX - touchStartX > 50) handleSwipe('right')
+                document.removeEventListener('touchend', handleTouchEnd)
+              }
+              document.addEventListener('touchend', handleTouchEnd)
+            }}
+          >
+            <Image
+              src="imagens/oekxnggselolp5paxtev.jpg"
+              alt="Gran Logo de Transporte Hidalgo"
+              width={360}
+              height={250}
+              className="rounded-none mb-8"
+            />
+            <h1 className="text-4xl md:text-5xl font-extrabold text-black mb-6 leading-tight drop-shadow-lg">
+              Plataforma Integral de <span className="text-[#b01639]">Transporte Hidalgo</span>
+            </h1>
+            <p className="text-xl md:text-2xl text-gray-500 leading-relaxed max-w-xl">
+              Conectando a nuestra comunidad con eficiencia y seguridad.
+              Acceda a todas las herramientas y recursos para una gestión óptima de servicios y operaciones.
+            </p>
+
+            {/* Navigation Button (Mobile) */}
+            <button
+              onClick={() => setCurrentPage(1)}
+              className="mt-8 bg-[#b01639] text-white px-6 py-3 rounded-lg font-semibold flex items-center gap-2"
+            >
+              Iniciar Sesión <ChevronRight size={20} />
+            </button>
           </div>
-        </section>
-      </main>
+
+          {/* Right Section: Login Card (Page 1) */}
+          <div className="w-full flex-shrink-0 flex items-center justify-center p-4">
+            <Card className="w-full max-w-md bg-white text-gray-900 shadow-3xl p-6 md:p-8 transform transition-all duration-500 ease-out hover:scale-[1.02] relative z-20 animate-fadeInRight">
+              <CardHeader className="text-center pb-6">
+                <div className="flex justify-center mb-4">
+                  <Image
+                    src="imagens/stch.png"
+                    alt="Logo"
+                    width={70}
+                    height={70}
+                    className="rounded-none"
+                  />
+                </div>
+                <CardTitle className="text-3xl md:text-4xl font-extrabold text-[#80142c] leading-tight">
+                  Inicio sesión
+                </CardTitle>
+                <CardDescription className="text-gray-600 mt-2 text-lg md:text-xl">
+                  Ingrese sus credenciales para continuar
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div>
+                    <Label htmlFor="username" className="block text-gray-700 text-sm md:text-base font-semibold mb-2">
+                      Nombre de usuario
+                    </Label>
+                    <Input
+                      id="username"
+                      type="text"
+                      placeholder="Ej: JuanPerez2024"
+                      required
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="w-full p-3 text-base md:text-lg border border-gray-400 rounded-lg
+                         focus:border-gray-500 focus:ring-0
+                         transition-all duration-200 text-gray-800
+                         hover:border-gray-500 placeholder-gray-400"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="password" className="block text-gray-700 text-sm md:text-base font-semibold mb-2">
+                      Contraseña
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full p-3 text-base md:text-lg border border-gray-400 rounded-lg
+                         focus:border-gray-500 focus:ring-0
+                         transition-all duration-200 pr-10 text-gray-800
+                         hover:border-gray-500 placeholder-gray-400"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:bg-gray-100 p-1 rounded-full transition-all duration-200"
+                        onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                      >
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full py-3 text-lg bg-gradient-to-r from-[#bc1c44] to-[#80142c]
+                       hover:from-[#80142c] hover:to-[#bc1c44] text-white font-bold rounded-lg
+                       shadow-lg transition-all duration-300 transform hover:-translate-y-1
+                       flex items-center justify-center gap-2"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="animate-spin h-5 w-5" />
+                        Iniciando Sesión...
+                      </>
+                    ) : (
+                      "Iniciar Sesión"
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+
+              {/* Back Button (Mobile) */}
+              {/* <button
+                  onClick={() => setCurrentPage(0)}
+                  className="mt-4 text-[#b01639] font-medium flex items-center justify-center gap-1"
+                >
+                  <ChevronLeft size={18} /> Volver al inicio
+                </button> */}
+            </Card>
+          </div>
+
+
+
+        </div>
+        {/* Pagination Indicators */}
+        <div className="flex justify-center gap-2 mt-4 mb-6 z-20">
+          {[0, 1].map((page) => (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={`w-3 h-3 rounded-full ${currentPage === page ? 'bg-[#b01639]' : 'bg-gray-300'}`}
+              aria-label={`Ir a página ${page + 1}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Desktop Layout (hidden on mobile) */}
+      <div className="hidden lg:flex flex-col lg:flex-row items-center justify-center w-full max-w-5xl mx-auto gap-12 p-8 pt-28 lg:pt-8 flex-grow">
+        {/* Left Section: Large Image and Description */}
+        <div className="flex flex-col items-center lg:items-start text-center lg:text-left lg:w-1/2 animate-fadeInLeft">
+          <Image
+            src="imagens/fkg3g8g8aofojin64fdn.jpg"
+            alt="Gran Logo de Transporte Hidalgo"
+            width={280}
+            height={250}
+            className="rounded-none mb-8"
+          />
+          <h1 className="text-6xl font-extrabold text-black mb-6 leading-tight drop-shadow-lg">
+            Plataforma Integral de <span className="text-[#b01639]">Transporte Hidalgo</span>
+          </h1>
+          <p className="text-xl text-gray-500 leading-relaxed max-w-xl">
+            Conectando a nuestra comunidad con eficiencia y seguridad.
+            Acceda a todas las herramientas y recursos para una gestión óptima de servicios y operaciones.
+          </p>
+        </div>
+
+        {/* Right Section: Login Card */}
+        <Card className="w-full max-w-md bg-white text-gray-900 shadow-3xl p-8 transform transition-all duration-500 ease-out hover:scale-[1.02] relative z-20 animate-fadeInRight">
+          <CardHeader className="text-center pb-6">
+            <div className="flex justify-center mb-4">
+              <Image src="imagens/stch.png" alt="logo morado" width={70} height={70} className="rounded-none" />
+            </div>
+            <CardTitle className="text-4xl font-extrabold text-[#80142c] leading-tight">
+              Inicio sesión
+            </CardTitle>
+            <CardDescription className="text-gray-600 mt-2 text-lg">
+              Ingrese sus credenciales para continuar
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <Label htmlFor="username" className="block text-gray-700 text-sm font-semibold mb-2">Nombre de usuario</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="Ej: JuanPerez202"
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)} // ✅ Esto es lo que faltaba
+                  className="w-full p-3 border border-gray-300 rounded-lg
+      focus:ring-2 focus:ring-[#bc1c44] focus:border-transparent
+      transition-all duration-200 text-gray-800
+      hover:border-gray-400 placeholder-gray-400"
+                />
+
+              </div>
+
+              <div>
+                <Label htmlFor="password" className="block text-gray-700 text-sm font-semibold mb-2">Contraseña</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)} // ✅ Esto también
+                    className="w-full p-3 border border-gray-300 rounded-lg
+      focus:ring-2 focus:ring-[#bc1c44] focus:border-transparent
+      transition-all duration-200 pr-10 text-gray-800"
+                  />
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:bg-gray-100 p-1 rounded-full transition-all duration-200"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </Button>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full py-3 bg-gradient-to-r from-[#bc1c44] to-[#80142c] hover:from-[#80142c] hover:to-[#bc1c44] text-white font-bold rounded-lg shadow-lg transition-all duration-300 transform hover:-translate-y-1 flex items-center justify-center gap-2 text-lg"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="animate-spin h-5 w-5" />
+                    Iniciando Sesión...
+                  </>
+                ) : (
+                  "Iniciar Sesión"
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Infinite Carousel Banner */}
+      <div className="w-full overflow-hidden my-12 py-4">
+        <div className="flex animate-scroll-logos whitespace-nowrap">
+          {[...Array(5)].map((_, i) => (
+            <Image
+              key={i}
+              src="imagens/img-pasarela.png"
+              alt="Logos de Movilidad Hidalgo"
+              width={1000}
+              height={50}
+              className="inline-block h-auto"
+            />
+          ))}
+          {[...Array(5)].map((_, i) => (
+            <Image
+              key={`duplicate-${i}`}
+              src="imagens/img-pasarela.png"
+              alt="Logos de Movilidad Hidalgo"
+              width={120}
+              height={50}
+              className="inline-block h-auto"
+            />
+          ))}
+        </div>
+      </div>
+
 
       {/* Footer */}
-      <footer className="relative w-full bg-[#7b1e3b] text-gray-200 py-6 md:py-8 mt-auto">
-        {/* Div decorativo superior */}
-        <div className="w-full h-3 bg-[#7b1e3b] absolute top-0 left-0" />
-
-        <div className=" mx-auto px-4 sm:px-6 lg:px-8 text-center pt-4">
-          <div className="flex flex-col items-center space-y-4">
-          
-            <p className="text-sm text-gray-400 max-w-prose">
-              Plataforma interna para la gestión del transporte en el estado de Hidalgo. <br className="hidden sm:inline" />
-              Desarrollada para el personal de la Secretaría de Movilidad y Transporte.
-            </p>
-          </div>
-
-          {/* Copyright */}
-          <div className="border-t border-stone-400 mt-6 pt-4 text-center text-gray-400 text-xs">
-            © {new Date().getFullYear()} Secretaría de Movilidad y Transporte de Hidalgo. Todos los derechos reservados.
-          </div>
+      <footer className="relative w-full">
+        <div className="relative w-full h-10 overflow-hidden">
+          <Image
+            src="imagens/fjr7hbdptzspaa9bfcsa.jpg"
+            alt="Imagen decorativa del footer"
+            layout="fill"
+            objectFit="cover"
+            className="opacity-90"
+          />
         </div>
       </footer>
     </div>

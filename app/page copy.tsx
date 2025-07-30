@@ -69,7 +69,7 @@ export default function LoginPage() {
       {/* Header with brand colors */}
       <header className="w-full absolute top-0 py-2 px-2 flex justify-between items-center z-10">
         <Image
-          src="https://res.cloudinary.com/dvvhnrvav/image/upload/v1749563496/transporte/afhhpxszzwtttnfyyg6r.jpg"
+          src="imagens/afhhpxszzwtttnfyyg6r.jpg"
           alt="Logo"
           width={250}
           height={200}
@@ -81,14 +81,7 @@ export default function LoginPage() {
         <div className="absolute right-0 top-0 w-1/2 h-[60px] bg-[#b01639]
           transform -skew-x-11  origin-bottom-right z-" />
 
-        <nav className="relative z-10">
-          <Link
-            href="/"
-            className="text-[#F5E6CC] text-lg font-semibold hover:text-[#FFD900] transition-colors duration-300"
-          >
-            Inicio
-          </Link>
-        </nav>
+        
       </header>
 
       {/* Main Content with Pagination (Mobile/Tablet) */}
@@ -114,7 +107,7 @@ export default function LoginPage() {
             }}
           >
             <Image
-              src="https://res.cloudinary.com/dvvhnrvav/image/upload/v1749563496/transporte/oekxnggselolp5paxtev.jpg"
+              src="imagens/oekxnggselolp5paxtev.jpg"
               alt="Gran Logo de Transporte Hidalgo"
               width={360}
               height={250}
@@ -143,7 +136,7 @@ export default function LoginPage() {
               <CardHeader className="text-center pb-6">
                 <div className="flex justify-center mb-4">
                   <Image
-                    src="http://apps.transportehidalgo.gob.mx:8081/Imagenes/stch.png"
+                    src="imagens/stch.png"
                     alt="Logo"
                     width={70}
                     height={70}
@@ -228,12 +221,12 @@ export default function LoginPage() {
               </CardContent>
 
               {/* Back Button (Mobile) */}
-              <button
+              {/* <button
                 onClick={() => setCurrentPage(0)}
                 className="mt-4 text-[#b01639] font-medium flex items-center justify-center gap-1"
               >
                 <ChevronLeft size={18} /> Volver al inicio
-              </button>
+              </button> */}
             </Card>
           </div>
 
@@ -258,7 +251,7 @@ export default function LoginPage() {
         {/* Left Section: Large Image and Description */}
         <div className="flex flex-col items-center lg:items-start text-center lg:text-left lg:w-1/2 animate-fadeInLeft">
           <Image
-            src="https://res.cloudinary.com/dvvhnrvav/image/upload/v1749563496/transporte/fkg3g8g8aofojin64fdn.jpg"
+            src="imagens/fkg3g8g8aofojin64fdn.jpg"
             alt="Gran Logo de Transporte Hidalgo"
             width={280}
             height={250}
@@ -277,7 +270,7 @@ export default function LoginPage() {
         <Card className="w-full max-w-md bg-white text-gray-900 shadow-3xl p-8 transform transition-all duration-500 ease-out hover:scale-[1.02] relative z-20 animate-fadeInRight">
           <CardHeader className="text-center pb-6">
             <div className="flex justify-center mb-4">
-              <Image src="http://apps.transportehidalgo.gob.mx:8081/Imagenes/stch.png" alt="Logo" width={70} height={70} className="rounded-none" />
+              <Image src="imagens/stch.png" alt="logo morado" width={70} height={70} className="rounded-none" />
             </div>
             <CardTitle className="text-4xl font-extrabold text-[#80142c] leading-tight">
               Inicio sesión
@@ -358,9 +351,9 @@ export default function LoginPage() {
           {[...Array(5)].map((_, i) => (
             <Image
               key={i}
-              src="https://res.cloudinary.com/dvvhnrvav/image/upload/v1749225391/ow0pfzer6dnnzgvtin5q.jpg"
+              src="imagens/img-pasarela.png"
               alt="Logos de Movilidad Hidalgo"
-              width={1200}
+              width={1000}
               height={50}
               className="inline-block h-auto"
             />
@@ -368,7 +361,7 @@ export default function LoginPage() {
           {[...Array(5)].map((_, i) => (
             <Image
               key={`duplicate-${i}`}
-              src="https://res.cloudinary.com/dvvhnrvav/image/upload/v1749225391/ow0pfzer6dnnzgvtin5q.jpg"
+              src="imagens/img-pasarela.png"
               alt="Logos de Movilidad Hidalgo"
               width={120}
               height={50}
@@ -383,7 +376,7 @@ export default function LoginPage() {
       <footer className="relative w-full">
         <div className="relative w-full h-10 overflow-hidden">
           <Image
-            src="https://res.cloudinary.com/dvvhnrvav/image/upload/v1749563496/transporte/fjr7hbdptzspaa9bfcsa.jpg"
+            src="imagens/fjr7hbdptzspaa9bfcsa.jpg"
             alt="Imagen decorativa del footer"
             layout="fill"
             objectFit="cover"

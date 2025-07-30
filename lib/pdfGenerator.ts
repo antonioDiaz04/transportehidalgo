@@ -1,131 +1,145 @@
-// Asegúrate de que jsPDF esté instalado: npm install jspdf
-// Asegúrate de que axios esté instalado: npm install axios
 import jsPDF from 'jspdf';
-import axios from 'axios'; // Aunque uses apiClient, axios se importa para tipado o si lo usas directamente en otro lugar.
-import apiClient from "@/lib/apiClient"; // Tu instancia de Axios personalizada
+import apiClient from "@/lib/apiClient";
 
-// Helper function to format boolean and specific numeric values for display
-const formatBoolean = (value: boolean | number | null | undefined) => {
-    if (value === 2 || value === true) return 'BIEN'; // Corresponds to value="2" or true
-    if (value === 1) return 'MAL';  // Corresponds to value="1"
-    if (value === 0 || value === false) return ''; // Corresponds to value="0" or false, now returns empty string
-    return 'N/A'; // Not Applicable or Unknown
+// 1. Helper Functions
+// ---
+/**
+ * Formats a boolean or number value into 'BIEN', 'MAL', 'N/A', or an empty string.
+ * - `2` or `true` maps to 'SI:MAL'.
+ * - `1` maps to 'SI:BIEN'.
+ * - `0` or `false` maps to an empty string.
+ * - Other values (null, undefined) map to 'N/A'.
+ *
+ * @param value The boolean, number, null, or undefined value to format.
+ * @returns A formatted string.
+ */
+const formatBoolean = (value: boolean | number | null | undefined): string => {
+    // Si el valor es '1' (de SI:BIEN en el select) o 'true' (de un checkbox), retorna 'BIEN'
+    if (value === 1 || value === true) return 'BIEN';
+    // Si el valor es '2' (de SI:MAL en el select), retorna 'MAL'
+    if (value === 2) return 'MAL';
+    // Si el valor es '3' (de NO en el select), retorna 'N/A' (como "No aplica" o "Ausente")
+    if (value === 3) return 'N/A';
+    // Si el valor es '0' (de Seleccione...) o 'false' (de un checkbox), retorna un string vacío
+    if (value === 0 || value === false) return '';
+    // Para cualquier otro caso (null, undefined, etc.), retorna 'N/A'
+    return 'N/A';
 };
 
-// Function to generate the PDF dynamically
-export async function generarPDF(idRV: string) { // Accept idRV as parameter
+// 2. Main PDF Generation Function
+// ---
+/**
+ * Generates a dynamic PDF for a vehicular inspection report based on the provided ID.
+ *    
+ * @param idRV The ID of the vehicular inspection record.
+ * @returns A jsPDF document instance.
+ * @throws {Error} If `idRV` is not provided or if no data is found for the given ID.
+ */
+export async function generarPDF(idRV: string): Promise<jsPDF> {
     if (!idRV) {
         console.error('[PDF] ID de Revista (idRV) no proporcionado.');
         throw new Error('ID de Revista (idRV) es requerido para generar el PDF.');
     }
 
     console.log(`[PDF] Iniciando generación de PDF para IdRevistaVehicular: ${idRV}...`);
+
+    // Initialize jsPDF document with A4 portrait orientation
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' }); // Tamaño carta
 
     try {
-        // 1. Fetch Inspection Data
-        // apiClient ya devuelve response.data directamente, no necesitas .data de nuevo
-        const responseData = await apiClient(`/revista/${idRV}`, { // Endpoint ajustado, asumiendo que es /api/revista/:idRV
+        // Fetch inspection data from the API
+        const responseData = await apiClient(`/revista/${idRV}`, {
             method: 'GET',
             withCredentials: true,
         });
-        console.log("Respuesta completa de la API:", responseData); // Log para ver la estructura real
-
-        // Accede a la propiedad 'data' si tu API la anida, de lo contrario usa responseData directamente
-        // Basado en tu ejemplo, parece que la data relevante está anidada en 'data'
-        const inspectionData = responseData.data; 
-
+        const inspectionData = responseData.data;
+        console.log('[PDF] Datos de inspección obtenidos:', inspectionData);
         if (!inspectionData) {
             throw new Error('No se encontraron datos para la revista vehicular.');
         }
 
-        console.log("Datos de inspección procesados:", inspectionData);
-        // 2. NO SE CARGAN NI SE USAN IMÁGENES (esto es una nota, no una funcionalidad)
-
-
+        // Set default font and size for the document
         doc.setFont('helvetica');
         doc.setFontSize(12);
 
-        // Logos (comentados, si no quieres que se generen)
+        // --- Header Section ---
+        // Logos
         const logoIzquierdo = "https://res.cloudinary.com/dvvhnrvav/image/upload/v1750179371/transporte/ydrefbxmpld29lrcskkt.png";
         doc.addImage(logoIzquierdo, "PNG", 15, 10, 40, 20);
 
         const logoDerecho = "https://res.cloudinary.com/dvvhnrvav/image/upload/v1750179074/transporte/lamhdjofyqwajgu6rzno.png";
         doc.addImage(logoDerecho, "JPEG", 180, 10, 20, 20);
 
-        // Folio Dinámico
-        doc.setTextColor(255, 0, 0);
+        // Dynamic Folio
+        doc.setTextColor(255, 0, 0); // Red color for "No:"
         doc.text('No:', 185, 35);
-        doc.setTextColor(0, 0, 0);
-        doc.text(inspectionData.IdRevistaVehicular || 'N/A', 195, 35); // Usar IdRevistaVehicular como Folio
+        doc.setTextColor(0, 0, 0); // Black color for the folio number
+        doc.text(inspectionData.IdRevistaVehicular || 'N/A', 195, 35);
 
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
 
-        // Información básica dinámica
-        let y = 40;
-        // Construir FechaInspeccion a partir de Dia, Mes, Anio
+        // Basic Information
+        let y = 40; // Initial Y position for basic info
         const fechaInspeccion = inspectionData.DiaInspeccion && inspectionData.MesInspeccion && inspectionData.AnioInspeccion
             ? `${inspectionData.DiaInspeccion}/${inspectionData.MesInspeccion}/${inspectionData.AnioInspeccion}`
             : 'N/A';
         doc.text(`FECHA DE INSPECCIÓN: ${fechaInspeccion}`, 15, y);
-        doc.text(`NÚMERO DE AUTORIZACIÓN: ${inspectionData.IdConsesion || 'N/A'}`, 120, y); // Usar IdConsesion
+        doc.text(`NÚMERO DE AUTORIZACIÓN: ${inspectionData.IdConsesion || 'N/A'}`, 130, y);
 
         y += 6;
-        doc.text(`NOMBRE DEL PROPIETARIO: ${inspectionData.NombreCompletoNA || 'N/A'}`, 15, y); // Usar NombreCompletoNA
-        doc.text(`TELÉFONO: ${inspectionData.Telefono || 'N/A'}`, 120, y); // Usar Telefono
-
+        doc.text(`PARA TRÁMITE DE: ${inspectionData.Tramite || 'N/A'}`, 15, y);
+        doc.text(`MUNICIPIO: ${inspectionData.Municipio || 'N/A'}`, 130, y);
+        
         y += 6;
-        doc.text(`PARA TRÁMITE DE: ${inspectionData.Tramite || 'N/A'}`, 15, y); // Usar Tramite
-        doc.text(`MUNICIPIO: ${inspectionData.Municipio || 'N/A'}`, 120, y);
-
-        y += 6;
+        doc.text(`PROPIETARIO: ${inspectionData.NombreCompletoNA || 'N/A'}`, 130, y);
         doc.text(`TIPO DE SERVICIO (MODALIDAD): ${inspectionData.Modalidad || 'N/A'}`, 15, y);
 
-        // Características Vehiculares
+        // --- Vehicular Characteristics Section ---
         y += 10;
         doc.setFont('helvetica', 'bold');
-        doc.text('CARACTERÍSTICAS VEHICULARES', doc.internal.pageSize.width / 2, y, { align: 'center' }); // Centrado horizontal
+        doc.text('CARACTERÍSTICAS VEHICULARES', doc.internal.pageSize.width / 2, y, { align: 'center' });
         doc.setFont('helvetica', 'normal');
 
         y += 10;
-        doc.text(`MARCA: ${inspectionData.Marca || 'N/A'}`, 15, y);
-        doc.text(`TIPO DE VEHÍCULO: ${inspectionData.TipoVehiculo || 'N/A'}`, 120, y);
+        // Define X coordinates for the three columns
+        const col1X = 15;
+        const col2X = 75;
+        const col3X = 145;
 
+        // Row 1
+        doc.text(`MARCA: ${inspectionData.Marca || 'N/A'}`, col1X, y);
+        doc.text(`No. DE MOTOR: ${inspectionData.NumeroMotor || 'N/A'}`, col2X, y);
+        doc.text(`No. DE SERIE: ${inspectionData.NumeroSerie || 'N/A'}`, col3X, y);
         y += 6;
-        doc.text(`No. DE MOTOR: ${inspectionData.NumeroMotor || 'N/A'}`, 15, y);
-        doc.text(`SUBMARCA: ${inspectionData.SubMarca || 'N/A'}`, 120, y);
-
+        
+        // Row 2
+        doc.text(`TIPO DE VEHÍCULO: ${inspectionData.TipoVehiculo || 'N/A'}`, col1X, y);
+        doc.text(`SUBMARCA: ${inspectionData.SubMarca || 'N/A'}`, col2X, y);
+        doc.text(`IMAGEN CROMÁTICA: ${formatBoolean(inspectionData.ImagenCromaticaVer)}`, col3X, y);
         y += 6;
-        doc.text(`IMAGEN CROMÁTICA: ${formatBoolean(inspectionData.ImagenCromaticaVer)}`, 15, y);
-        doc.text(`MODELO: ${inspectionData.Modelo || 'N/A'}`, 120, y); // Ajustado para usar Modelo
-
+        
+        // Row 3
+        doc.text(`MODELO: ${inspectionData.Modelo || 'N/A'}`, col1X, y);
+        doc.text(`PLACA DELANTERA: ${formatBoolean(inspectionData.PlacaDelantera)}`, col2X, y);
+        doc.text(`PLACA TRASERA: ${formatBoolean(inspectionData.PlacaTrasera)}`, col3X, y);
         y += 6;
-        doc.text(`No. DE SERIE: ${inspectionData.NumeroSerie || 'N/A'}`, 15, y);
-        doc.text(`PLACA DELANTERA: ${formatBoolean(inspectionData.PlacaDelantera)}`, 120, y); // Usar PlacaDelantera (boolean)
 
+        // Row 4
+        doc.text(`PLACAS ASIG.: ${inspectionData.PlacaAsignada || 'N/A'}`, col1X, y);
+        doc.text(`CALCOMANÍA DE VERIFICACIÓN: ${formatBoolean(inspectionData.CalcaVerificacionVer)}`, col2X, y);
+        doc.text(`CALCOMANÍA DE LA TENENCIA: ${formatBoolean(inspectionData.CalcaTenenciaVer)}`, col3X, y);
         y += 6;
-        doc.text(`PLACAS ASIG.: ${inspectionData.PlacaAsignada || 'N/A'}`, 15, y); // Usar PlacaAsignada
-        doc.text(`PLACA TRASERA: ${formatBoolean(inspectionData.PlacaTrasera)}`, 120, y); // Usar PlacaTrasera (boolean)
 
-        y += 6;
-        doc.text(`CALCOMANÍA DE VERIFICACIÓN: ${formatBoolean(inspectionData.CalcaVerificacionVer)}`, 120, y);
-
-        y += 6;
-        doc.text(`CALCOMANÍA DE LA TENENCIA: ${formatBoolean(inspectionData.CalcaTenenciaVer)}`, 120, y);
-
-        // Tabla compacta dinámica (Ponderación)
+        // --- Inspection Checklist Section ---
         y += 10;
-        doc.setFontSize(9); // Smaller font for checklist
-        let positiveChecksCount = 0;
-        // Solo contamos los elementos que realmente se muestran en el checklist
-        // Hay 8 filas * 3 columnas = 24 posibles checks.
-        const totalChecks = 24; 
+        doc.setFontSize(9);
+        let positiveChecksCount = 0; // This variable is declared but not used for any output in the PDF, consider removing or using it.
+        const totalChecks = 24; // 8 rows * 3 columns - This variable is declared but not used for any output in the PDF, consider removing or using it.
 
         const checklistItems = [
-            // [Label1, DataField1, Label2, DataField2, Label3, DataField3]
             ['PINTURA Y CARROCERÍA', 'PinturaCarroceriaVer', 'CLAXON', 'ClaxonVer', 'EXTINTOR', 'EstinguidorVer'],
-            ['ESTADO DE LLANTAS', 'EstadoLlantasVer', 'LUZ BAJA', 'LuzBajaVer', 'HERRAMIENTA', 'HerramientaVer'], // Corregido HerramientaVer
+            ['ESTADO DE LLANTAS', 'EstadoLlantasVer', 'LUZ BAJA', 'LuzBajaVer', 'HERRAMIENTA', 'HerramientaVer'],
             ['DEFENSAS', 'DefensasVer', 'LUZ ALTA', 'LuzAltaVer', 'SISTEMA DE FRENADO', 'SistemaFrenadoVer'],
             ['VIDRIOS', 'VidriosVer', 'CUARTOS', 'CuartosVer', 'SISTEMA DE DIRECCIÓN', 'SistemaDireccionVer'],
             ['LIMPIADORES', 'LimpiadoresVer', 'DIRECCIONALES', 'DireccionalesVer', 'SISTEMA DE SUSPENSIÓN', 'SistemaSuspensionVer'],
@@ -138,8 +152,7 @@ export async function generarPDF(idRV: string) { // Accept idRV as parameter
             doc.text(row[0], 15, y);
             const val1 = inspectionData[row[1] as keyof typeof inspectionData];
             doc.text(formatBoolean(val1), 80, y);
-            // La lógica de conteo sigue siendo para "SI:BIEN" (valor 2 o true)
-            if (val1 === 2 || val1 === true) positiveChecksCount++; 
+            if (val1 === 2 || val1 === true) positiveChecksCount++;
 
             doc.text(row[2], 95, y);
             const val2 = inspectionData[row[3] as keyof typeof inspectionData];
@@ -153,79 +166,49 @@ export async function generarPDF(idRV: string) { // Accept idRV as parameter
 
             y += 6;
         });
-        doc.setFontSize(10); // Reset font size
+        doc.setFontSize(10);
 
+        // Insurance Information
         y += 2;
-        doc.text(`CIA. ASEGURADORA: ${inspectionData.ciaAseguradora || 'N/A'}`, 15, y); // Usar ciaAseguradora
+        doc.text(`CIA. ASEGURADORA: ${inspectionData.ciaAseguradora || 'N/A'}`, 15, y);
         doc.text(`NÚMERO DE PÓLIZA: ${inspectionData.NumeroPoliza || 'N/A'}`, 80, y);
-        doc.text(`VIGENCIA: ${inspectionData.FechaVencimiento ? new Date(inspectionData.FechaVencimiento).toLocaleDateString() : 'N/A'}`, 150, y); // Usar FechaVencimiento
+        doc.text(`VIGENCIA: ${inspectionData.FechaVencimiento ? new Date(inspectionData.FechaVencimiento).toLocaleDateString() : 'N/A'}`, 150, y);
 
-        // --- Ponderación / Calificación del Vehículo ---
-        y += 10;
-        doc.setFont('helvetica', 'bold');
-        doc.text('PONDERACIÓN DEL VEHÍCULO', doc.internal.pageSize.width / 2, y, { align: 'center' });
-        doc.setFont('helvetica', 'normal'); // Reset font to normal for the text content
-        y += 7; // Espacio después del título de la sección
+        // --- Ponderation Details Section (placed before Observations as per new order) ---
+        // Define X coordinates for the three columns
 
-        let ratingLabel = ''; // La etiqueta especial (DEFICIENTE, REGULAR, ÓPTIMO)
-        let displayRatingText = ''; // El texto que se mostrará (PRIME o el porcentaje/conteo)
-        let ratingDescription = ''; // Nueva variable para la descripción
-        
-        // Calcular el porcentaje de ponderación
-        const ponderacionPercentage = totalChecks > 0 ? Math.round((positiveChecksCount / totalChecks) * 100) : 0;
+        // --- Ponderation Details Section (placed before Observations as per new order) ---
 
-        // Los umbrales de ponderación se basan en el total de 24 checks (8 filas * 3 columnas)
-        if (positiveChecksCount < 9) { // Menos de 9 checks "SI:BIEN" o true
-            ratingLabel = 'DEFICIENTE';
-            displayRatingText = `${ratingLabel} (${ponderacionPercentage}%)`; // Incluir porcentaje
-            ratingDescription = 'Requiere atención inmediata para cumplir los estándares mínimos.'; 
-        } else if (positiveChecksCount >= 9 && positiveChecksCount <= 18) { // Entre 9 y 18 checks "SI:BIEN" o true
-            ratingLabel = 'REGULAR';
-            displayRatingText = `${ratingLabel} (${ponderacionPercentage}%)`; // Incluir porcentaje
-            ratingDescription = 'Condiciones aceptables, con áreas identificadas para mejora.'; 
-        } else if (positiveChecksCount > 18) { // Más de 18 checks "SI:BIEN" o true
-            ratingLabel = 'ÓPTIMO';
-            displayRatingText = `PRIME (${ponderacionPercentage}%)`; // PRIME ahora incluye porcentaje
-            ratingDescription = 'Vehículo en excelentes condiciones, superando los estándares de seguridad y operación.'; // Descripción específica para PRIME
-        } else {
-            // Fallback en caso de que no caiga en ninguna categoría (aunque debería)
-            ratingLabel = 'N/A';
-            displayRatingText = `N/A (${ponderacionPercentage}%)`; // Incluir porcentaje
-            ratingDescription = 'No se pudo determinar la calificación por falta de datos.';
-        }
+        // Row 1 of Ponderation
+        y += 8; // Add more space from the insurance info
+        doc.text(`MODELO: ${inspectionData.RangoAnio || 'N/A'}`, col1X, y);
+        doc.text(`TIENE AIRE ACONDICIONADO: ${formatBoolean(inspectionData.TieneAire)}`, col2X, y);
+        doc.text(`CAPACIDAD: ${inspectionData.Capacidad || 'N/A'}`, col3X, y);
 
-        // Muestra el texto de la calificación (siempre en negro)
-        doc.setTextColor(0, 0, 0); // Establecer color de texto a negro
-        doc.setFontSize(10); // Tamaño de fuente para el texto principal de la calificación
-        doc.text(displayRatingText, doc.internal.pageSize.width / 2, y, { align: 'center' }); 
+        // Row 2 of Ponderation
+        y += 8;
+        doc.text(`TIPO DE BOLSA DE AIRE: ${inspectionData.TipoBolsa !== undefined ? inspectionData.TipoBolsa : 'N/A'}`, col1X, y);
+        doc.text(`TIPO: ${inspectionData.Tipo || 'N/A'}`, col2X, y);
+        doc.text(`TIPO DE FRENO: ${inspectionData.TipoFreno || 'N/A'}`, col3X, y);
 
-        // Muestra la descripción si está disponible
-        if (ratingDescription) {
-            doc.setFontSize(8); // Tamaño de fuente más pequeño para la descripción
-            doc.text(ratingDescription, doc.internal.pageSize.width / 2, y + 5, { align: 'center' }); 
-            y += 15; // Incrementar Y para acomodar el texto principal y la descripción
-        } else {
-            y += 10; // Espacio original si no hay descripción
-        }
-        doc.setFontSize(10); // Restablecer tamaño de fuente para el contenido subsiguiente
-        doc.setFont('helvetica', 'normal');
-        // --- Fin Ponderación ---
+        // Row 3 of Ponderation
+        y += 8;
+        doc.text(`CANTIDAD DE CINTURONES: ${inspectionData.Cantidad || 'N/A'}`, col1X, y);
+        doc.text(`MATERIAL DE TAPICERÍA: ${inspectionData.Material || 'N/A'}`, 120, y);
 
-        // Ajuste de Y para el resto del contenido
-        y = Math.max(y, doc.internal.pageSize.height / 2 + 30); // Asegurarse de que Y esté por debajo de la mitad de la página
-
-
+        // --- Observations and Approval Section ---
+        y += 10; // Space after ponderation details
         doc.setFont('helvetica', 'bold');
         doc.text('OBSERVACIONES:', 15, y);
         doc.setFont('helvetica', 'normal');
-        // Handle multi-line observations
+        // Split text to fit within the column width for observations
         const observationsText = doc.splitTextToSize(inspectionData.Observaciones || 'Sin observaciones.', 180);
         doc.text(observationsText, 50, y);
-        y += (observationsText.length - 1) * doc.getLineHeight() / doc.internal.scaleFactor + 5; // Adjust y based on observation lines
+        // Adjust Y position based on the number of lines in observations
+        y += (observationsText.length - 1) * doc.getLineHeight() / doc.internal.scaleFactor + 5;
 
-        y = Math.max(y, 212); // Ensure APROBADO starts at least at 212 if observations are short
-
-        doc.text(`APROBADO: ${formatBoolean(inspectionData.Aprobado)}`, doc.internal.pageSize.width / 2, y, { align: 'center' }); // Dynamic Aprobado, centrado
+        y += 10;
+        doc.text(`APROBADO: ${formatBoolean(inspectionData.Aprobado)}`, doc.internal.pageSize.width / 2, y, { align: 'center' });
 
         y += 10;
         doc.setFontSize(9);
@@ -233,23 +216,42 @@ export async function generarPDF(idRV: string) { // Accept idRV as parameter
             maxWidth: 180,
         });
 
+        // --- Signatures Section ---
         y += 12;
         doc.setFontSize(10);
         doc.text('INSPECTOR', 45, y);
-        doc.text(inspectionData.Inspector || 'N/A', 30, y + 5); // Dynamic Inspector name
+        doc.text(inspectionData.Inspector || 'N/A', 30, y + 5);
         doc.text('INTERESADO', 140, y);
-        doc.text(inspectionData.NombreCompletoNA || 'N/A', 130, y + 5); // Dynamic Interesado name (using NombreCompletoNA)
+        doc.text(inspectionData.NombreCompletoNA || 'N/A', 130, y + 5);
 
+        // Signature lines
         doc.line(30, y + 15, 80, y + 15);
         doc.text('NOMBRE Y FIRMA', 40, y + 20);
         doc.line(130, y + 15, 180, y + 15);
         doc.text('NOMBRE Y FIRMA', 140, y + 20);
 
-        y += 30;
+        // --- Score and Classification Section (placed absolutely at the bottom, before footer) ---
+        // Calculate the initial Y position for this final part of the ponderation.
+        const footerHeight = 25; // Estimated height for the footer
+        const scoreClassificationHeight = 6; // Only 1 row of 6mm
+        let bottomPonderationY = doc.internal.pageSize.height - footerHeight - scoreClassificationHeight - 5; // -5 for a small margin
+
+        // Ensure it doesn't overlap with the signatures content, if space is tight
+        bottomPonderationY = Math.max(bottomPonderationY, y + 40); // 'y' is the current position after signatures + 20mm buffer
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold'); // Keep bold for Score and Classification
+        doc.text(`PUNTUACIÓN OBTENIDA: ${inspectionData.Puntuacion !== undefined ? inspectionData.Puntuacion : 'N/A'}`, col1X, bottomPonderationY);
+        doc.text(`CLASIFICACIÓN: ${inspectionData.Clasificacion || 'N/A'}`, col2X, bottomPonderationY);
+        // No increment needed after this as the footer comes immediately after
+
+        // --- Footer Section ---
+        let footerY = doc.internal.pageSize.height - 20; // Fixed to 20mm from the bottom for the footer
+
         doc.setFontSize(9);
-        doc.text('Av. de la Prensa No. 205, Col. L. García', 150, y);
-        doc.text('Pachuca de Soto, Hidalgo, México', 158, y + 5);
-        doc.text('Tel: 01 (771) 717 8000 ext. 1755', 160, y + 10);
+        doc.text('Av. de la Prensa No. 205, Col. L. García', 150, footerY);
+        doc.text('Pachuca de Soto, Hidalgo, México', 158, footerY + 5);
+        doc.text('Tel: 01 (771) 717 8000 ext. 1755', 160, footerY + 10);
 
         console.log('[PDF] PDF generado dinámicamente.');
         return doc;
@@ -259,7 +261,15 @@ export async function generarPDF(idRV: string) { // Accept idRV as parameter
     }
 }
 
-export function savePDF(doc: jsPDF, filename: string) {
+// 3. PDF Saving Function
+// ---
+/**
+ * Saves the generated jsPDF document to a file.
+ *
+ * @param doc The jsPDF document instance to save.
+ * @param filename The desired name for the PDF file (without extension).
+ */
+export function savePDF(doc: jsPDF, filename: string): void {
     try {
         console.log(`[PDF] Guardando PDF como: ${filename}.pdf`);
         doc.save(`${filename}.pdf`);
