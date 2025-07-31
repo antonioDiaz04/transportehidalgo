@@ -5,8 +5,9 @@ import apiClient from "@/lib/apiClient";
 // ---
 /**
  * Formats a boolean or number value into 'BIEN', 'MAL', 'N/A', or an empty string.
- * - `2` or `true` maps to 'SI:MAL'.
- * - `1` maps to 'SI:BIEN'.
+ * - `1` or `true` maps to 'BIEN'.
+ * - `2` maps to 'MAL'.
+ * - `3` maps to 'N/A'.
  * - `0` or `false` maps to an empty string.
  * - Other values (null, undefined) map to 'N/A'.
  *
@@ -26,11 +27,67 @@ const formatBoolean = (value: boolean | number | null | undefined): string => {
     return 'N/A';
 };
 
+/**
+ * Helper function to truncate text and add ellipsis if it exceeds max width or max characters.
+ * Prioritizes truncation by character count if `maxChars` is provided.
+ *
+ * @param doc The jsPDF document instance for text measurement.
+ * @param text The string to truncate.
+ * @param maxWidth The maximum allowed width for the text in mm.
+ * @param fontSize The font size in points to use for text measurement.
+ * @param maxChars Optional: The maximum number of characters allowed before truncation, including ellipsis.
+ * @returns The truncated string with ellipsis if necessary, or "N/A" if text is null/undefined.
+ */
+const truncateText = (
+    doc: jsPDF,
+    text: string | number | null | undefined, // Added number to the type
+    maxWidth: number, // in mm (visual width)
+    fontSize: number,
+    maxChars?: number // Optional: max characters allowed before truncation
+): string => {
+    // Convert number to string explicitly if it's a number
+    const inputText = (text === null || text === undefined) ? 'N/A' : String(text);
+
+    let resultText = inputText;
+    const ellipsis = '...';
+
+    // 1. Prioritize truncation by character count if maxChars is provided
+    if (maxChars !== undefined && inputText.length > maxChars) {
+        // Ensure there's enough space for ellipsis
+        const sliceLength = Math.max(0, maxChars - ellipsis.length);
+        resultText = inputText.slice(0, sliceLength) + ellipsis;
+    }
+
+    // 2. Now, check if the resulting text (either original or char-truncated) exceeds the visual maxWidth
+    // Set font size for accurate measurement
+    doc.setFontSize(fontSize);
+    const scaleFactor = doc.internal.scaleFactor; // Get internal scale factor for accurate mm measurement
+
+    // Calculate initial width of resultText
+    let currentTextWidth = doc.getStringUnitWidth(resultText) * fontSize / scaleFactor;
+
+    if (currentTextWidth > maxWidth) {
+        // If it still exceeds maxWidth, perform visual truncation
+        const ellipsisWidth = doc.getStringUnitWidth(ellipsis) * fontSize / scaleFactor;
+        let truncatedByWidthText = resultText;
+        let newWidth = currentTextWidth;
+
+        while (newWidth >= maxWidth - ellipsisWidth && truncatedByWidthText.length > 0) {
+            truncatedByWidthText = truncatedByWidthText.slice(0, -1);
+            newWidth = doc.getStringUnitWidth(truncatedByWidthText) * fontSize / scaleFactor;
+        }
+        resultText = truncatedByWidthText + ellipsis;
+    }
+
+    return resultText;
+};
+
+
 // 2. Main PDF Generation Function
 // ---
 /**
  * Generates a dynamic PDF for a vehicular inspection report based on the provided ID.
- *    
+ *
  * @param idRV The ID of the vehicular inspection record.
  * @returns A jsPDF document instance.
  * @throws {Error} If `idRV` is not provided or if no data is found for the given ID.
@@ -74,7 +131,7 @@ export async function generarPDF(idRV: string): Promise<jsPDF> {
         doc.setTextColor(255, 0, 0); // Red color for "No:"
         doc.text('No:', 185, 35);
         doc.setTextColor(0, 0, 0); // Black color for the folio number
-        doc.text(inspectionData.IdRevistaVehicular || 'N/A', 195, 35);
+        doc.text(truncateText(doc, inspectionData.IdRevistaVehicular, 30, 10, 20), 195, 35); // Max 20 chars, 30mm width
 
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
@@ -85,15 +142,20 @@ export async function generarPDF(idRV: string): Promise<jsPDF> {
             ? `${inspectionData.DiaInspeccion}/${inspectionData.MesInspeccion}/${inspectionData.AnioInspeccion}`
             : 'N/A';
         doc.text(`FECHA DE INSPECCIÓN: ${fechaInspeccion}`, 15, y);
-        doc.text(`NÚMERO DE AUTORIZACIÓN: ${inspectionData.IdConsesion || 'N/A'}`, 130, y);
+        // Apply truncateText to NUMERO DE AUTORIZACIÓN
+        doc.text(`NÚMERO DE AUTORIZACIÓN: ${truncateText(doc, inspectionData.IdConsesion, 60, 10, 20)}`, 130, y); // Max 20 chars, 60mm width
 
         y += 6;
-        doc.text(`PARA TRÁMITE DE: ${inspectionData.Tramite || 'N/A'}`, 15, y);
-        doc.text(`MUNICIPIO: ${inspectionData.Municipio || 'N/A'}`, 130, y);
-        
+        // Apply truncateText to PARA TRÁMITE DE
+        doc.text(`PARA TRÁMITE DE: ${truncateText(doc, inspectionData.Tramite, 80, 10, 20)}`, 15, y); // Max 20 chars, 80mm width
+        // Apply truncateText to MUNICIPIO
+        doc.text(`MUNICIPIO: ${truncateText(doc, inspectionData.Municipio, 60, 10, 20)}`, 130, y); // Max 20 chars, 60mm width
+
         y += 6;
-        doc.text(`PROPIETARIO: ${inspectionData.NombreCompletoNA || 'N/A'}`, 130, y);
-        doc.text(`TIPO DE SERVICIO (MODALIDAD): ${inspectionData.Modalidad || 'N/A'}`, 15, y);
+        // Apply truncateText to PROPIETARIO
+        doc.text(`PROPIETARIO: ${truncateText(doc, inspectionData.NombreCompletoNA, 60, 10, 20)}`, 130, y); // Max 20 chars, 60mm width
+        // Apply truncateText to TIPO DE SERVICIO (MODALIDAD)
+        doc.text(`TIPO DE SERVICIO (MODALIDAD): ${truncateText(doc, inspectionData.Modalidad, 80, 10, 20)}`, 15, y); // Max 20 chars, 80mm width
 
         // --- Vehicular Characteristics Section ---
         y += 10;
@@ -108,25 +170,25 @@ export async function generarPDF(idRV: string): Promise<jsPDF> {
         const col3X = 145;
 
         // Row 1
-        doc.text(`MARCA: ${inspectionData.Marca || 'N/A'}`, col1X, y);
-        doc.text(`No. DE MOTOR: ${inspectionData.NumeroMotor || 'N/A'}`, col2X, y);
-        doc.text(`No. DE SERIE: ${inspectionData.NumeroSerie || 'N/A'}`, col3X, y);
+        doc.text(`MARCA: ${truncateText(doc, inspectionData.Marca, 50, 10, 20)}`, col1X, y); // Max 20 chars, 50mm width
+        doc.text(`No. DE MOTOR: ${truncateText(doc, inspectionData.NumeroMotor, 60, 10, 20)}`, col2X, y); // Max 20 chars, 60mm width
+        doc.text(`No. DE SERIE: ${truncateText(doc, inspectionData.NumeroSerie, 60, 10, 20)}`, col3X, y); // Max 20 chars, 60mm width
         y += 6;
-        
+
         // Row 2
-        doc.text(`TIPO DE VEHÍCULO: ${inspectionData.TipoVehiculo || 'N/A'}`, col1X, y);
-        doc.text(`SUBMARCA: ${inspectionData.SubMarca || 'N/A'}`, col2X, y);
+        doc.text(`TIPO DE VEHÍCULO: ${truncateText(doc, inspectionData.TipoVehiculo, 50, 10, 20)}`, col1X, y); // Max 20 chars, 50mm width
+        doc.text(`SUBMARCA: ${truncateText(doc, inspectionData.SubMarca, 60, 10, 20)}`, col2X, y); // Max 20 chars, 60mm width
         doc.text(`IMAGEN CROMÁTICA: ${formatBoolean(inspectionData.ImagenCromaticaVer)}`, col3X, y);
         y += 6;
-        
+
         // Row 3
-        doc.text(`MODELO: ${inspectionData.Modelo || 'N/A'}`, col1X, y);
+        doc.text(`MODELO: ${truncateText(doc, String(inspectionData.Modelo), 50, 10, 20)}`, col1X, y); // Max 20 chars, 50mm width
         doc.text(`PLACA DELANTERA: ${formatBoolean(inspectionData.PlacaDelantera)}`, col2X, y);
         doc.text(`PLACA TRASERA: ${formatBoolean(inspectionData.PlacaTrasera)}`, col3X, y);
         y += 6;
 
         // Row 4
-        doc.text(`PLACAS ASIG.: ${inspectionData.PlacaAsignada || 'N/A'}`, col1X, y);
+        doc.text(`PLACAS ASIG.: ${truncateText(doc, inspectionData.PlacaAsignada, 50, 10, 20)}`, col1X, y); // Max 20 chars, 50mm width
         doc.text(`CALCOMANÍA DE VERIFICACIÓN: ${formatBoolean(inspectionData.CalcaVerificacionVer)}`, col2X, y);
         doc.text(`CALCOMANÍA DE LA TENENCIA: ${formatBoolean(inspectionData.CalcaTenenciaVer)}`, col3X, y);
         y += 6;
@@ -134,8 +196,8 @@ export async function generarPDF(idRV: string): Promise<jsPDF> {
         // --- Inspection Checklist Section ---
         y += 10;
         doc.setFontSize(9);
-        let positiveChecksCount = 0; // This variable is declared but not used for any output in the PDF, consider removing or using it.
-        const totalChecks = 24; // 8 rows * 3 columns - This variable is declared but not used for any output in the PDF, consider removing or using it.
+        let positiveChecksCount = 0;
+        const totalChecks = 24;
 
         const checklistItems = [
             ['PINTURA Y CARROCERÍA', 'PinturaCarroceriaVer', 'CLAXON', 'ClaxonVer', 'EXTINTOR', 'EstinguidorVer'],
@@ -170,31 +232,24 @@ export async function generarPDF(idRV: string): Promise<jsPDF> {
 
         // Insurance Information
         y += 2;
-        doc.text(`CIA. ASEGURADORA: ${inspectionData.ciaAseguradora || 'N/A'}`, 15, y);
-        doc.text(`NÚMERO DE PÓLIZA: ${inspectionData.NumeroPoliza || 'N/A'}`, 80, y);
+        doc.text(`CIA. ASEGURADORA: ${truncateText(doc, inspectionData.ciaAseguradora, 60, 10, 20)}`, 15, y); // Max 20 chars, 60mm width
+        doc.text(`NÚMERO DE PÓLIZA: ${truncateText(doc, inspectionData.NumeroPoliza, 50, 10, 20)}`, 80, y); // Max 20 chars, 50mm width
         doc.text(`VIGENCIA: ${inspectionData.FechaVencimiento ? new Date(inspectionData.FechaVencimiento).toLocaleDateString() : 'N/A'}`, 150, y);
 
-        // --- Ponderation Details Section (placed before Observations as per new order) ---
-        // Define X coordinates for the three columns
-
-        // --- Ponderation Details Section (placed before Observations as per new order) ---
-
-        // Row 1 of Ponderation
+        // --- Ponderation Details Section ---
         y += 8; // Add more space from the insurance info
-        doc.text(`MODELO: ${inspectionData.RangoAnio || 'N/A'}`, col1X, y);
+        doc.text(`MODELO: ${truncateText(doc, inspectionData.RangoAnio, 50, 10, 20)}`, col1X, y); // Max 20 chars, 50mm width
         doc.text(`TIENE AIRE ACONDICIONADO: ${formatBoolean(inspectionData.TieneAire)}`, col2X, y);
-        doc.text(`CAPACIDAD: ${inspectionData.Capacidad || 'N/A'}`, col3X, y);
+        doc.text(`CAPACIDAD: ${truncateText(doc, inspectionData.Capacidad, 50, 10, 20)}`, col3X, y); // Max 20 chars, 50mm width
 
-        // Row 2 of Ponderation
         y += 8;
-        doc.text(`TIPO DE BOLSA DE AIRE: ${inspectionData.TipoBolsa !== undefined ? inspectionData.TipoBolsa : 'N/A'}`, col1X, y);
-        doc.text(`TIPO: ${inspectionData.Tipo || 'N/A'}`, col2X, y);
-        doc.text(`TIPO DE FRENO: ${inspectionData.TipoFreno || 'N/A'}`, col3X, y);
+        doc.text(`TIPO DE BOLSA DE AIRE: ${truncateText(doc, inspectionData.TipoBolsa !== undefined ? inspectionData.TipoBolsa : 'N/A', 50, 10, 20)}`, col1X, y); // Max 20 chars, 50mm width
+        doc.text(`TIPO: ${truncateText(doc, inspectionData.Tipo, 50, 10, 20)}`, col2X, y); // Max 20 chars, 50mm width
+        doc.text(`TIPO DE FRENO: ${truncateText(doc, inspectionData.TipoFreno, 50, 10, 20)}`, col3X, y); // Max 20 chars, 50mm width
 
-        // Row 3 of Ponderation
         y += 8;
-        doc.text(`CANTIDAD DE CINTURONES: ${inspectionData.Cantidad || 'N/A'}`, col1X, y);
-        doc.text(`MATERIAL DE TAPICERÍA: ${inspectionData.Material || 'N/A'}`, 120, y);
+        doc.text(`CANTIDAD DE CINTURONES: ${truncateText(doc, String(inspectionData.Cantidad), 50, 10, 20)}`, col1X, y); // Max 20 chars, 50mm width
+        doc.text(`MATERIAL DE TAPICERÍA: ${truncateText(doc, inspectionData.Material, 50, 10, 20)}`, 120, y); // Max 20 chars, 50mm width
 
         // --- Observations and Approval Section ---
         y += 10; // Space after ponderation details
@@ -202,7 +257,7 @@ export async function generarPDF(idRV: string): Promise<jsPDF> {
         doc.text('OBSERVACIONES:', 15, y);
         doc.setFont('helvetica', 'normal');
         // Split text to fit within the column width for observations
-        const observationsText = doc.splitTextToSize(inspectionData.Observaciones || 'Sin observaciones.', 180);
+        const observationsText = doc.splitTextToSize(inspectionData.Observaciones || 'Sin observaciones.', 140); // Increased width for observations
         doc.text(observationsText, 50, y);
         // Adjust Y position based on the number of lines in observations
         y += (observationsText.length - 1) * doc.getLineHeight() / doc.internal.scaleFactor + 5;
@@ -220,9 +275,9 @@ export async function generarPDF(idRV: string): Promise<jsPDF> {
         y += 12;
         doc.setFontSize(10);
         doc.text('INSPECTOR', 45, y);
-        doc.text(inspectionData.Inspector || 'N/A', 30, y + 5);
+        doc.text(truncateText(doc, inspectionData.Inspector, 50, 10, 20), 30, y + 5); // Max 20 chars, 50mm width
         doc.text('INTERESADO', 140, y);
-        doc.text(inspectionData.NombreCompletoNA || 'N/A', 130, y + 5);
+        doc.text(truncateText(doc, inspectionData.NombreCompletoNA, 50, 10, 20), 130, y + 5); // Max 20 chars, 50mm width (using Propietario)
 
         // Signature lines
         doc.line(30, y + 15, 80, y + 15);
@@ -241,9 +296,8 @@ export async function generarPDF(idRV: string): Promise<jsPDF> {
 
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold'); // Keep bold for Score and Classification
-        doc.text(`PUNTUACIÓN OBTENIDA: ${inspectionData.Puntuacion !== undefined ? inspectionData.Puntuacion : 'N/A'}`, col1X, bottomPonderationY);
-        doc.text(`CLASIFICACIÓN: ${inspectionData.Clasificacion || 'N/A'}`, col2X, bottomPonderationY);
-        // No increment needed after this as the footer comes immediately after
+        doc.text(`PUNTUACIÓN OBTENIDA: ${truncateText(doc, String(inspectionData.Puntuacion), 40, 10, 20)}`, col1X, bottomPonderationY); // Max 20 chars, 40mm width
+        doc.text(`CLASIFICACIÓN: ${truncateText(doc, inspectionData.Clasificacion, 60, 10, 20)}`, col2X, bottomPonderationY); // Max 20 chars, 60mm width
 
         // --- Footer Section ---
         let footerY = doc.internal.pageSize.height - 20; // Fixed to 20mm from the bottom for the footer
