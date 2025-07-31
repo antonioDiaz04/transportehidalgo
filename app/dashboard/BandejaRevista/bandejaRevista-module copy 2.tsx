@@ -27,7 +27,7 @@ interface VehicleData {
   Placa: string;
   Propietario: string;
   IdTramite?: number;
-  Tramite?: number;
+  Tramite?: string;
   Modalidad: string;
   Municipio: string;
   FechaInspeccion: string;
@@ -534,7 +534,7 @@ export default function BandejaRevistaModule() {
                     <td className="px-3 py-2 text-sm text-gray-800">{item.IdRevistaVehicular}</td>
                     <td className="px-3 py-2 text-sm text-gray-800">{item.Folio || 0}</td>
                     <td className="px-3 py-2 text-sm text-gray-800">{item.IdConsesion}</td>
-                    <td className="px-3 py-2 text-sm text-gray-800 max-w-[100px] sm:max-w-[120px] overflow-hidden text-ellipsis">{item.Tramite || 'N/A'}</td>
+                    <td className="px-3 py-2 text-sm text-gray-800 max-w-[100px] sm:max-w-[120px] overflow-hidden text-ellipsis">{item.Tramite ||item.IdTramite || 'N/A'}</td>
                     <td className="px-3 py-2 text-sm text-gray-800">{item.Placa}</td>
                     <td className="px-3 py-2 text-sm text-gray-800 max-w-[120px] sm:max-w-[150px] overflow-hidden text-ellipsis">{item.Propietario}</td>
                     <td className="px-3 py-2 text-sm text-gray-800">{item.Modalidad}</td>

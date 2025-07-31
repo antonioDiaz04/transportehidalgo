@@ -696,7 +696,7 @@ export default function ExpedienteModule() {
               <Button
                 onClick={handleSearch}
                 className="rounded-lg bg-blue-500 hover:bg-blue-600 text-white"
-                disabled={isSearching || !seriePlaca.trim() || !folio.trim()}
+                disabled={isSearching || !seriePlaca.trim() && !folio.trim()}
               >
                 {isSearching ? "Buscando..." : "Buscar"}
               </Button>

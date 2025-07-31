@@ -226,7 +226,7 @@ export default function VehiculoModule() {
       // const [numSerie, setNumSerie] = useState('')
       // const [numMotor, setNumMotor] = useState('')
 
-      const { data } = await apiClient(`http://localhost:3000/api/vehiculo/buscar?${searchParams.toString()}`, {
+      const { data } = await apiClient(`/vehiculo/buscar?${searchParams.toString()}`, {
                  method:'GET',
 
         withCredentials: true
@@ -268,7 +268,7 @@ export default function VehiculoModule() {
         // Nueva consulta para obtener la información completa de la concesión por su ID
         if (expediente.idC) {
           try {
-            const detalle = await apiClient(`http://localhost:3000/api/concesion/${expediente.idC}`, {
+            const detalle = await apiClient(`/concesion/${expediente.idC}`, {
                         method:'GET',
               withCredentials: true
             });
@@ -281,6 +281,7 @@ export default function VehiculoModule() {
             console.log("Respuesta de la API 3:", detalleData);
             if (detalleData) {
               // consesion
+              
               if (detalleData.concesion.data) {
                 const dataC = detalleData.concesion.data
                 console.log(dataC)
@@ -670,10 +671,17 @@ export default function VehiculoModule() {
             </div>
           </div>
           <div className="mt-6 flex justify-end">
-            <Button
-              className="bg-blue-500 hover:bg-blue-600 text-white"
-              onClick={navigateToInspection}
-            >
+           <Button
+                         className="bg-blue-500 hover:bg-blue-600 text-white"
+                         onClick={() => {
+                           if (concessionData?.idC) {
+                             console.log("Sí hay idV:", concessionData.idC);
+                             router.push(`/dashboard/iv?idC=${concessionData.idC}`);
+                           } else {
+                             console.log("No hay idV");
+                           }
+                         }}
+                       >
               Realizar Inspección
             </Button>
           </div>
@@ -694,38 +702,38 @@ export default function VehiculoModule() {
 
         <CardContent className="p-6  space-y-6">
           {/* Sección de búsqueda */}
-          <div className="space-y-3">
+            <div className="space-y-3">
             <h2 className="text-lg font-medium text-gray-800">Datos de búsqueda</h2>
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end w-full">
               <div className="flex-1 w-full">
-                <label htmlFor="placa" className="block text-sm font-medium text-gray-700 mb-1">Placa</label>
-                <Input
-                  id="placa"
-                  placeholder="Placa"
-                  className="w-full"
-                  value={placa}
-                  onChange={(e) => setPlaca(e.target.value)}
-                />
+              <label htmlFor="placa" className="block text-sm font-medium text-gray-700 mb-1">Placa</label>
+              <Input
+                id="placa"
+                placeholder="Placa"
+                className="w-full"
+                value={placa}
+                onChange={(e) => setPlaca(e.target.value)}
+              />
               </div>
               <div className="flex-1 w-full">
-                <label htmlFor="numSerie" className="block text-sm font-medium text-gray-700 mb-1">Núm. de Serie</label>
-                <Input
-                  id="numSerie"
-                  placeholder="Núm. de Serie"
-                  className="w-full"
-                  value={numSerie}
-                  onChange={(e) => setNumSerie(e.target.value)}
-                />
+              <label htmlFor="numSerie" className="block text-sm font-medium text-gray-700 mb-1">Núm. de Serie</label>
+              <Input
+                id="numSerie"
+                placeholder="Núm. de Serie"
+                className="w-full"
+                value={numSerie}
+                onChange={(e) => setNumSerie(e.target.value)}
+              />
               </div>
               <div className="flex-1 w-full">
-                <label htmlFor="numMotor" className="block text-sm font-medium text-gray-700 mb-1">Núm. de Motor</label>
-                <Input
-                  id="numMotor"
-                  placeholder="Núm. de Motor"
-                  className="w-full"
-                  value={numMotor}
-                  onChange={(e) => setNumMotor(e.target.value)}
-                />
+              <label htmlFor="numMotor" className="block text-sm font-medium text-gray-700 mb-1">Núm. de Motor</label>
+              <Input
+                id="numMotor"
+                placeholder="Núm. de Motor"
+                className="w-full"
+                value={numMotor}
+                onChange={(e) => setNumMotor(e.target.value)}
+              />
               </div>
             </div>
 
@@ -736,7 +744,12 @@ export default function VehiculoModule() {
             >
               {isSearching ? "Buscando..." : "Buscar"}
             </Button>
-          </div>
+            {error && (
+              <div className="mt-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">
+              {error}
+              </div>
+            )}
+            </div>
 
           {/* Resultados o estado vacío */}
           {!selectedExpediente ? (
