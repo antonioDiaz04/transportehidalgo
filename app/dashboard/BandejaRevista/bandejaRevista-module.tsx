@@ -500,8 +500,8 @@ export default function BandejaRevistaModule() {
               <SelectValue placeholder="Estatus" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Registrado">Registrado</SelectItem>
-              <SelectItem value="Impreso">Impreso</SelectItem>
+              {/* <SelectItem value="Registrado">Registrado</SelectItem>
+              <SelectItem value="Impreso">Impreso</SelectItem> */}
               <SelectItem value="all">Todos</SelectItem>
             </SelectContent>
           </Select>
