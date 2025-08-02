@@ -1,8 +1,8 @@
-"use client"
+"use client" // This must be at the very top of the file
 
 import apiClient from "@/lib/apiClient"
 import type React from "react"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import Image from "next/image"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -13,1117 +13,1121 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
-  Trash2,
-  XCircle,
-  FileImage,
-  ClipboardCheck,
-  Lightbulb,
-  Car,
-  Wrench,
-  ShieldCheck,
-  CheckSquare,
-  ArrowLeft,
-  Upload,
-  Save,
-  Loader,
+    Trash2,
+    XCircle,
+    FileImage,
+    ClipboardCheck,
+    Lightbulb,
+    Car,
+    ShieldCheck,
+    ArrowLeft,
+    Upload,
+    Save,
+    Loader,
+    BadgeCheck,
+    TriangleAlert,
+    Award,
+    ClipboardList,
+    PlusCircle,
+    X,
+    Loader2,
 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
-import { Progress } from "@/components/ui/progress"
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
-interface SelectedImage {
-  id: string
-  file?: File
-  type: string
-  previewUrl: string
-  customName?: string
-  idImagenRevistaVehicular?: number
-}
+// Opciones para campos que son select y tienen SI:BIEN, SI:MAL, NO
+const generalSelectOptions = [
+    { value: "0", label: "Seleccione..." },
+    { value: "1", label: "SI:BIEN" },
+    { value: "2", label: "SI:MAL" },
+    { value: "3", label: "NO" },
+]
 
-interface ImageType {
-  value: string
-  label: string
+interface SelectedImage {
+    id: string
+    file?: File
+    type: string // This will be the string representation of the numeric ID
+    previewUrl: string
+    customName?: string
+    idImagenRevistaVehicular?: number
 }
 
 interface ConcesionarioData {
-  IdConcesion: number
-  Folio: string
-  TipoServicio: string
-  TipoPlaca: string
-  Mnemotecnia: string
-  Modalidad: string
-  MunicipioAutorizado: string
-  ClaseUnidad: string | null
-  VigenciaAnios: number | null
-  SeriePlacaActual: string
-  FechaExpedicion: string
-  Observaciones: string
-  IdVehiculoActual: string
-  Placa: string
-  Propietario: string
-  FolioVehiculo: string
+    IdConcesion: number
+    Folio: string
+    TipoServicio: string
+    TipoPlaca: string
+    Mnemotecnia: string
+    Modalidad: string
+    MunicipioAutorizado: string
+    ClaseUnidad: string | null
+    VigenciaAnios: number | null
+    SeriePlacaActual: string
+    FechaExpedicion: string
+    Observaciones: string
+    IdVehiculoActual: string
+    Placa: string
+    Propietario: string
+    FolioVehiculo: string
 }
 
 interface TramiteOption {
-  value: string
-  label: string
+    value: string
+    label: string
 }
 
+// Se elimina los campos que no existen en la API
 const initialInspectionData = {
-  placaDelantera: true,
-  placaTrasera: true,
-  calcaVerificacion: true,
-  calcaTenencia: true,
-  pinturaCarroceria: true,
-  estadoLlantas: true,
-  defensas: "2", // Cambiado a string para select
-  vidrios: "2", // Cambiado a string para select
-  limpiadores: "2", // Cambiado a string para select
-  espejos: "2", // Cambiado a string para select
-  llantaRefaccion: "2", // Cambiado a string para select
-  parabrisasMedallon: "2", // Cambiado a string para select
-  claxon: true,
-  luzBaja: true,
-  luzAlta: true,
-  cuartos: true,
-  direccionales: true,
-  intermitentes: true,
-  stop: true,
-  timbre: true,
-  estinguidor: true,
-  herramientas: true,
-  sistemaFrenado: true,
-  sistemaDireccion: true,
-  sistemaSuspension: true,
-  interiores: true,
-  botiquin: true,
-  cinturonSeguridad: true,
-  imagenCromatica: true,
+    // Checkbox (Casillas de Verificación)
+    placaDelantera: false,
+    placaTrasera: false,
+    calcaVerificacion: false,
+    calcaTenencia: false,
+    pinturaCarroceria: false,
+    estadoLlantas: false,
+    claxon: false,
+    luzBaja: false,
+    luzAlta: false,
+    cuartos: false,
+    direccionales: false,
+    intermitentes: false,
+    stop: false,
+    timbre: false,
+    estinguidor: false,
+    herramientas: false,
+    sistemaFrenado: false,
+    sistemaDireccion: false,
+    sistemaSuspension: false,
+    interiores: false,
+    botiquin: false,
+    cinturonSeguridad: false,
+    imagenCromatica: false,
+    aprobarRevistaVehicular: false,
+
+    // Select (Listas Desplegables)
+    defensas: "0",
+    vidrios: "0",
+    limpiadores: "0",
+    espejos: "0",
+    llantaRefaccion: "0",
+    parabrisasMedallon: "0",
+
+    // Características para el tipo de servicio (puntuación)
+    modeloVehiculo: "0",
+    tipoVehiculo: "0",
+    capacidadPasajeros: "0",
+    tiposFreno: "0",
+    cinturonesSeguridadTipo: "0",
+    tapiceriaAsientos: "0", // Se usa el nombre de la API
 }
 
-const fieldLabels: Record<keyof typeof initialInspectionData, string> = {
-  placaDelantera: "Placa Delantera",
-  placaTrasera: "Placa Trasera",
-  calcaVerificacion: "Calcomanía de Verificación",
-  calcaTenencia: "Calcomanía de Tenencia",
-  pinturaCarroceria: "Pintura y Carrocería",
-  estadoLlantas: "Estado de Llantas",
-  defensas: "Defensas",
-  vidrios: "Vidrios",
-  limpiadores: "Limpiaparabrisas",
-  espejos: "Espejos Laterales",
-  llantaRefaccion: "Llanta de Refacción",
-  parabrisasMedallon: "Parabrisas y Medallón",
-  claxon: "Claxon",
-  luzBaja: "Luz Baja",
-  luzAlta: "Luz Alta",
-  cuartos: "Luces de Cuartos",
-  direccionales: "Direccionales",
-  intermitentes: "Luces Intermitentes",
-  stop: "Luces de Stop",
-  timbre: "Timbre (si aplica)",
-  estinguidor: "estinguidor",
-  herramientas: "herramientas Básica",
-  sistemaFrenado: "Sistema de Frenado",
-  sistemaDireccion: "Sistema de Dirección",
-  sistemaSuspension: "Sistema de Suspensión",
-  interiores: "Interiores",
-  botiquin: "Botiquín de Primeros Auxilios",
-  cinturonSeguridad: "Cinturones de Seguridad",
-  imagenCromatica: "Imagen Cromática",
+// Define las interfaces para tipar los datos y evitar errores
+interface Option {
+    value: string
+    label: string
+    score?: number
 }
 
-// Campos que deben usar select en lugar de checkbox
-const selectFields = ["defensas", "vidrios", "limpiadores", "espejos", "llantaRefaccion", "parabrisasMedallon"]
+// Se eliminan los campos que no existen en la API
+interface SelectOptions {
+    capacidadPasajerosOptions: Option[]
+    modeloVehiculoOptions: Option[]
+    tipoVehiculoOptions: Option[]
+    tiposFrenoOptions: Option[]
+    cinturonesSeguridadTipoOptions: Option[]
+    tapiceriaAsientosOptions: Option[]
+    clasificacionOptions: Option[]
+}
 
-// Opciones para los campos select
-const selectOptions = [
-  { value: "2", label: "SI:BIEN" },
-  { value: "1", label: "SI:MAL" },
-  { value: "0", label: "NO" },
-]
-
-// Opciones por defecto para trámites
-const defaultTramiteOptions: TramiteOption[] = [
-  { value: "0", label: "Seleccione aquí" },
-  { value: "3", label: "Cambio de Vehículo" },
-  { value: "12", label: "Emplacamiento" },
-  { value: "26", label: "Cambio de Motor de Vehículo" },
-  { value: "39", label: "Pago de Derechos" },
-]
+const defaultSelects: SelectOptions = {
+    capacidadPasajerosOptions: [],
+    modeloVehiculoOptions: [],
+    tipoVehiculoOptions: [],
+    tiposFrenoOptions: [],
+    cinturonesSeguridadTipoOptions: [],
+    tapiceriaAsientosOptions: [],
+    clasificacionOptions: [],
+}
 
 export default function InspeccionRevistaVehicularForm() {
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const idConcesionParam = searchParams.get("idC")
-  const [inspectionData, setInspectionData] = useState(initialInspectionData)
-  const [selectedImages, setSelectedImages] = useState<SelectedImage[]>([])
-  const [observaciones, setObservaciones] = useState("")
-  const [aprobarRevistaVehicular, setAprobarRevistaVehicular] = useState(false)
-  const [selectedTramite, setSelectedTramite] = useState("")
-  const [tramiteOptions, setTramiteOptions] = useState<TramiteOption[]>(defaultTramiteOptions)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [fetchedImageTypes, setFetchedImageTypes] = useState<ImageType[]>([])
-  const { toast } = useToast()
-  const [imageToDelete, setImageToDelete] = useState<{ id: string; idImagenRevistaVehicular?: number } | null>(null)
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [isUploading, setIsUploading] = useState(false)
-  const [isSavingImages, setIsSavingImages] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [concesionarioData, setConcesionarioData] = useState<ConcesionarioData | null>(null)
-  const [isLoadingConcesion, setIsLoadingConcesion] = useState(false)
-  const [isLoadingTramites, setIsLoadingTramites] = useState(false)
+    const searchParams = useSearchParams()
+    const router = useRouter()
+    const idConcesionParam = searchParams.get("idC")
+    const [inspectionData, setInspectionData] = useState(initialInspectionData)
+    const [dynamicSelectOptions, setDynamicSelectOptions] = useState<SelectOptions>(defaultSelects)
+    const { toast } = useToast()
+    const [selectedImages, setSelectedImages] = useState<SelectedImage[]>([])
+    const [observaciones, setObservaciones] = useState("")
+    const [selectedTramite, setSelectedTramite] = useState("invalid-selection")
+    const [tramiteOptions, setTramiteOptions] = useState<TramiteOption[]>([])
+    const fileInputRef = useRef<HTMLInputElement>(null)
+    const [fetchedImageTypes, setFetchedImageTypes] = useState<any[]>([])
+    const [imageToDelete, setImageToDelete] = useState<{ id: string; idImagenRevistaVehicular?: number } | null>(null)
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
+    const [isUploading, setIsUploading] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [concesionarioData, setConcesionarioData] = useState<ConcesionarioData | null>(null)
+    const [isLoadingConcesion, setIsLoadingConcesion] = useState(false)
+    const [isLoadingTramites, setIsLoadingTramites] = useState(false)
+    const [isLoadingDynamicOptions, setIsLoadingDynamicOptions] = useState(false)
 
-  // Cargar trámites disponibles
-  useEffect(() => {
-    const fetchTramites = async () => {
-      setIsLoadingTramites(true)
-      try {
-        const response = await apiClient("/revista/tipos-tramite", {
-          method: "GET",
-          withCredentials: true,
-        })
+    // Estado para los diálogos de confirmación y resultados
+    const [confirmSave, setConfirmSave] = useState(false)
+    const [inspectionResultAlert, setInspectionResultAlert] = useState<{
+        isOpen: boolean
+        isRejected: boolean
+        classification: string
+        classificationId: number
+        score: number
+        totalPossibleScore: number
+    } | null>(null)
+    const [isScoringLogicModalOpen, setIsScoringLogicModalOpen] = useState(false)
+    const [checkAllEssential, setCheckAllEssential] = useState(false)
 
-        console.log("Respuesta de la API de trámites:", response.data)
-        if (response.data && Array.isArray(response.data)) {
-          const tramites = response.data.map((tramite: any) => ({
-            value: String(tramite.IdTramite),
-            label: tramite.Tramite,
-          }))
-          setTramiteOptions([{ value: "0", label: "Seleccione aquí" }, ...tramites])
-        } else {
-          // Si no hay datos o no se encontraron, usar opciones por defecto
-          setTramiteOptions(defaultTramiteOptions)
-          toast({
-            title: "Trámites cargados por defecto",
-            description: "No se pudieron cargar los trámites desde el servidor. Se usarán las opciones por defecto.",
-            variant: "default",
-          })
+    // Define el esquema de puntuación dinámicamente con las opciones cargadas
+    const scoringSchema = useMemo(() => {
+        return {
+            essential: [
+                { key: "placaDelantera", label: "Placa Delantera", type: "checkbox" as const },
+                { key: "placaTrasera", label: "Placa Trasera", type: "checkbox" as const },
+                { key: "calcaVerificacion", label: "Calcomanía de Verificación", type: "checkbox" as const },
+                { key: "calcaTenencia", label: "Calcomanía de Tenencia", type: "checkbox" as const },
+                { key: "pinturaCarroceria", label: "Pintura y Carrocería", type: "checkbox" as const },
+                { key: "estadoLlantas", label: "Estado de Llantas", type: "checkbox" as const },
+                { key: "claxon", label: "Claxon", type: "checkbox" as const },
+                { key: "luzBaja", label: "Luz Baja", type: "checkbox" as const },
+                { key: "luzAlta", label: "Luz Alta", type: "checkbox" as const },
+                { key: "cuartos", label: "Luces de Cuartos", type: "checkbox" as const },
+                { key: "direccionales", label: "Direccionales", type: "checkbox" as const },
+                { key: "intermitentes", label: "Luces Intermitentes", type: "checkbox" as const },
+                { key: "stop", label: "Luces de Stop", type: "checkbox" as const },
+                { key: "timbre", label: "Timbre (si aplica)", type: "checkbox" as const },
+                { key: "estinguidor", label: "Extinguidor", type: "checkbox" as const },
+                { key: "herramientas", label: "Herramientas Básicas", type: "checkbox" as const },
+                { key: "sistemaFrenado", label: "Sistema de Frenado", type: "checkbox" as const },
+                { key: "sistemaDireccion", label: "Sistema de Dirección", type: "checkbox" as const },
+                { key: "sistemaSuspension", label: "Sistema de Suspensión", type: "checkbox" as const },
+                { key: "interiores", label: "Interiores", type: "checkbox" as const },
+                { key: "botiquin", label: "Botiquín de Primeros Auxilios", type: "checkbox" as const },
+                { key: "cinturonSeguridad", label: "Cinturones de Seguridad", type: "checkbox" as const },
+                { key: "imagenCromatica", label: "Imagen Cromática", type: "checkbox" as const },
+                { key: "defensas", label: "Defensas", type: "select-essential" as const, options: generalSelectOptions },
+                { key: "vidrios", label: "Vidrios", type: "select-essential" as const, options: generalSelectOptions },
+                { key: "limpiadores", label: "Limpiaparabrisas", type: "select-essential" as const, options: generalSelectOptions },
+                { key: "espejos", label: "Espejos Laterales", type: "select-essential" as const, options: generalSelectOptions },
+                { key: "llantaRefaccion", label: "Llanta de Refacción", type: "select-essential" as const, options: generalSelectOptions },
+                { key: "parabrisasMedallon", label: "Parabrisas y Medallón", type: "select-essential" as const, options: generalSelectOptions },
+            ],
+            // Los campos puntuados coinciden ahora con la API
+            scored: [
+                { key: "modeloVehiculo", label: "Modelo del Vehículo", type: "select" as const, options: dynamicSelectOptions.modeloVehiculoOptions },
+                { key: "tipoVehiculo", label: "Tipo de Vehículo", type: "select" as const, options: dynamicSelectOptions.tipoVehiculoOptions },
+                { key: "capacidadPasajeros", label: "Capacidad de Pasajeros", type: "select" as const, options: dynamicSelectOptions.capacidadPasajerosOptions },
+                { key: "tiposFreno", label: "Tipos de Freno", type: "select" as const, options: dynamicSelectOptions.tiposFrenoOptions },
+                { key: "cinturonesSeguridadTipo", label: "Cinturones de Seguridad (Tipo)", type: "select" as const, options: dynamicSelectOptions.cinturonesSeguridadTipoOptions },
+                { key: "tapiceriaAsientos", label: "Tapicería de Asientos", type: "select" as const, options: dynamicSelectOptions.tapiceriaAsientosOptions },
+            ],
         }
-      } catch (error) {
-        console.error("Error fetching tramites:", error)
-        // Si hay error, usar opciones por defecto
-        setTramiteOptions(defaultTramiteOptions)
-        toast({
-          title: "Trámites cargados por defecto",
-          description: "No se pudieron cargar los trámites desde el servidor. Se usarán las opciones por defecto.",
-          variant: "default",
-        })
-      } finally {
-        setIsLoadingTramites(false)
-      }
-    }
+    }, [dynamicSelectOptions])
 
-    fetchTramites()
-  }, [toast])
+    // Lógica de cálculo de puntuación y clasificación con useMemo
+    const { isRejected, classification, classificationId, score, totalPossibleScore } = useMemo(() => {
+        let currentScore = 0
+        let vehicleRejected = false
+        // La puntuación máxima posible es 6 campos * 3 puntos/campo = 18
+        const maxPossibleScore = 18
 
-  // Nuevo useEffect para cargar datos del concesionario automáticamente desde la URL
-  useEffect(() => {
-    const fetchConcesionarioData = async () => {
-      if (idConcesionParam) {
-        setIsLoadingConcesion(true)
-        try {
-          const { data } = await apiClient(`/concesion/autorizacion/${idConcesionParam}`, {
-            method: "GET",
-            withCredentials: true,
-          })
-          console.log("Respuesta de la API de concesionario/autorización:", data)
-          if (data) {
-            const apiData = data
-            setConcesionarioData({
-              IdConcesion: apiData.IdConcesion,
-              Folio: apiData.Folio,
-              TipoServicio: apiData.TipoServicio,
-              TipoPlaca: apiData.TipoPlaca,
-              Mnemotecnia: apiData.Mnemotecnia,
-              Modalidad: apiData.Modalidad,
-              MunicipioAutorizado: apiData.MunicipioAutorizado,
-              ClaseUnidad: apiData.ClaseUnidad,
-              VigenciaAnios: apiData.VigenciaAnios,
-              SeriePlacaActual: apiData.SeriePlacaActual,
-              FechaExpedicion: apiData.FechaExpedicion,
-              Observaciones: apiData.Observaciones,
-              IdVehiculoActual: apiData.IdVehiculoActual,
-              Placa: apiData.SeriePlacaActual,
-              Propietario: apiData.IdConcesionarioActual || apiData.IdPropietario,
-              FolioVehiculo: apiData.Folio,
-            })
-            toast({
-              title: "Concesionario y Vehículo encontrados",
-              description: `Datos cargados para el ID de Concesión: ${idConcesionParam}`,
-            })
-          } else {
-            setConcesionarioData(null)
-            toast({
-              title: "No encontrado",
-              description: `No se encontraron datos para el ID de Concesión ${idConcesionParam}.`,
-              variant: "default",
-            })
-          }
-        } catch (err: any) {
-          console.error("Error al cargar concesionario/autorización:", err)
-          setConcesionarioData(null)
-          toast({
-            title: "Error de carga",
-            description: `Ocurrió un error al cargar los datos: ${err.response?.data?.error || err.message}`,
-            variant: "destructive",
-          })
-        } finally {
-          setIsLoadingConcesion(false)
-        }
-      } else {
-        setConcesionarioData(null)
-        toast({
-          title: "Advertencia",
-          description: "No se ha proporcionado un ID de Concesión en la URL. Ejemplo: `/tu-ruta?idC=123`",
-          variant: "default",
-        })
-      }
-    }
-
-    fetchConcesionarioData()
-  }, [idConcesionParam, toast])
-
-  // Efecto para cargar los tipos de imagen disponibles
-  useEffect(() => {
-    const fetchImageTypes = async () => {
-      try {
-        const response = await apiClient("/revista/tipos-imagen", {
-          method: "GET",
-          withCredentials: true,
-        })
-        const typesArray = response.data
-        if (!Array.isArray(typesArray)) {
-          console.error(
-            "Error: Image types response is not an array or does not contain a 'data' property that is an array.",
-            response.data,
-          )
-          setFetchedImageTypes([])
-          toast({
-            title: "Error al cargar tipos de imagen",
-            description: "Ocurrió un error al cargar los tipos de imagen. La lista estará vacía.",
-            variant: "destructive",
-          })
-          return
-        }
-        const types = typesArray.map((type: any) => ({
-          value: String(type.IdTipoImagen),
-          label: type.TipoImagen,
-        }))
-        setFetchedImageTypes(types)
-      } catch (error) {
-        console.error("Error fetching image types:", error)
-        toast({
-          title: "Error al cargar tipos de imagen",
-          description: "Ocurrió un error al cargar los tipos de imagen. La lista estará vacía.",
-          variant: "destructive",
-        })
-        setFetchedImageTypes([])
-      }
-    }
-
-    fetchImageTypes()
-  }, [toast])
-
-  // Limpieza de URLs de objetos cuando las imágenes seleccionadas cambian
-  useEffect(() => {
-    return () => {
-      selectedImages.forEach((img) => {
-        if (img.file && img.previewUrl) {
-          URL.revokeObjectURL(img.previewUrl)
-        }
-      })
-    }
-  }, [selectedImages])
-
-  const toggleField = (field: keyof typeof initialInspectionData) => {
-    if (selectFields.includes(field)) return // No permitir toggle en campos select
-    setInspectionData((prev) => ({ ...prev, [field]: !prev[field] }))
-  }
-
-  const handleSelectChange = (field: keyof typeof initialInspectionData, value: string) => {
-    setInspectionData((prev) => ({ ...prev, [field]: value }))
-  }
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files
-    if (files && files.length > 0) {
-      const newImages: SelectedImage[] = Array.from(files).map((file) => ({
-        id: `${file.name}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-        file: file,
-        type: "",
-        previewUrl: URL.createObjectURL(file),
-      }))
-      setSelectedImages((prev) => [...prev, ...newImages])
-      toast({
-        title: "Imágenes seleccionadas",
-        description: `${newImages.length} imagen(es) seleccionada(s).`,
-      })
-    }
-    if (fileInputRef.current) fileInputRef.current.value = ""
-  }
-
-  const handleTypeChange = (id: string, newTypeValue: string) => {
-    setSelectedImages((prev) =>
-      prev.map((img) => {
-        if (img.id === id) {
-          const selectedTypeLabel = fetchedImageTypes.find((t) => t.value === newTypeValue)?.label || newTypeValue
-          let extension = ""
-          if (img.file?.name) {
-            extension = img.file.name.split(".").pop() || ""
-          } else if (img.previewUrl.startsWith("data:image/jpeg")) {
-            extension = "jpg"
-          } else if (img.previewUrl.startsWith("data:image/png")) {
-            extension = "png"
-          }
-          const safeType = selectedTypeLabel.replace(/\s+/g, "_").toLowerCase()
-          const customName = `inspeccion_${safeType}_${Date.now()}${extension ? "." + extension : ""}`
-          return { ...img, type: newTypeValue, customName }
-        }
-        return img
-      }),
-    )
-  }
-
-  const calculatePercentage = () => {
-    const total = Object.keys(initialInspectionData).length
-    const checked = Object.values(inspectionData).filter(
-      (val) => val === true || (typeof val === "string" && val !== ""),
-    ).length
-    return Math.round((checked / total) * 100)
-  }
-
-  const getProgressBarColor = (percentage: number) => {
-    if (percentage < 30) return "bg-red-500"
-    if (percentage < 70) return "bg-yellow-500"
-    return "bg-green-500"
-  }
-
-  const handleRemoveImage = async (idImagen: string, idImagenRevistaVehicular?: number) => {
-    console.log("--- Starting handleRemoveImage Process ---")
-    console.log("Received IdImagen (local):", idImagen)
-    console.log("Received idImagenRevistaVehicular (from DB):", idImagenRevistaVehicular)
-    const imageToRemove = selectedImages.find((img) =>
-      img.idImagenRevistaVehicular ? img.idImagenRevistaVehicular === idImagenRevistaVehicular : img.id === idImagen,
-    )
-    if (imageToRemove?.file && imageToRemove.previewUrl) {
-      URL.revokeObjectURL(imageToRemove.previewUrl)
-    }
-    setImageToDelete({
-      id: idImagen,
-      idImagenRevistaVehicular: idImagenRevistaVehicular || imageToRemove?.idImagenRevistaVehicular,
-    })
-    setIsDeleteModalOpen(true)
-  }
-
-  const confirmDeleteImage = async () => {
-    setIsDeleting(true)
-    console.log("--- Starting confirmDeleteImage Process ---")
-    console.log("Current imageToDelete state:", imageToDelete)
-    if (!imageToDelete) {
-      toast({
-        title: "Error al eliminar",
-        description: "No se ha seleccionado ninguna imagen para eliminar",
-        variant: "destructive",
-      })
-      setIsDeleting(false)
-      return
-    }
-    try {
-      if (imageToDelete.idImagenRevistaVehicular) {
-        await apiClient(`/revista/imagen/${imageToDelete.idImagenRevistaVehicular}`, {
-          method: "DELETE",
-          withCredentials: true,
-        })
-        toast({
-          title: "Imagen eliminada",
-          description: "Imagen eliminada del servidor y localmente.",
-        })
-      } else {
-        toast({
-          title: "Imagen eliminada",
-          description: "Imagen eliminada localmente (no estaba en el servidor).",
-        })
-      }
-      setSelectedImages((prev) =>
-        prev.filter((img) =>
-          imageToDelete.idImagenRevistaVehicular
-            ? img.idImagenRevistaVehicular !== imageToDelete.idImagenRevistaVehicular
-            : img.id !== imageToDelete.id,
-        ),
-      )
-    } catch (error: any) {
-      console.error("Error deleting image:", error)
-      toast({
-        title: "Error al eliminar imagen",
-        description: `Error: ${error.response?.data?.error || error.message}`,
-        variant: "destructive",
-      })
-    } finally {
-      setIsDeleteModalOpen(false)
-      setImageToDelete(null)
-      setIsDeleting(false)
-    }
-  }
-
-  const cancelDeleteImage = () => {
-    setIsDeleteModalOpen(false)
-    setImageToDelete(null)
-  }
-
-  const handleClearAllLocalImages = () => {
-    selectedImages.forEach((img) => {
-      if (img.file) URL.revokeObjectURL(img.previewUrl)
-    })
-    setSelectedImages((prev) => prev.filter((img) => img.idImagenRevistaVehicular !== undefined))
-    if (fileInputRef.current) fileInputRef.current.value = ""
-    toast({
-      title: "Imágenes vaciadas localmente",
-      description:
-        "Las imágenes nuevas han sido eliminadas de la vista previa. Las imágenes ya guardadas en el servidor *no* se borran con este botón.",
-      variant: "default",
-    })
-  }
-
-  const handleGoBack = () => {
-    router.back()
-  }
-
-  const uploadNewImages = async (targetIdRV: number) => {
-    setIsUploading(true);
-    const newImagesToUpload = selectedImages.filter(img => img.file && img.idImagenRevistaVehicular === undefined);
-
-    if (newImagesToUpload.length === 0) {
-      setIsUploading(false);
-      return { success: true, message: "No hay imágenes nuevas para subir." };
-    }
-
-    const uploadPromises = newImagesToUpload.map(async (img) => {
-      if (!img.file || !img.type) {
-        console.warn(`Skipping image upload: missing file or type for ID ${img.id}`);
-        toast({
-          title: "Imagen no subida",
-          description: `Falta tipo o archivo para ${img.customName || img.file?.name || 'una imagen'}.`,
-          variant: "destructive",
-        });
-        return { success: false, id: img.id, message: `Missing data for image ${img.id}` };
-      }
-
-      const formData = new FormData();
-      // Se ajustó el nombre del archivo para usar el customName (que incluye el tipo y timestamp)
-      // o el nombre original del archivo si customName no está disponible.
-      formData.append('imagen', img.file, img.customName || img.file.name);
-      formData.append('idRV', String(targetIdRV));
-      formData.append('tipoImagen', img.type);
-      console.log(formData)
-      try {
-        const uploadResponse = await apiClient('/revista/imagen', {
-          method: 'POST',
-          data: formData,
-          withCredentials: true,
-        });
-        console.log(uploadResponse)
-        // CORRECCIÓN: Acceder directamente a idImagen, ya que apiClient ya devuelve response.data
-        return { success: true, id: img.id, backendId: uploadResponse.idImagen };
-      } catch (uploadError: any) {
-        console.error(`Error uploading image ${img.customName || img.file.name}:`, uploadError);
-        toast({
-          title: "Error al subir imagen",
-          description: `No se pudo subir ${img.customName || img.file?.name}: ${uploadError.response?.data?.error || uploadError.message}`,
-          variant: "destructive",
-        });
-        return { success: false, id: img.id, message: `Upload failed for ${img.customName || img.file.name}: ${uploadError.response?.data?.error || uploadError.message}` };
-      }
-    });
-
-    const results = await Promise.all(uploadPromises);
-    const allSucceeded = results.every(r => r.success);
-
-    if (allSucceeded) {
-      setSelectedImages(prev => prev.map(img => {
-        const result = results.find(r => r.id === img.id && r.success);
-        return result && result.backendId ? { ...img, idImagenRevistaVehicular: result.backendId } : img;
-      }));
-      setIsUploading(false);
-      return { success: true, message: "Todas las imágenes nuevas subidas correctamente." };
-    } else {
-      const failedCount = results.filter(r => !r.success).length;
-      setIsUploading(false);
-      return { success: false, message: `${failedCount} imagen(es) fallaron al subir.` };
-    }
-  };
-
-  const calculatePonderacion = () => {
-    const selectFieldsCount = selectFields.length
-    const siBienCount = selectFields.filter(
-      (field) => inspectionData[field as keyof typeof initialInspectionData] === "2",
-    ).length
-
-    const percentage = Math.round((siBienCount / selectFieldsCount) * 100)
-
-    if (percentage < 35) {
-      return {
-        category: "DEFICIENTE",
-        percentage,
-        color: "bg-red-500",
-        textColor: "text-white",
-        siBienCount,
-        totalSelectFields: selectFieldsCount,
-      }
-    } else if (percentage <= 70) {
-      return {
-        category: "REGULAR",
-        percentage,
-        color: "bg-yellow-500",
-        textColor: "text-black",
-        siBienCount,
-        totalSelectFields: selectFieldsCount,
-      }
-    } else {
-      return {
-        category: "PRIME",
-        percentage,
-        color: "bg-green-500",
-        textColor: "text-white",
-        siBienCount,
-        totalSelectFields: selectFieldsCount,
-      }
-    }
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    if (!concesionarioData) {
-      toast({
-        title: "Error de datos",
-        description:
-          "Los datos del concesionario no se han cargado. Asegúrate de que el ID de concesión en la URL sea válido.",
-        variant: "destructive",
-      })
-      setIsSubmitting(false)
-      return
-    }
-
-    if (!selectedTramite || selectedTramite === "0") {
-      toast({
-        title: "Error de validación",
-        description: "Por favor, selecciona un trámite antes de enviar el formulario.",
-        variant: "destructive",
-      })
-      setIsSubmitting(false)
-      return
-    }
-
-    if (
-      !concesionarioData.IdVehiculoActual ||
-      !concesionarioData.Placa ||
-      !concesionarioData.Propietario ||
-      !concesionarioData.FolioVehiculo
-    ) {
-      toast({
-        title: "Error de datos del vehículo",
-        description:
-          "Los datos del vehículo (ID, Placa, Propietario, Folio de Expediente) no se obtuvieron correctamente del concesionario. Por favor, verifica la respuesta del API.",
-        variant: "destructive",
-      })
-      setIsSubmitting(false)
-      return
-    }
-
-    const newImagesWithoutType = selectedImages.filter(
-      (img) => img.file && img.idImagenRevistaVehicular === undefined && img.type === "",
-    )
-    if (newImagesWithoutType.length > 0) {
-      toast({
-        title: "Error de validación",
-        description: "Por favor, selecciona un tipo para CADA imagen nueva antes de enviar el formulario.",
-        variant: "destructive",
-      })
-      setIsSubmitting(false)
-      return
-    }
-
-    try {
-      const payload = {
-        idConcesion: concesionarioData.IdConcesion,
-        idPropietario: Number.parseInt(concesionarioData.Propietario),
-        idTramite: selectedTramite === "0" ? 1 : Number.parseInt(selectedTramite),
-        idVehiculo: Number.parseInt(concesionarioData.IdVehiculoActual),
-        placa: concesionarioData.Placa,
-        propietario: concesionarioData.Propietario,
-        ...Object.keys(initialInspectionData).reduce(
-          (acc, key) => {
-            const apiName = key + "Ver"
-            const value = inspectionData[key as keyof typeof initialInspectionData]
-            if (selectFields.includes(key)) {
-              acc[apiName] = Number.parseInt(value as string)
-            } else {
-              acc[apiName] = value ? 1 : 0
+        // Función para normalizar los IDs de la API a valores de 1, 2 o 3
+        const getNormalizedScore = (id: number) => {
+            // Asumiendo que los IDs 1, 2, 3 son puntajes "malos", y 4, 5, 6 son puntajes "buenos"
+            if (id <= 3) {
+                // Aquí podrías definir otra lógica si los IDs bajos tienen puntos
+                return id;
+            } else if (id >= 4) {
+                return id - 3;
             }
-            return acc
-          },
-          {} as Record<string, number | boolean>,
-        ),
-        observaciones: observaciones,
-        aprobado: aprobarRevistaVehicular ? 1 : 0,
-        folio: concesionarioData.FolioVehiculo,
-      }
+            return 0; // Por defecto
+        };
 
-      console.log("Payload to send:", payload)
-      const response = await apiClient("/revista", {
-        data: payload,
-        method: 'POST',
-        withCredentials: true,
-      })
-      console.log("Response from API:", response)
-      // CORRECCIÓN: Acceder directamente a idRV, ya que apiClient ya devuelve response.data
-      if (response.success) { // Asumiendo que response.success es una propiedad directamente del objeto de respuesta
-        const savedIdRV = response.idRV // <--- CORRECCIÓN aquí también
-        toast({
-          title: "Inspección guardada",
-          description: `Inspección del vehículo ID ${concesionarioData.IdVehiculoActual} guardada con éxito. ID de Revista: ${savedIdRV}`,
-        })
 
-        const uploadResult = await uploadNewImages(savedIdRV)
-        if (uploadResult.success) {
-          toast({
-            title: "Imágenes subidas",
-            description: "Todas las imágenes nuevas se subieron correctamente.",
-          })
-          setInspectionData(initialInspectionData)
-          setObservaciones("")
-          setAprobarRevistaVehicular(false)
-          setSelectedImages([])
-          setConcesionarioData(null)
-          setSelectedTramite("")
-          router.push(`/dashboard`)
-        } else {
-          toast({
-            title: "Advertencia",
-            description: `Inspección guardada, pero ${uploadResult.message}.`,
-            variant: "destructive",
-          })
+        // 1. Verificar Campos Esenciales para el rechazo
+        for (const field of scoringSchema.essential) {
+            const value = inspectionData[field.key as keyof typeof initialInspectionData]
+            if (field.type === "checkbox") {
+                if (value === false) {
+                    vehicleRejected = true
+                    break
+                }
+            } else if (field.type === "select-essential") {
+                if (value === "0" || value === "2" || value === "3") {
+                    vehicleRejected = true
+                    break
+                }
+            }
         }
-      } else {
-        toast({
-          title: "Error al guardar inspección",
-          description: `Ocurrió un error: ${response.error || "Error desconocido"}`, // <--- CORRECCIÓN aquí también
-          variant: "destructive",
-        })
-      }
-    } catch (error: any) {
-      console.error("Error submitting inspection:", error)
-      toast({
-        title: "Error al enviar inspección",
-        description: `Ocurrió un error: ${error.response?.data?.error || error.message}`,
-        variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
+
+        // 2. Calcular la Puntuación para los campos de "Tipo de Servicio"
+        if (!vehicleRejected) {
+            for (const field of scoringSchema.scored) {
+                const value = inspectionData[field.key as keyof typeof initialInspectionData];
+                if (field.type === "select" && typeof value === "string" && value !== "0") {
+                    const idAsNumber = parseInt(value, 10);
+                    // Usa la función de normalización para obtener el puntaje
+                    const scoreValue = getNormalizedScore(idAsNumber);
+                    currentScore += scoreValue;
+                }
+            }
+        }
+
+        // 3. Determinar la Clasificación (TEXTO y ID)
+        let vehicleClassification = "N/A"
+        let vehicleClassificationId = 0
+        if (vehicleRejected) {
+            vehicleClassification = "RECHAZADO"
+        } else {
+            const allScoredFieldsSelected = scoringSchema.scored.every(
+                (field) => inspectionData[field.key as keyof typeof initialInspectionData] !== "0",
+            )
+            if (!allScoredFieldsSelected) {
+                vehicleClassification = "PENDIENTE DE CLASIFICAR"
+            } else {
+                // Lógica de clasificación usando el puntaje total
+                if (currentScore < 9) {
+                    vehicleClassification = "ESCENCIAL"
+                    vehicleClassificationId = 1
+                } else if (currentScore > 9 && currentScore < 18) {
+                    vehicleClassification = "SELECTO"
+                    vehicleClassificationId = 2
+                } else if (currentScore >= 18) { // Regla ajustada para PRIME
+                    vehicleClassification = "PRIME"
+                    vehicleClassificationId = 3
+                } else {
+                    vehicleClassification = "NO CLASIFICADO"
+                    vehicleClassificationId = 0
+                }
+            }
+        }
+        return {
+            isRejected: vehicleRejected,
+            classification: vehicleClassification,
+            classificationId: vehicleClassificationId,
+            score: currentScore,
+            totalPossibleScore: maxPossibleScore,
+        }
+    }, [inspectionData, scoringSchema])
+
+    // --- Efectos de Carga de Datos ---
+    useEffect(() => {
+        const fetchTramites = async () => {
+            setIsLoadingTramites(true)
+            try {
+                const response = await apiClient("/revista/tipos-tramite", {
+                    method: "GET",
+                    withCredentials: true,
+                })
+                console.log("Respuesta de la API de trámites:", response.data)
+                if (response.data && Array.isArray(response.data)) {
+                    const tramites = response.data
+                        .filter(
+                            (tramite: any) =>
+                                tramite.IdTramite !== null && tramite.IdTramite !== undefined && String(tramite.IdTramite) !== "",
+                        )
+                        .map((tramite: any) => ({
+                            value: String(tramite.IdTramite),
+                            label: tramite.Tramite,
+                        }))
+                    setTramiteOptions([{ value: "invalid-selection", label: "Seleccione aquí" }, ...tramites])
+                } else {
+                    console.error("Error: La respuesta de trámites no es un array válido.", response.data)
+                    setTramiteOptions([{ value: "invalid-selection", label: "Seleccione aquí" }])
+                }
+            }
+            catch (error: any) {
+                console.error("Error al cargar trámites:", error)
+                setTramiteOptions([{ value: "invalid-selection", label: "Seleccione aquí" }])
+                toast({
+                    title: "Error al cargar trámites",
+                    description: `Ocurrió un error al cargar los trámites: ${error.response?.data?.error || error.message}`,
+                    variant: "destructive",
+                })
+            } finally {
+                setIsLoadingTramites(false)
+            }
+        }
+        fetchTramites()
+    }, [toast])
+
+
+    useEffect(() => {
+        const fetchConcesionarioData = async () => {
+            if (idConcesionParam) {
+                setIsLoadingConcesion(true)
+                try {
+                    const { data } = await apiClient(`/concesion/autorizacion/${idConcesionParam}`, {
+                        method: "GET",
+                        withCredentials: true,
+                    })
+                    console.log("Respuesta de la API de concesionario/autorización:", data)
+                    if (data) {
+                        const apiData = data
+                        setConcesionarioData({
+                            IdConcesion: apiData.IdConcesion,
+                            Folio: apiData.Folio,
+                            TipoServicio: apiData.TipoServicio,
+                            TipoPlaca: apiData.TipoPlaca,
+                            Mnemotecnia: apiData.Mnemotecnia,
+                            Modalidad: apiData.Modalidad,
+                            MunicipioAutorizado: apiData.MunicipioAutorizado,
+                            ClaseUnidad: apiData.ClaseUnidad,
+                            VigenciaAnios: apiData.VigenciaAnios,
+                            SeriePlacaActual: apiData.SeriePlacaActual,
+                            FechaExpedicion: apiData.FechaExpedicion,
+                            Observaciones: apiData.Observaciones,
+                            IdVehiculoActual: apiData.IdVehiculoActual,
+                            Placa: apiData.SeriePlacaActual,
+                            Propietario: apiData.IdConcesionarioActual || apiData.IdPropietario,
+                            FolioVehiculo: apiData.Folio,
+                        })
+                        toast({
+                            title: "Concesionario y Vehículo encontrados",
+                            description: `Datos cargados para el ID de Concesión: ${idConcesionParam}`,
+                        })
+                    } else {
+                        setConcesionarioData(null)
+                        toast({
+                            title: "No encontrado",
+                            description: `No se encontraron datos para el ID de Concesión ${idConcesionParam}.`,
+                            variant: "default",
+                        })
+                    }
+                } catch (err: any) {
+                    console.error("Error al cargar concesionario/autorización:", err)
+                    setConcesionarioData(null)
+                    toast({
+                        title: "Error de carga",
+                        description: `Ocurrió un error al cargar los datos: ${err.response?.data?.error || err.message}`,
+                        variant: "destructive",
+                    })
+                } finally {
+                    setIsLoadingConcesion(false)
+                }
+            } else {
+                setConcesionarioData(null)
+                toast({
+                    title: "Advertencia",
+                    description: "No se ha proporcionado un ID de Concesión en la URL. Ejemplo: `/tu-ruta?idC=123`",
+                    variant: "default",
+                })
+            }
+        }
+        fetchConcesionarioData()
+    }, [idConcesionParam, toast])
+
+    // CORRECCIÓN: Este es el useEffect que carga las opciones. Se ajustó para coincidir con la API.
+    useEffect(() => {
+        const fetchCamposSeleccionPuntuacion = async () => {
+            setIsLoadingDynamicOptions(true);
+            try {
+                const { data } = await apiClient(`/vehiculo/datos/puntuacion`, {
+                    method: "GET",
+                    withCredentials: true,
+                });
+                console.log("Respuesta de la API de puntuación:", data);
+
+                if (data) {
+                    const mappedOptions: SelectOptions = {
+                        capacidadPasajerosOptions: data.CapacidadPasajeros.map((item: any) => ({
+                            value: String(item.CapacidadId),
+                            label: item.Capacidad,
+                        })),
+                        cinturonesSeguridadTipoOptions: data.CinturonesSeguridad.map((item: any) => ({
+                            value: String(item.CinturonId),
+                            label: item.Cantidad,
+                        })),
+                        modeloVehiculoOptions: data.ModeloVehiculo.map((item: any) => ({
+                            value: String(item.ModeloId),
+                            label: item.RangoAnio,
+                        })),
+                        tapiceriaAsientosOptions: data.TapiceriaAsientos.map((item: any) => ({
+                            value: String(item.TapiceriaId),
+                            label: item.Material,
+                        })),
+                        tiposFrenoOptions: data.TiposFreno.map((item: any) => ({
+                            value: String(item.FrenoId),
+                            label: item.TipoFreno,
+                        })),
+                        tipoVehiculoOptions: data.TipoVehiculo.map((item: any) => ({
+                            value: String(item.TipoId),
+                            label: item.Tipo,
+                        })),
+                        clasificacionOptions: data.Clasificacion.map((item: any) => ({
+                            value: String(item.ClasificacionId),
+                            label: item.Clasificacion,
+                        })),
+                    };
+                    setDynamicSelectOptions(mappedOptions);
+
+                    toast({
+                        title: "Campos de puntuación cargados",
+                        description: "Los campos de puntuación se han cargado correctamente.",
+                    });
+                } else {
+                    setDynamicSelectOptions(defaultSelects);
+                    toast({
+                        title: "Error al cargar campos de puntuación",
+                        description: "No se pudieron cargar los campos de puntuación. Se usarán las opciones por defecto.",
+                        variant: "destructive",
+                    });
+                }
+            } catch (err: any) {
+                console.error("Error al cargar campos de puntuación:", err);
+                setDynamicSelectOptions(defaultSelects);
+                toast({
+                    title: "Error al cargar campos de puntuación",
+                    description: "Ocurrió un error al cargar los campos de puntuación. Se usarán las opciones por defecto.",
+                    variant: "destructive",
+                });
+            } finally {
+                setIsLoadingDynamicOptions(false);
+            }
+        };
+        fetchCamposSeleccionPuntuacion();
+    }, [toast]);
+
+    // Efecto para cargar los tipos de imagen disponibles
+    useEffect(() => {
+        const fetchImageTypes = async () => {
+            try {
+                const response = await apiClient("/revista/tipos-imagen", {
+                    method: "GET",
+                    withCredentials: true,
+                })
+                const typesArray = response.data
+                if (!Array.isArray(typesArray)) {
+                    console.error(
+                        "Error: La respuesta de tipos de imagen no es un array o no contiene una propiedad 'data' que sea un array.",
+                        response.data,
+                    )
+                    setFetchedImageTypes([])
+                    toast({
+                        title: "Error al cargar tipos de imagen",
+                        description: "Ocurrió un error al cargar los tipos de imagen. La lista estará vacía.",
+                        variant: "destructive",
+                    })
+                    return
+                }
+                const types = typesArray
+                    .filter(
+                        (type: any) =>
+                            type.IdTipoImagen !== null && type.IdTipoImagen !== undefined && String(type.IdTipoImagen) !== "",
+                    )
+                    .map((type: any) => ({
+                        value: String(type.IdTipoImagen), // Ensure value is a string, e.g., "1", "2"
+                        label: type.TipoImagen,
+                    }))
+                setFetchedImageTypes(types)
+            } catch (error) {
+                console.error("Error al obtener tipos de imagen:", error)
+                toast({
+                    title: "Error al cargar tipos de imagen",
+                    description: "Ocurrió un error al cargar los tipos de imagen. La lista estará vacía.",
+                    variant: "destructive",
+                })
+                setFetchedImageTypes([])
+            }
+        }
+        fetchImageTypes()
+    }, [toast])
+
+
+    // Limpieza de URLs de objetos
+    useEffect(() => {
+        return () => {
+            selectedImages.forEach((img) => {
+                if (img.file && img.previewUrl) {
+                    URL.revokeObjectURL(img.previewUrl)
+                }
+            })
+        }
+    }, [selectedImages])
+
+    // --- Handlers de Eventos ---
+    const handleFieldChange = (field: keyof typeof initialInspectionData, value: boolean | string) => {
+        setInspectionData((prev) => ({ ...prev, [field]: value }))
+        if (typeof value === "boolean" && field !== "aprobarRevistaVehicular" && value === false) {
+            setCheckAllEssential(false)
+        }
     }
-  }
 
-  const percentage = calculatePercentage()
-  const progressBarColor = getProgressBarColor(percentage)
+    const handleCheckAllEssential = (checked: boolean) => {
+        setCheckAllEssential(checked)
+        const newInspectionData = { ...inspectionData }
+        scoringSchema.essential.forEach((field) => {
+            if (field.type === "checkbox") {
+                (newInspectionData as any)[field.key] = checked
+            } else if (field.type === "select-essential") {
+                (newInspectionData as any)[field.key] = checked ? "1" : "0"
+            }
+        })
+        setInspectionData(newInspectionData)
+    }
 
-  return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-      <div className="flex items-center justify-between mb-6">
-        <Button onClick={handleGoBack} variant="outline" className="flex items-center bg-transparent">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Volver
-        </Button>
-        <h1 className="text-2xl font-bold text-gray-800">Nueva Inspección de Revista Vehicular</h1>
-        <div className="w-24"></div>
-      </div>
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files
+        if (files && files.length > 0) {
+            const newImages: SelectedImage[] = Array.from(files).map((file) => ({
+                id: `${file.name}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                file: file,
+                type: "",
+                previewUrl: URL.createObjectURL(file),
+            }))
+            setSelectedImages((prev) => [...prev, ...newImages])
+            toast({
+                title: "Imágenes seleccionadas",
+                description: `${newImages.length} imagen(es) seleccionada(s).`,
+            })
+        }
+        if (fileInputRef.current) fileInputRef.current.value = ""
+    }
 
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="flex items-center text-xl">
-            <Wrench className="mr-2 h-5 w-5 text-blue-600" /> Selección de Trámite
-          </CardTitle>
-          <CardDescription>Selecciona el tipo de trámite a realizar para esta inspección.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <Label htmlFor="tramite">Seleccione el trámite a realizar:</Label>
-              {isLoadingTramites ? (
-                <div className="flex items-center justify-center p-4">
-                  <Loader className="mr-2 h-4 w-4 animate-spin text-blue-500" />
-                  <p className="text-gray-600">Cargando trámites...</p>
-                </div>
-              ) : (
-                <Select value={selectedTramite} onValueChange={setSelectedTramite}>
-                  <SelectTrigger id="tramite" className="w-full">
-                    <SelectValue placeholder="Seleccione aquí" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {tramiteOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    const handleTypeChange = (id: string, newTypeValue: string) => {
+        setSelectedImages((prev) =>
+            prev.map((img) => {
+                if (img.id === id) {
+                    const selectedTypeLabel = fetchedImageTypes.find((t: any) => t.value === newTypeValue)?.label || newTypeValue
+                    let extension = ""
+                    if (img.file?.name) {
+                        extension = img.file.name.split(".").pop() || ""
+                    } else if (img.previewUrl.startsWith("data:image/jpeg")) {
+                        extension = "jpg"
+                    } else if (img.previewUrl.startsWith("data:image/png")) {
+                        extension = "png"
+                    }
+                    const safeType = selectedTypeLabel.replace(/\s+/g, "_").toLowerCase()
+                    const customName = `inspeccion_${safeType}_${Date.now()}${extension ? "." + extension : ""}`
+                    return { ...img, type: newTypeValue, customName }
+                }
+                return img
+            }),
+        )
+    }
 
-      <Card className="mb-8">
-        <CardContent>
-          {isLoadingConcesion ? (
-            <div className="flex items-center justify-center p-4">
-              <Loader className="mr-2 h-6 w-6 animate-spin text-blue-500" />
-              <p className="text-gray-600">Cargando datos del concesionario...</p>
-            </div>
-          ) : concesionarioData ? (
-            <>
-              <CardTitle className="flex items-center text-xl mt-6">
-                <Car className="mr-2 h-5 w-5 text-blue-600" /> Datos del Vehículo Asociado
-              </CardTitle>
-              <CardDescription>Información del vehículo obtenida a través del ID de concesión.</CardDescription>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                <div>
-                  <Label htmlFor="idVehiculo">ID del Vehículo</Label>
-                  <Input id="idVehiculo" value={concesionarioData.IdVehiculoActual || "N/A"} readOnly disabled />
-                </div>
-                <div>
-                  <Label htmlFor="placaVehiculo">Placa del Vehículo</Label>
-                  <Input id="placaVehiculo" value={concesionarioData.Placa || "N/A"} readOnly disabled />
-                </div>
-                <div>
-                  <Label htmlFor="propietarioVehiculo">Propietario del Vehículo</Label>
-                  <Input id="propietarioVehiculo" value={concesionarioData.Propietario || "N/A"} readOnly disabled />
-                </div>
-                <div>
-                  <Label htmlFor="folioVehiculo">Folio del Expediente (Vehículo)</Label>
-                  <Input id="folioVehiculo" value={concesionarioData.FolioVehiculo || "N/A"} readOnly disabled />
-                </div>
-              </div>
-              {(!concesionarioData.IdVehiculoActual ||
-                !concesionarioData.Placa ||
-                !concesionarioData.Propietario ||
-                !concesionarioData.FolioVehiculo) && (
-                  <p className="text-orange-500 text-sm mt-2">
-                    Advertencia: Algunos datos clave del vehículo no se cargaron correctamente. Por favor, verifica la
-                    respuesta del API.
-                  </p>
-                )}
-            </>
-          ) : (
-            <p className="text-gray-500 text-center p-4">
-              Esperando un ID de Concesión válido en la URL para cargar la información.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+    const handleDeleteImage = (id: string, idImagenRevistaVehicular?: number) => {
+        setImageToDelete({ id, idImagenRevistaVehicular })
+        setIsDeleteModalOpen(true)
+    }
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center text-xl">
-              <ClipboardCheck className="mr-2 h-5 w-5 text-blue-600" /> Detalles de la Inspección
-            </CardTitle>
-            <CardDescription>Verifica cada aspecto del vehículo y marca su estado.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Object.entries(fieldLabels).map(([key, label]) => (
-              <div key={key} className="flex flex-col space-y-2">
-                <Label htmlFor={key} className="text-sm font-medium">
-                  {label}
-                </Label>
-                {selectFields.includes(key) ? (
-                  <Select
-                    value={inspectionData[key as keyof typeof initialInspectionData] as string}
-                    onValueChange={(value) => handleSelectChange(key as keyof typeof initialInspectionData, value)}
-                  >
-                    <SelectTrigger id={key}>
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {selectOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id={key}
-                      checked={inspectionData[key as keyof typeof initialInspectionData] as boolean}
-                      onCheckedChange={() => toggleField(key as keyof typeof initialInspectionData)}
-                    />
-                    <Label
-                      htmlFor={key}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Verificado
-                    </Label>
-                  </div>
-                )}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+    const handleConfirmDelete = async () => {
+        if (!imageToDelete) return
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center text-xl">
-              <Lightbulb className="mr-2 h-5 w-5 text-yellow-600" /> Observaciones
-            </CardTitle>
-            <CardDescription>Añade cualquier comentario o nota adicional sobre la inspección.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              placeholder="Escribe tus observaciones aquí..."
-              value={observaciones}
-              onChange={(e) => setObservaciones(e.target.value)}
-              rows={4}
-            />
-          </CardContent>
-        </Card>
+        setIsDeleting(true)
+        try {
+            if (imageToDelete.idImagenRevistaVehicular) {
+                // Lógica para eliminar de la API
+                await apiClient(`/revista/imagen/${imageToDelete.idImagenRevistaVehicular}`, {
+                    method: "DELETE",
+                    withCredentials: true,
+                })
+                toast({ title: "Imagen eliminada", description: "La imagen se ha eliminado correctamente del servidor." })
+            } else {
+                toast({ title: "Imagen eliminada", description: "La imagen local se ha eliminado correctamente." })
+            }
+            setSelectedImages((prev) => prev.filter((img) => img.id !== imageToDelete.id))
+            setIsDeleteModalOpen(false)
+        } catch (error) {
+            console.error("Error al eliminar la imagen:", error)
+            toast({ title: "Error al eliminar la imagen", description: "No se pudo eliminar la imagen. Inténtalo de nuevo.", variant: "destructive" })
+        } finally {
+            setIsDeleting(false)
+        }
+    }
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center text-xl">
-              <FileImage className="mr-2 h-5 w-5 text-green-600" /> Imágenes
-            </CardTitle>
-            <CardDescription>
-              Sube las imágenes requeridas para la inspección. Se guardarán junto con la inspección.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center space-x-4">
-              <Button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center"
-                variant="outline"
-              >
-                <Upload className="mr-2 h-4 w-4" /> Seleccionar Archivos
-              </Button>
-              <Input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                className="hidden"
-                multiple
-                accept="image/*"
-              />
-              {selectedImages.filter(img => img.file && img.idImagenRevistaVehicular === undefined).length > 0 && (
-                <Button
-                  type="button"
-                  onClick={handleClearAllLocalImages}
-                  variant="destructive"
-                  className="flex items-center"
-                >
-                  <XCircle className="mr-2 h-4 w-4" /> Limpiar Imágenes Nuevas
+    const handleSaveInspection = async () => {
+        // Validación de campos
+        if (!idConcesionParam || !concesionarioData) {
+            toast({ title: "Error de validación", description: "No se encontraron datos de la concesión.", variant: "destructive" })
+            return
+        }
+        if (selectedTramite === "invalid-selection") {
+            toast({ title: "Error de validación", description: "Por favor, seleccione un tipo de trámite.", variant: "destructive" })
+            return
+        }
+
+        // Determinar si hay imágenes sin tipo asignado
+        const imagesWithoutType = selectedImages.some(img => img.type === "" || img.type === "0");
+        if (imagesWithoutType) {
+            toast({
+                title: "Error de validación",
+                description: "Por favor, asigna un tipo a todas las imágenes seleccionadas.",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        // Mostrar el modal de confirmación
+        setConfirmSave(true)
+    }
+
+    const handleFinalSave = async () => {
+        setIsSubmitting(true)
+        setConfirmSave(false)
+        try {
+            const formData = new FormData()
+
+            const inspectionPayload = {
+                IdConcesion: concesionarioData?.IdConcesion,
+                Observaciones: observaciones,
+                Aprobado: !isRejected, // La aprobación se basa en la lógica del useMemo
+                IdTramite: selectedTramite,
+                IdClasificacion: classificationId,
+                Puntuacion: score,
+            }
+
+            formData.append("revistavehicular", JSON.stringify(inspectionPayload))
+
+            // Adjuntar los campos de la inspección
+            const inspectionDetails = {
+                ...inspectionData,
+                aprobarRevistaVehicular: !isRejected,
+            }
+            formData.append("revistadetalles", JSON.stringify(inspectionDetails))
+
+
+            // Adjuntar las imágenes
+            selectedImages.forEach((img) => {
+                if (img.file) {
+                    formData.append(
+                        "imagenes",
+                        img.file,
+                        JSON.stringify({
+                            customName: img.customName,
+                            type: img.type,
+                            originalName: img.file.name,
+                        }),
+                    )
+                }
+            })
+
+            const response = await apiClient("/revista", {
+                method: "POST",
+                data: formData,
+                withCredentials: true,
+            })
+
+            if (response) {
+                toast({
+                    title: "Inspección guardada",
+                    description: `La inspección del vehículo ha sido guardada con éxito.`,
+                })
+                // Redirigir o limpiar el formulario
+                router.push(`/concesion/detalle-concesion?idC=${concesionarioData?.IdConcesion}`)
+            } else {
+                throw new Error("Error desconocido al guardar.")
+            }
+        } catch (error: any) {
+            console.error("Error al guardar la inspección:", error)
+            toast({
+                title: "Error al guardar",
+                description: `Ocurrió un error al guardar: ${error.response?.data?.error || error.message}`,
+                variant: "destructive",
+            })
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    const isAllEssentialChecked = useMemo(() => {
+        return scoringSchema.essential.every((field) => {
+            const value = inspectionData[field.key as keyof typeof initialInspectionData]
+            if (field.type === "checkbox") {
+                return value === true
+            } else if (field.type === "select-essential") {
+                return value === "1"
+            }
+            return false
+        })
+    }, [inspectionData, scoringSchema.essential])
+
+    // Actualiza el estado del checkbox "Seleccionar Todo"
+    useEffect(() => {
+        setCheckAllEssential(isAllEssentialChecked)
+    }, [isAllEssentialChecked])
+
+    return (
+        <main className="min-h-screen bg-gray-100 p-8">
+            <div className="container mx-auto">
+                <Button variant="outline" className="mb-6" onClick={() => router.back()}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Regresar
                 </Button>
-              )}
-            </div>
-            <div className="flex justify-between items-center sticky top-0 bg-white z-10 py-1">
-              <h3 className="text-sm md:text-base font-semibold text-gray-800">
-                Imágenes ({selectedImages.length})
-                {selectedImages.some((img) => img) && (
-                  <span className="ml-2 text-xs text-orange-500">( Las imágenes nuevas se subirán cuando guardes la inspección principal.)</span>
+                <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-3xl font-bold">Inspección de Revista Vehicular</h1>
+                    <div className="flex items-center space-x-2">
+                        {isSubmitting && <Loader2 className="animate-spin" />}
+                        <Button
+                            onClick={handleSaveInspection}
+                            disabled={isSubmitting || isLoadingConcesion || isLoadingTramites || isLoadingDynamicOptions}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                            <Save className="mr-2 h-4 w-4" />
+                            Guardar Inspección
+                        </Button>
+                    </div>
+                </div>
+                {isLoadingConcesion ? (
+                    <Card className="flex justify-center items-center h-48">
+                        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                        <span className="ml-2 text-lg">Cargando datos del concesionario...</span>
+                    </Card>
+                ) : (
+                    concesionarioData && (
+                        <Card className="mb-6">
+                            <CardHeader>
+                                <CardTitle className="flex items-center">
+                                    <Car className="mr-2 text-blue-600" />
+                                    Datos del Vehículo y Concesionario
+                                </CardTitle>
+                                <CardDescription>
+                                    Información de la concesión y del vehículo para la inspección.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <p>
+                                        <strong>ID Concesión:</strong> {concesionarioData.IdConcesion}
+                                    </p>
+                                    <p>
+                                        <strong>Placa:</strong> {concesionarioData.Placa}
+                                    </p>
+                                    <p>
+                                        <strong>Folio:</strong> {concesionarioData.Folio}
+                                    </p>
+                                    <p>
+                                        <strong>Tipo de Servicio:</strong> {concesionarioData.TipoServicio}
+                                    </p>
+                                    <p>
+                                        <strong>Modalidad:</strong> {concesionarioData.Modalidad}
+                                    </p>
+                                    <p>
+                                        <strong>Propietario:</strong> {concesionarioData.Propietario}
+                                    </p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )
                 )}
-              </h3>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {selectedImages.map((image) => (
-                <Card key={image.id} className="relative group overflow-hidden">
-                  <CardContent className="p-2">
-                    <div className="w-full h-32 relative mb-2">
-                      <Image
-                        src={image.previewUrl || "/placeholder.svg"}
-                        alt={`Preview ${image.id}`}
-                        layout="fill"
-                        objectFit="cover"
-                        className="rounded-md"
-                      />
-                    </div>
-                    <Label htmlFor={`select-${image.id}`} className="text-xs mb-1 block">
-                      Tipo de Imagen:
-                    </Label>
-                    <Select
-                      value={image.type}
-                      onValueChange={(value) => handleTypeChange(image.id, value)}
-                      disabled={isSubmitting || image.idImagenRevistaVehicular !== undefined}
-                    >
-                      <SelectTrigger id={`select-${image.id}`} className="w-full text-xs">
-                        <SelectValue placeholder="Seleccionar Tipo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {fetchedImageTypes.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
-                            {type.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {image && !image.type && (
-                      <p className="text-red-500 text-[0.6rem] mt-1 flex items-center">
-                        <XCircle className="h-3 w-3 mr-1" /> Requiere tipo
-                      </p>
-                    )}
-                    <Button
-                      type="button"
-                      onClick={() => handleRemoveImage(image.id, image.idImagenRevistaVehicular)}
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2 rounded-full w-8 h-8 p-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      disabled={isDeleting}
-                    >
-                      {isDeleting && imageToDelete?.id === image.id ? (
-                        <Loader className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                    </Button>
-                    {image.idImagenRevistaVehicular && (
-                      <span className="absolute bottom-2 left-2 text-xs text-white bg-blue-500 px-2 py-1 rounded-full">
-                        Guardada
-                      </span>
-                    )}
-                  </CardContent>
+
+                {/* Sección de Selección de Trámite y Observaciones */}
+                <Card className="mb-6">
+                    <CardHeader>
+                        <CardTitle className="flex items-center">
+                            <ClipboardList className="mr-2 text-blue-600" />
+                            Detalles del Trámite
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <Label htmlFor="tramite">Tipo de Trámite</Label>
+                                <Select value={selectedTramite} onValueChange={setSelectedTramite} disabled={isSubmitting}>
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Seleccione un tipo de trámite" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {tramiteOptions.map((option) => (
+                                            <SelectItem key={option.value} value={option.value}>
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="col-span-1 md:col-span-2">
+                                <Label htmlFor="observaciones">Observaciones Adicionales</Label>
+                                <Textarea
+                                    id="observaciones"
+                                    value={observaciones}
+                                    onChange={(e) => setObservaciones(e.target.value)}
+                                    placeholder="Ingrese cualquier observación relevante..."
+                                    disabled={isSubmitting}
+                                />
+                            </div>
+                        </div>
+                    </CardContent>
                 </Card>
-              ))}
-            </div>
-            {selectedImages.filter((img) => img.file && img.idImagenRevistaVehicular === undefined).length > 0 && (
-              <p className="text-sm text-gray-500 mt-4">
-                * Las imágenes nuevas se subirán cuando guardes la inspección principal.
-              </p>
-            )}
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center text-xl">
-              <CheckSquare className="mr-2 h-5 w-5 text-purple-600" /> Resumen y Aprobación
-            </CardTitle>
-            <CardDescription>Revisa el progreso de la inspección y decide si aprobarla.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-6">
-              <Label className="block text-sm font-medium mb-2">Progreso de la Inspección:</Label>
-              <Progress value={percentage} className={`${progressBarColor} transition-all duration-500`} />
-              <p className="text-right text-sm text-gray-600 mt-1">{percentage}% Completado</p>
-            </div>
+                {/* Sección de Inspección de Componentes Esenciales */}
+                <Card className="mb-6">
+                    <CardHeader>
+                        <CardTitle className="flex items-center">
+                            <ShieldCheck className="mr-2 text-green-600" />
+                            Inspección de Componentes Esenciales
+                        </CardTitle>
+                        <CardDescription>
+                            Estos puntos son obligatorios para la aprobación de la revista vehicular.
+                        </CardDescription>
+                        <div className="flex items-center space-x-2 mt-2">
+                            <Checkbox
+                                id="checkAllEssential"
+                                checked={checkAllEssential}
+                                onCheckedChange={(checked: boolean) => handleCheckAllEssential(checked)}
+                                disabled={isSubmitting}
+                            />
+                            <Label htmlFor="checkAllEssential" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                Seleccionar Todo (Marcar como SI:BIEN / Válido)
+                            </Label>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {scoringSchema.essential.map((field) => (
+                                <div key={field.key} className="flex items-center space-x-2">
+                                    {field.type === "checkbox" ? (
+                                        <>
+                                            <Checkbox
+                                                id={field.key}
+                                                checked={inspectionData[field.key as keyof typeof initialInspectionData] as boolean}
+                                                onCheckedChange={(checked: boolean) => handleFieldChange(field.key as keyof typeof initialInspectionData, checked)}
+                                                disabled={isSubmitting}
+                                            />
+                                            <Label htmlFor={field.key}>{field.label}</Label>
+                                        </>
+                                    ) : (
+                                        <div className="flex flex-col w-full">
+                                            <Label htmlFor={field.key}>{field.label}</Label>
+                                            <Select
+                                                value={inspectionData[field.key as keyof typeof initialInspectionData] as string}
+                                                onValueChange={(value) => handleFieldChange(field.key as keyof typeof initialInspectionData, value)}
+                                                disabled={isSubmitting}
+                                            >
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Seleccione..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {field.options.map((option) => (
+                                                        <SelectItem key={option.value} value={option.value}>
+                                                            {option.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
 
-            {/* Nueva sección de ponderación */}
-            <div className="mb-6">
-              <Label className="block text-sm font-medium mb-2">Ponderación de la Inspección Vehicular:</Label>
-              {(() => {
-                const ponderacion = calculatePonderacion()
-                return (
-                  <div className="space-y-3">
-                    <div
-                      className={`${ponderacion.color} ${ponderacion.textColor} p-4 rounded-lg text-center font-bold text-lg`}
-                    >
-                      {ponderacion.category}
-                    </div>
-                    <div className="text-sm text-gray-600 space-y-1">
-                      <p>
-                        Campos "SI:BIEN": {ponderacion.siBienCount} de {ponderacion.totalSelectFields}
-                      </p>
-                      <p>Porcentaje de calidad: {ponderacion.percentage}%</p>
-                      <div className="text-xs text-gray-500 mt-2">
-                        <p>• DEFICIENTE: Menos del 35% (Rojo)</p>
-                        <p>• REGULAR: 35% - 70% (Amarillo)</p>
-                        <p>• ÓPTIMO (PRIME): Más del 70% (Verde)</p>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })()}
-            </div>
-            <div className="flex items-center space-x-2 mt-4">
-              <Checkbox
-                id="aprobarRevista"
-                checked={aprobarRevistaVehicular}
-                onCheckedChange={() => setAprobarRevistaVehicular((prev) => !prev)}
-                className="h-5 w-5"
-              />
-              <Label htmlFor="aprobarRevista" className="text-base font-medium leading-none flex items-center">
-                <ShieldCheck className="mr-2 h-5 w-5 text-green-500" /> Aprobar Revista Vehicular
-              </Label>
-            </div>
-            <p className="text-sm text-gray-500 mt-2">
-              Marca esta casilla si todos los criterios de inspección se cumplen y el vehículo es aprobado.
-            </p>
-          </CardContent>
-        </Card>
+                {/* Sección de Puntuación (Características del Tipo de Servicio) */}
+                <Card className="mb-6">
+                    <CardHeader>
+                        <CardTitle className="flex items-center">
+                            <Award className="mr-2 text-yellow-600" />
+                            Puntuación y Clasificación del Vehículo
+                        </CardTitle>
+                        <CardDescription className="flex justify-between items-center">
+                            <span>
+                                Estos campos determinan la puntuación y clasificación final del vehículo.
+                            </span>
+                            <Button variant="link" onClick={() => setIsScoringLogicModalOpen(true)} className="text-blue-600">
+                                Ver lógica de puntuación
+                                <Lightbulb className="ml-2 h-4 w-4" />
+                            </Button>
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {isLoadingDynamicOptions ? (
+                            <div className="flex justify-center items-center h-24">
+                                <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                                <span className="ml-2">Cargando opciones de puntuación...</span>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {scoringSchema.scored.map((field) => (
+                                    <div key={field.key} className="flex flex-col w-full">
+                                        <Label htmlFor={field.key}>{field.label}</Label>
+                                        <Select
+                                            value={inspectionData[field.key as keyof typeof initialInspectionData] as string}
+                                            onValueChange={(value) => handleFieldChange(field.key as keyof typeof initialInspectionData, value)}
+                                            disabled={isSubmitting}
+                                        >
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Seleccione..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {field.options.map((option) => (
+                                                    <SelectItem key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <div className="mt-8 p-4 bg-gray-50 border rounded-lg flex items-center justify-between">
+                            <div className="flex items-center space-x-4">
+                                {isRejected ? (
+                                    <TriangleAlert className="h-6 w-6 text-red-500" />
+                                ) : (
+                                    <Award className="h-6 w-6 text-yellow-600" />
+                                )}
+                                <div>
+                                    <h3 className="text-lg font-semibold">Resultado de la Inspección</h3>
+                                    <p className="text-sm text-gray-600">
+                                        Puntuación: <span className="font-bold">{score}</span> de {totalPossibleScore}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-xl font-bold">Clasificación:</p>
+                                <p className="text-xl font-extrabold" style={{ color: isRejected ? '#dc2626' : '#22c55e' }}>
+                                    {classification}
+                                </p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
 
-        <div className="flex justify-end gap-4">
-          <Button type="button" variant="outline" onClick={handleGoBack} disabled={isSubmitting}>
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={isSubmitting || isUploading || isDeleting || !concesionarioData}>
-            {isSubmitting ? (
-              <>
-                <Loader className="mr-2 h-4 w-4 animate-spin" />
-                Guardando Inspección...
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Guardar Nueva Inspección
-              </>
-            )}
-          </Button>
-        </div>
-      </form>
+                {/* Sección de Carga y Gestión de Imágenes */}
+                <Card className="mb-6">
+                    <CardHeader>
+                        <CardTitle className="flex items-center">
+                            <FileImage className="mr-2 text-purple-600" />
+                            Imágenes de Evidencia
+                        </CardTitle>
+                        <CardDescription>
+                            Adjunte y clasifique las imágenes necesarias para el trámite.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-center space-x-2 mb-4">
+                            <Input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={handleFileChange}
+                                ref={fileInputRef}
+                                className="hidden"
+                                id="file-upload"
+                                disabled={isUploading || isSubmitting}
+                            />
+                            <Button
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isUploading || isSubmitting}
+                                className="bg-purple-600 hover:bg-purple-700 text-white"
+                            >
+                                <Upload className="mr-2 h-4 w-4" />
+                                Subir Imágenes
+                            </Button>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                            {selectedImages.map((image) => (
+                                <div key={image.id} className="relative group">
+                                    <Image
+                                        src={image.previewUrl}
+                                        alt={`Preview de la imagen ${image.id}`}
+                                        width={150}
+                                        height={150}
+                                        className="object-cover w-full h-32 rounded-lg border"
+                                    />
+                                    <div className="absolute top-1 right-1">
+                                        <Button
+                                            variant="destructive"
+                                            size="icon"
+                                            className="w-6 h-6 rounded-full"
+                                            onClick={() => handleDeleteImage(image.id, image.idImagenRevistaVehicular)}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                    <div className="absolute bottom-0 left-0 right-0 p-1 bg-black bg-opacity-50 text-white text-xs rounded-b-lg">
+                                        <Select value={image.type} onValueChange={(value) => handleTypeChange(image.id, value)}>
+                                            <SelectTrigger className="w-full text-xs">
+                                                <SelectValue placeholder="Tipo..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {fetchedImageTypes.map((type: any) => (
+                                                    <SelectItem key={type.value} value={type.value}>
+                                                        {type.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
 
-      <AlertDialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente la imagen.
-              {imageToDelete?.idImagenRevistaVehicular && (
-                <span className="font-bold text-red-600 block mt-2">
-                  Esta imagen ya está guardada en el servidor y será eliminada de forma permanente.
-                </span>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelDeleteImage} disabled={isDeleting}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDeleteImage}
-              disabled={isDeleting}
-              className="bg-red-500 hover:bg-red-600"
-            >
-              {isDeleting ? (
-                <>
-                  <Loader className="mr-2 h-4 w-4 animate-spin" />
-                  Eliminando...
-                </>
-              ) : (
-                "Eliminar"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  )
+                {/* Diálogo de Confirmación de Guardado */}
+                <AlertDialog open={confirmSave} onOpenChange={setConfirmSave}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Confirmar Guardado de Inspección</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                ¿Estás seguro de que deseas guardar esta inspección?
+                                <br />
+                                <br />
+                                <strong>Resultado:</strong> <span className="font-bold">{classification}</span>
+                                <br />
+                                <strong>Puntuación:</strong> <span className="font-bold">{score}</span> de {totalPossibleScore}
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel disabled={isSubmitting}>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleFinalSave} disabled={isSubmitting}>
+                                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                Guardar Inspección
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+
+                {/* Diálogo para la Lógica de Puntuación */}
+                <AlertDialog open={isScoringLogicModalOpen} onOpenChange={setIsScoringLogicModalOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle className="flex items-center">
+                                <Lightbulb className="mr-2 text-blue-600" />
+                                Lógica de Puntuación
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                                <p>La puntuación se calcula sumando los puntos de cada uno de los 6 campos del vehículo.</p>
+                                <ul className="list-disc list-inside mt-4 space-y-1">
+                                    <li>Las opciones `1, 2, 3` suman 1, 2, y 3 puntos respectivamente.</li>
+                                </ul>
+                                <h4 className="font-semibold mt-4">Clasificación por Puntaje Total:</h4>
+                                <ul className="list-disc list-inside mt-2 space-y-1">
+                                    <li>Puntaje &lt; 9: **ESCENCIAL**</li>
+                                    <li>Puntaje entre 9 y 17: **SELECTO**</li>
+                                    <li>Puntaje &gt;= 18: **PRIME**</li>
+                                </ul>
+                                <h4 className="font-semibold mt-4">Rechazo:</h4>
+                                <ul className="list-disc list-inside mt-2 space-y-1">
+                                    <li>Si algún campo de la sección "Componentes Esenciales" no es "SI:BIEN" o "Válido".</li>
+                                </ul>
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogAction onClick={() => setIsScoringLogicModalOpen(false)}>Cerrar</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
+        </main>
+    )
 }

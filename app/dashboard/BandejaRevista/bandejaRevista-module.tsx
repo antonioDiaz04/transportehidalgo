@@ -1,16 +1,17 @@
 'use client';
-import apiClient from '@/lib/apiClient'
+
+import apiClient from '@/lib/apiClient';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { X, ImagePlus, Trash2, Check, XCircle, Printer, Loader2, Save } from 'lucide-react';
+import { X, ImagePlus, Trash2, Check, XCircle, Printer, Loader2, Save, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-// import generarPdf 
-import { generarPDF, savePDF } from "@/lib/pdfGenerator"
+import { generarPDF, savePDF } from "@/lib/pdfGenerator";
 
+// Interface para las imágenes seleccionadas
 interface SelectedImage {
   id: string;
   file?: File;
@@ -20,6 +21,7 @@ interface SelectedImage {
   isNew: boolean;
 }
 
+// Interface para los datos del vehículo
 interface VehicleData {
   IdRevistaVehicular: string;
   Folio: string;
@@ -27,20 +29,31 @@ interface VehicleData {
   Placa: string;
   Propietario: string;
   IdTramite?: number;
-  Tramite?: number;
+  Tramite?: string;
   Modalidad: string;
   Municipio: string;
   FechaInspeccion: string;
   Estatus: string;
 }
 
+// Interface para la respuesta paginada de la API
+interface PaginatedResponse {
+  data: VehicleData[];
+  totalRecords: number;
+}
+
+const PAGES_PER_GROUP = 10;
+
 export default function BandejaRevistaModule() {
+  // --- Estados de los Filtros ---
   const [concession, setConcession] = useState('');
   const [plate, setPlate] = useState('');
   const [status, setStatus] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [municipality, setMunicipality] = useState('');
+  // const [municipality, setMunicipality] = useState('');
+
+  // --- Estados de Datos y UI ---
   const [filteredData, setFilteredData] = useState<VehicleData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -50,85 +63,90 @@ export default function BandejaRevistaModule() {
   const [apiImageTypes, setApiImageTypes] = useState<{ value: string; label: string }[]>([]);
   const [imageLoading, setImageLoading] = useState(false);
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState<string | null>(null);
 
-  // PDF generation state
-  const [pdfLoading, setPdfLoading] = useState<string | null>(null)
+  // --- Estado de Paginación ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
 
-  useEffect(() => {
-    const fetchImageTypes = async () => {
-      try {
-        const response = await apiClient('/revista/tipos-imagen', {
-          method: 'GET',
-          withCredentials: true,
-        });
+  const totalPages = itemsPerPage === 0 ? 1 : Math.ceil(totalItems / itemsPerPage);
 
-        const rawTypes = response.data;
-        const formattedTypes = rawTypes.map((type: any) => ({
-          value: type.IdTipoImagen.toString(),
-          label: type.TipoImagen,
-        }));
-        setApiImageTypes(formattedTypes);
-      } catch (err: any) {
-        console.error('Error al obtener tipos de imagen:', err)
-        const msg = err?.response?.data?.error || err?.message || 'No se pudieron cargar los tipos de imagen.'
-        toast.error(msg)
-      }
-    }
-
-    fetchImageTypes()
-  }, [])
-
-
-  const fetchRevistas = async () => {
-    setLoading(true)
-    setError('')
+  const fetchImageTypes = async () => {
     try {
-      const params = new URLSearchParams()
-      if (concession) params.append('noConcesion', concession)
-      if (plate) params.append('placa', plate)
-      if (status && status !== 'all') params.append('estatus', status)
-      if (startDate) params.append('fechaInicio', startDate)
-      if (endDate) params.append('fechaFin', endDate)
-      if (municipality) params.append('municipio', municipality)
-
-      const response = await apiClient(`/revista/buscar?${params.toString()}`, {
+      const response = await apiClient('/revista/tipos-imagen', {
         method: 'GET',
         withCredentials: true,
-      })
-      console.log(response)
+      });
 
-      setFilteredData(response.data || [])
+      const rawTypes = response.data;
+      const formattedTypes = rawTypes.map((type: any) => ({
+        value: type.IdTipoImagen.toString(),
+        label: type.TipoImagen,
+      }));
+      setApiImageTypes(formattedTypes);
+    } catch (err: any) {
+      console.error('Error al obtener tipos de imagen:', err);
+      const msg = err?.response?.data?.error || err?.message || 'No se pudieron cargar los tipos de imagen.';
+      toast.error(msg);
+    }
+  };
+
+  useEffect(() => {
+    fetchImageTypes();
+  }, []);
+
+  const fetchRevistas = async (page: number = currentPage, size: number = itemsPerPage) => {
+    setLoading(true);
+    setError('');
+    try {
+      const params = new URLSearchParams();
+      if (concession) params.append('noConcesion', concession);
+      if (plate) params.append('placa', plate);
+      if (status && status !== 'all') params.append('estatus', status);
+      if (startDate) params.append('fechaInicio', startDate);
+      if (endDate) params.append('fechaFin', endDate);
+
+      params.append('page', page.toString());
+      params.append('pageSize', size.toString());
+
+      const response = await apiClient<PaginatedResponse>(`/revista/buscar?${params.toString()}`, {
+        method: 'GET',
+        withCredentials: true,
+      });
+      console.log('Datos obtenidos:', response);
+      setFilteredData(response.data || []);
+      setTotalItems(response?.totalRecords || 0);
 
       if (response.data?.length > 0) {
-        toast.success(`Se encontraron ${response.data.length} registros.`)
+        toast.success(`Se encontraron ${response.totalRecords} registros. Mostrando página ${page}.`);
       } else {
-        toast.info('No se encontraron registros.')
+        toast.info('No se encontraron registros.');
       }
     } catch (err: any) {
-      console.error('Error en búsqueda:', err)
-      const status = err?.response?.status
-      const msg = err?.response?.data?.error || err?.message || 'Error al buscar revistas vehiculares.'
-
-      setError(msg)
-
+      console.error('Error en búsqueda:', err);
+      const status = err?.response?.status;
+      const msg = err?.response?.data?.error || err?.message || 'Error al buscar revistas vehiculares.';
+      setError(msg);
       if (status === 404) {
-        setFilteredData([])
-        toast.info('No se encontraron revistas vehiculares con los criterios de búsqueda.')
+        setFilteredData([]);
+        setTotalItems(0);
+        toast.info('No se encontraron revistas vehiculares con los criterios de búsqueda.');
       } else {
-        toast.error(msg)
+        toast.error(msg);
       }
-
-      setFilteredData([])
+      setFilteredData([]);
     } finally {
-      setLoading(false)
-      setSelectedRowId(null)
-      setSelectedVehicle(null)
-      setSelectedImages([])
+      setLoading(false);
+      setSelectedRowId(null);
+      setSelectedVehicle(null);
+      setSelectedImages([]);
     }
-  }
+  };
 
   const handleSearch = () => {
-    fetchRevistas();
+    setCurrentPage(1);
+    fetchRevistas(1, itemsPerPage);
   };
 
   const handleClearFilters = () => {
@@ -137,8 +155,10 @@ export default function BandejaRevistaModule() {
     setStatus('');
     setStartDate('');
     setEndDate('');
-    setMunicipality('');
+    
     setFilteredData([]);
+    setTotalItems(0);
+    setCurrentPage(1);
     setError('');
     setSelectedRowId(null);
     setSelectedVehicle(null);
@@ -149,14 +169,12 @@ export default function BandejaRevistaModule() {
   const fetchExistingImages = useCallback(async (idRevistaVehicular: string) => {
     setImageLoading(true);
     try {
-      console.log('Fetching images for ID:', idRevistaVehicular);
       const response = await apiClient(`/revista/${idRevistaVehicular}/imagenes`, {
         method: 'GET',
         withCredentials: true,
       });
 
       const rawImages = response.data;
-      console.log('Fetched images:', rawImages);
 
       if (!Array.isArray(rawImages)) {
         console.error('API response data is not an array:', rawImages);
@@ -166,7 +184,7 @@ export default function BandejaRevistaModule() {
 
       const existingImages: SelectedImage[] = rawImages.map((img: any) => {
         const imageId = img.IdImagen?.toString() ?? `temp-existing-${img.TipoImagen}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-        const mimeType = 'image/jpeg'; // Asumiendo JPEG por defecto si no se especifica
+        const mimeType = 'image/jpeg';
 
         if (!img.ImagenBase64) {
           console.warn(`Image with ID ${imageId} is missing ImagenBase64 and will be skipped.`);
@@ -175,9 +193,9 @@ export default function BandejaRevistaModule() {
 
         return {
           id: imageId,
-          type: img.TipoImagen?.toString() ?? '',
+          type: img.IdTipoImagen?.toString() ?? '',
           previewUrl: `data:${mimeType};base64,${img.ImagenBase64}`,
-          customName: apiImageTypes.find(t => t.value === img.TipoImagen?.toString())?.label || `Imagen existente (${imageId.slice(0, 8)}...)`,
+          customName: apiImageTypes.find(t => t.value === img.IdTipoImagen?.toString())?.label || `Imagen existente (${imageId.slice(0, 8)}...)`,
           isNew: false,
         };
       }).filter(Boolean) as SelectedImage[];
@@ -200,12 +218,10 @@ export default function BandejaRevistaModule() {
     } finally {
       setImageLoading(false);
     }
-
   }, [apiImageTypes]);
 
   useEffect(() => {
     if (selectedVehicle) {
-      // Revocar URLs de imágenes nuevas previas si se selecciona otro vehículo
       selectedImages.filter(img => img.isNew).forEach(img => URL.revokeObjectURL(img.previewUrl));
       setSelectedImages([]);
 
@@ -213,7 +229,6 @@ export default function BandejaRevistaModule() {
         setSelectedImages(images);
       });
     } else {
-      // Limpiar imágenes y revocar URLs cuando no hay vehículo seleccionado
       selectedImages.filter(img => img.isNew).forEach(img => URL.revokeObjectURL(img.previewUrl));
       setSelectedImages([]);
     }
@@ -229,9 +244,9 @@ export default function BandejaRevistaModule() {
           return;
         }
         newImages.push({
-          id: `${file.name}-${Date.now()}`, // ID único para nuevas imágenes
+          id: `${file.name}-${Date.now()}`,
           file,
-          type: '', // El tipo se asignará después
+          type: '',
           previewUrl: URL.createObjectURL(file),
           isNew: true,
         });
@@ -240,7 +255,7 @@ export default function BandejaRevistaModule() {
       toast.success(`${newImages.length} nueva(s) imagen(es) seleccionada(s).`);
     }
     if (fileInputRef.current) {
-      fileInputRef.current.value = ''; // Reset the input to allow selecting the same file again
+      fileInputRef.current.value = '';
     }
   };
 
@@ -267,15 +282,13 @@ export default function BandejaRevistaModule() {
         const message = err?.response?.data?.error || err?.message || 'Error al eliminar imagen del servidor.';
 
         toast.error(message, { id: deleteToastId });
-
-        return; // Detener la eliminación local si falla la eliminación del servidor
+        return;
       }
     }
 
-    // Eliminación local (tanto para nuevas como registradas si ya se eliminó en el backend)
     setSelectedImages(prev => {
       if (imageToRemove.isNew && imageToRemove.previewUrl) {
-        URL.revokeObjectURL(imageToRemove.previewUrl); // Liberar memoria
+        URL.revokeObjectURL(imageToRemove.previewUrl);
       }
 
       toast.warning(
@@ -295,7 +308,7 @@ export default function BandejaRevistaModule() {
     }
 
     newImagesToClear.forEach(img => URL.revokeObjectURL(img.previewUrl));
-    setSelectedImages(prev => prev.filter(img => !img.isNew)); // Solo mantiene las imágenes existentes (no nuevas)
+    setSelectedImages(prev => prev.filter(img => !img.isNew));
     toast.info('Las imágenes nuevas han sido eliminadas de la selección.');
   };
 
@@ -343,17 +356,16 @@ export default function BandejaRevistaModule() {
         await apiClient('/revista/imagen', {
           method: 'POST',
           data: formData,
-          withCredentials: true
+          withCredentials: true,
         });
-
       });
 
       await Promise.all(uploadPromises);
 
       toast.success(`Se guardaron ${imagesToUpload.length} imagen(es) nueva(s) para el vehículo con placa ${selectedVehicle.Placa}.`, { id: saveToastId });
 
-      // Volver a cargar las imágenes para actualizar la vista y marcar las subidas como no nuevas
-      await fetchExistingImages(selectedVehicle.IdRevistaVehicular);
+      const updatedImages = await fetchExistingImages(selectedVehicle.IdRevistaVehicular);
+      setSelectedImages(updatedImages);
 
     } catch (err: any) {
       console.error('Error al guardar imágenes:', err);
@@ -364,63 +376,29 @@ export default function BandejaRevistaModule() {
     } finally {
       setImageLoading(false);
     }
-
   };
+
   const handlePrintRevista = async (idRevistaVehicular: string, folio: string) => {
-    setPdfLoading(idRevistaVehicular)
+    setPdfLoading(idRevistaVehicular);
 
     try {
-      console.log(`Generando PDF para revista ${idRevistaVehicular}...`)
+      const pdfDoc = await generarPDF(idRevistaVehicular);
+      const filename = `Revista_Vehicular_${folio || idRevistaVehicular}`;
+      savePDF(pdfDoc, filename);
 
-      // Generate PDF using the imported function
-      const pdfDoc = await generarPDF(idRevistaVehicular)
-
-      // Save PDF with folio as filename
-      const filename = `Revista_Vehicular_${folio || idRevistaVehicular}`
-      savePDF(pdfDoc, filename)
-
-      // Update status to 'Impreso' in the local state
       setFilteredData((prevData) =>
         prevData.map((item) =>
           item.IdRevistaVehicular === idRevistaVehicular ? { ...item, Estatus: "Impreso" } : item,
         ),
-      )
+      );
 
-      console.log("PDF generado y descargado exitosamente")
     } catch (error) {
-      console.error("Error al generar PDF:", error)
-      setError("Error al generar el PDF. Intente nuevamente.")
+      console.error("Error al generar PDF:", error);
+      setError("Error al generar el PDF. Intente nuevamente.");
     } finally {
-      setPdfLoading(null)
+      setPdfLoading(null);
     }
-  }
-  // const handlePrintRevista = async (idRevistaVehicular: string, currentFolio: string) => {
-  //   toast.loading(`Registrando impresión para Folio: ${currentFolio}...`, { id: 'print-toast' });
-  //   try {
-  //     const response = await axios.post('/revista/imprimir', {
-  //       idRV: parseInt(idRevistaVehicular, 10),
-  //       folio: currentFolio
-  //     }, {
-  //       withCredentials: true,
-  //     });
-
-  //     toast.success(response.data.message || 'Registro de impresión exitoso.', { id: 'print-toast' });
-  //     setFilteredData(prevData =>
-  //       prevData.map(item =>
-  //         item.IdRevistaVehicular === idRevistaVehicular
-  //           ? { ...item, Estatus: 'Impreso' }
-  //           : item
-  //       )
-  //     );
-  //   } catch (error) {
-  //     console.error('Error al intentar imprimir la revista:', error);
-  //     if (axios.isAxiosError(error) && error.response) {
-  //       toast.error(error.response.data.error || 'Error al registrar la impresión.', { id: 'print-toast' });
-  //     } else {
-  //       toast.error('Error de red o comunicación al intentar imprimir la revista.', { id: 'print-toast' });
-  //     }
-  //   }
-  // };
+  };
 
   const handleRowSelect = (vehicle: VehicleData) => {
     if (selectedRowId === vehicle.IdRevistaVehicular) {
@@ -435,9 +413,82 @@ export default function BandejaRevistaModule() {
     }
   };
 
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage) {
+      setCurrentPage(newPage);
+      fetchRevistas(newPage, itemsPerPage);
+    }
+  };
+
+  const handleItemsPerPageChange = (value: string) => {
+    const newSize = parseInt(value, 10);
+    setItemsPerPage(newSize);
+    setCurrentPage(1);
+    fetchRevistas(1, newSize);
+  };
+
+  // Lógica para generar los botones de paginación por grupos
+  const generatePageButtons = () => {
+    if (itemsPerPage === 0) return null;
+
+    const buttons = [];
+    const currentGroupStartPage = Math.floor((currentPage - 1) / PAGES_PER_GROUP) * PAGES_PER_GROUP + 1;
+    const currentGroupEndPage = Math.min(currentGroupStartPage + PAGES_PER_GROUP - 1, totalPages);
+
+    // Botón para retroceder un grupo
+    if (currentGroupStartPage > 1) {
+      buttons.push(
+        <Button
+          key="prev-group"
+          variant="outline"
+          size="icon"
+          onClick={() => handlePageChange(currentGroupStartPage - 1)}
+          disabled={loading}
+          className="h-8 w-8 text-sm"
+        >
+          ...
+        </Button>
+      );
+    }
+    
+    // Botones del grupo actual
+    for (let i = currentGroupStartPage; i <= currentGroupEndPage; i++) {
+      buttons.push(
+        <Button
+          key={i}
+          variant={i === currentPage ? "default" : "ghost"}
+          size="icon"
+          onClick={() => handlePageChange(i)}
+          disabled={loading}
+          className={`h-8 w-8 text-sm font-medium ${i === currentPage ? 'bg-blue-600 text-white hover:bg-blue-700' : 'text-gray-700 hover:bg-gray-100'}`}
+        >
+          {i}
+        </Button>
+      );
+    }
+
+    // Botón para avanzar al siguiente grupo
+    if (currentGroupEndPage < totalPages) {
+      buttons.push(
+        <Button
+          key="next-group"
+          variant="outline"
+          size="icon"
+          onClick={() => handlePageChange(currentGroupEndPage + 1)}
+          disabled={loading}
+          className="h-8 w-8 text-sm"
+        >
+          ...
+        </Button>
+      );
+    }
+
+    return buttons;
+  };
+  
   return (
-    <div className=" md:p-6  rounded-lg flex flex-col lg:flex-row gap-4 md:gap-6 h-[calc(100vh-2rem)]">
-      {/* Main search and table section */}
+    <div className="md:p-6 rounded-lg flex flex-col lg:flex-row gap-4 md:gap-6 h-[calc(100vh-2rem)]">
+      {/* Seção principal de busca e tabela */}
       <div className="flex-1 overflow-hidden flex flex-col bg-white p-4 rounded-lg shadow-md">
         <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-gray-800">Búsqueda de Revista Vehicular</h1>
 
@@ -456,7 +507,7 @@ export default function BandejaRevistaModule() {
           </Select>
           <Input type="date" placeholder="Fecha inicial" value={startDate} onChange={e => setStartDate(e.target.value)} className="h-10 border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
           <Input type="date" placeholder="Fecha final" value={endDate} onChange={e => setEndDate(e.target.value)} className="h-10 border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
-          <Input placeholder="Municipio" value={municipality} onChange={e => setMunicipality(e.target.value)} className="h-10 border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+          {/* <Input placeholder="Municipio" value={municipality} onChange={e => setMunicipality(e.target.value)} className="h-10 border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500" /> */}
         </div>
 
         <div className="flex gap-2 md:gap-3 mb-4 md:mb-6 justify-end">
@@ -471,7 +522,16 @@ export default function BandejaRevistaModule() {
 
         {error && <p className="text-red-600 bg-red-50 p-3 rounded-md mb-4 text-center text-sm md:text-base border border-red-200">{error}</p>}
 
-        <div className="flex-1 overflow-auto border border-gray-200 shadow-sm">
+        <div className="flex-1 overflow-auto border border-gray-200 shadow-sm relative">
+          {loading && (
+            <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center z-20">
+              <div className="flex items-center">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600 mr-3" />
+                <span className="text-lg text-gray-700 font-medium">Cargando datos...</span>
+              </div>
+            </div>
+          )}
+
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-100 sticky top-0 z-10">
               <tr>
@@ -516,12 +576,10 @@ export default function BandejaRevistaModule() {
                         size="sm"
                         variant="ghost"
                         onClick={(e) => {
-                          e.stopPropagation()
-                          handlePrintRevista(item.IdRevistaVehicular, item.Folio)
+                          e.stopPropagation();
+                          handlePrintRevista(item.IdRevistaVehicular, item.Folio);
                         }}
-
-                        className={`h-7 w-7 p-0text-green-600 hover:bg-green-50 hover:text-green-800"
-                          `}
+                        className={`h-7 w-7 p-0 text-green-600 hover:bg-green-50 hover:text-green-800`}
                         title={item.Estatus === "Impreso" ? "Ya impreso" : "Imprimir"}
                       >
                         {pdfLoading === item.IdRevistaVehicular ? (
@@ -539,8 +597,7 @@ export default function BandejaRevistaModule() {
                     <td className="px-3 py-2 text-sm text-gray-800 max-w-[120px] sm:max-w-[150px] overflow-hidden text-ellipsis">{item.Propietario}</td>
                     <td className="px-3 py-2 text-sm text-gray-800">{item.Modalidad}</td>
                     <td className="px-3 py-2 text-sm">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${item.Estatus === 'Impreso' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'
-                        }`}>
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${item.Estatus === 'Impreso' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
                         {item.Estatus}
                       </span>
                     </td>
@@ -563,9 +620,74 @@ export default function BandejaRevistaModule() {
             </tbody>
           </table>
         </div>
+
+        {/* --- Controles de Paginación y cantidad de items por página --- */}
+        {totalPages > 0 && (
+          <div className="mt-4 flex flex-wrap items-center justify-between p-3 bg-gray-50 rounded-lg shadow-inner">
+            <div className="flex items-center gap-2 mb-2 sm:mb-0">
+                <span className="text-sm text-gray-600">Mostrar:</span>
+                <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange} disabled={loading}>
+                    <SelectTrigger className="w-[100px] h-8 text-sm">
+                        <SelectValue placeholder="Items" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="0">Todo</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            
+            <div className="flex items-center gap-1 flex-wrap justify-center">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handlePageChange(1)}
+                disabled={currentPage === 1 || loading || itemsPerPage === 0}
+                className="h-8 w-8 text-sm"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1 || loading || itemsPerPage === 0}
+                className="h-8 w-8 text-sm"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+
+              {/* Botones de paginación por grupos */}
+              {generatePageButtons()}
+
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages || loading || itemsPerPage === 0}
+                className="h-8 w-8 text-sm"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handlePageChange(totalPages)}
+                disabled={currentPage === totalPages || loading || itemsPerPage === 0}
+                className="h-8 w-8 text-sm"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
+            <span className="text-sm text-gray-600 mt-2 sm:mt-0">Página {currentPage} de {totalPages}</span>
+            <span className="text-sm text-gray-600 mt-2 sm:mt-0">Total de registros: {totalItems}</span>
+          </div>
+        )}
       </div>
 
-      {/* Image management section */}
+      {/* Seção de gerenciamento de imagens */}
       {selectedVehicle && (
         <div className="w-full lg:w-2/5 p-4 md:p-6 bg-white rounded-lg shadow-xl border border-gray-100 flex flex-col h-[calc(100vh-6rem)] lg:h-auto">
           <div className="flex justify-between items-center mb-3 border-b pb-3 border-gray-100">
@@ -611,7 +733,7 @@ export default function BandejaRevistaModule() {
             </div>
           )}
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar pr-2"> {/* Added custom-scrollbar for better aesthetics */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
             {!imageLoading && selectedImages.length > 0 ? (
               <div className="space-y-2 md:space-y-3">
                 <div className="flex justify-between items-center sticky top-0 bg-white z-10 py-1">
@@ -640,7 +762,7 @@ export default function BandejaRevistaModule() {
                           width={70}
                           height={70}
                           className="rounded-md object-cover border border-gray-200 w-[70px] h-[70px] aspect-square"
-                          priority // Consider adding priority for initial images
+                          priority
                         />
                         <Button
                           type="button"
@@ -670,9 +792,7 @@ export default function BandejaRevistaModule() {
                           </SelectContent>
                         </Select>
                         {img.isNew && !img.type && (
-                          <p className="text-red-500 text-[0.6rem] mt-1 flex items-center">
-                            <XCircle className="h-3 w-3 mr-1" /> Requiere tipo
-                          </p>
+                          <p className="text-red-500 text-xs mt-1">Requiere tipo</p>
                         )}
                       </div>
                     </div>
@@ -680,20 +800,17 @@ export default function BandejaRevistaModule() {
                 </div>
               </div>
             ) : (
-              !imageLoading && <p className="text-center text-gray-500 text-sm py-4">No hay imágenes seleccionadas. Añade una.</p>
+              !imageLoading && <p className="text-center text-gray-500 p-4">No hay imágenes seleccionadas.</p>
             )}
           </div>
-
-          <div className="mt-4 pt-4 border-t border-gray-200 flex justify-end">
-            <Button
-              onClick={handleSaveImages}
-              disabled={imageLoading || !selectedImages.some(img => img.isNew)}
-              className="h-9 md:h-10 bg-green-600 hover:bg-green-700 text-white shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {imageLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              {imageLoading ? 'Guardando...' : 'Guardar Imágenes'}
-            </Button>
-          </div>
+          {selectedImages.some(img => img.isNew) && (
+            <div className="mt-4 flex justify-end">
+              <Button onClick={handleSaveImages} disabled={imageLoading} className="bg-green-600 hover:bg-green-700 text-white">
+                {imageLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                Guardar Imágenes
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

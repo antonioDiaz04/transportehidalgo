@@ -294,7 +294,7 @@ export default function TitularModule() {
     setError(null); // Clear any previous errors
     console.log("Concesionario seleccionado:", concesionario);
 
-    const idConcesionario = Number(concesionario.idConcesionario)
+    const idConcesionario = concesionario.idConcesionario
 
     try {
       console.log("Obteniendo detalle de concesión para concesionario ID:", idConcesionario);
@@ -608,146 +608,7 @@ export default function TitularModule() {
         tipo: concesionBasica.TipoServicio ?? ""
       });
 
-      // 2. SEGUNDA PETICIÓN: Obtener detalles por IdConcesion
-      // if (concesion.idC) {
-
-      //   const { data: detailData } = await apiClient(
-      //     `/concesion/${concesion.idC}`,
-      //     {
-      //       headers: { "Content-Type": "application/json" },
-      //       withCredentials: true,
-      //     }
-      //   );
-
-      //   const detalle = detailData;
-
-      //   // Concesionario
-      //   if (detalle.concesionario?.data) {
-      //     const c = detalle.concesionario.data;
-      //     console.log("Concesionario encontrado:", c);
-      //     // Creamos un objeto para inspección/debug
-      //     const concesionarioDebugObj = {
-      //       // Datos personales
-      //       tipoPersona: c.TipoPersona ?? "",
-      //       identificador: c.IdConcesionario ?? "",
-      //       nombre: c.Nombre ?? "",
-      //       apellidoPaterno: c.ApellidoPaterno ?? "",
-      //       apellidoMaterno: c.ApellidoMaterno ?? "",
-      //       fechaNacimiento: c.FechaNacimiento ?? "",
-      //       lugarNacimiento: c.LugarNacimiento ?? "",
-      //       genero: c.Genero ?? "",
-      //       rfc: c.RFC ?? "",
-      //       nacionalidad: c.Nacionalidad ?? "",
-      //       correoElectronico: c.Mail ?? "",
-      //       estadoCivil: c.EstadoCivil ?? "",
-      //       fechaAlta: c.FechaAlta ?? "",
-      //       estatus: c.Estatus ?? "",
-      //       observacionesConcesionario: c.Observaciones ?? "",
-      //       domicilio: detalle.direcciones?.data && detalle.direcciones.data.length > 0
-      //         ? {
-      //           calle: detalle.direcciones.data[0].Calle ?? "",
-      //           colonia: detalle.direcciones.data[0].Colonia ?? "",
-      //           cruzaCon: detalle.direcciones.data[0].CruceCalles ?? "",
-      //           referencia: detalle.direcciones.data[0].Referencia ?? "",
-      //           numeroExterior: detalle.direcciones.data[0].NumExterior ?? "",
-      //           numeroInterior: detalle.direcciones.data[0].NumInterior ?? "",
-      //           estado: detalle.direcciones.data[0].Estado ?? "",
-      //           codigoPostal: detalle.direcciones.data[0].CodigoPostal ?? "",
-      //           municipio: detalle.direcciones.data[0].Municipio ?? "",
-      //           localidad: detalle.direcciones.data[0].Localidad ?? "",
-      //           tipoDireccion: detalle.direcciones.data[0].TipoDireccion ?? "",
-      //           esFiscal: detalle.direcciones.data[0].EsFiscal ?? false,
-      //           telefono: detalle.direcciones.data[0].Telefono ?? "",
-      //           fax: detalle.direcciones.data[0].Fax ?? "",
-      //         }
-      //         : null,
-      //       beneficiarios: Array.isArray(detalle.beneficiarios?.data)
-      //         ? detalle.beneficiarios.data.map((b: any) => ({
-      //           nombre: b.NombreCompleto ?? "",
-      //           parentesco: b.Parentesco ?? "",
-      //         }))
-      //         : [],
-      //       referencias: Array.isArray(detalle.referencias?.data)
-      //         ? detalle.referencias.data.map((r: any) => ({
-      //           nombreCompleto: r.NombreCompleto ?? "",
-      //           parentesco: r.Parentesco ?? "",
-      //           calle: r.Calle ?? "",
-      //           colonia: r.Colonia ?? "",
-      //           cruzaCon: r.CruceCalles ?? "",
-      //           referencia: r.Referencia ?? "",
-      //           numeroExterior: r.NumExterior ?? "",
-      //           numeroInterior: r.NumInterior ?? "",
-      //           estado: r.Estado ?? "",
-      //           codigoPostal: r.CodigoPostal ?? "",
-      //           municipio: r.Municipio ?? "",
-      //           localidad: r.Localidad ?? "",
-      //           tipoDireccion: r.TipoDireccion ?? "",
-      //           telefonoParticular: r.Telefono ?? "",
-      //           fax: r.Fax ?? "",
-      //         }))
-      //         : [],
-      //       // Datos de concesión (rellenar con los datos del objeto detalle principal)
-      //       idConcesion: concesionBasica?.IdConcesion ?? "",
-      //       folio: concesionBasica?.Folio ?? "",
-      //       fechaExpedicion: concesionBasica?.FechaExpedicion ?? "",
-      //       fechaVencimiento: concesionBasica?.FechaVencimiento ?? "",
-      //       vigenciaAnios: concesionBasica?.VigenciaAnios ?? 0,
-      //       seriePlacaActual: concesionBasica?.SeriePlacaActual ?? "",
-      //       seriePlacaAnterior: concesionBasica?.SeriePlacaAnterior ?? "",
-      //       ultimaActualizacion: concesionBasica?.UltimaActualizacion ?? "",
-      //       idItinerario: concesionBasica?.IdItinerario ?? 0,
-      //       itinerario: concesionBasica?.Itinerario ?? "",
-      //       ruta: concesionBasica?.Ruta ?? "",
-      //       idServicio: concesionBasica?.IdServicio ?? 0,
-      //       idMunicipioAutorizado: concesionBasica?.IdMunicipioAutorizado ?? 0,
-      //       estadoExpedicion: concesionBasica?.EstadoExpedicion ?? "",
-      //       municipioAutorizado: concesionBasica?.MunicipioAutorizado ?? "",
-      //       idMunicipioExpedicion: concesionBasica?.IdMunicipioExpedicion ?? 0,
-      //       municipioExpedicion: concesionBasica?.MunicipioExpedicion ?? "",
-      //       idEstadoExpedicion: concesionBasica?.IdEstadoExpedicion ?? 0,
-      //       idEstatus: concesionBasica?.IdEstatus ?? 0,
-      //       idVehiculoActual: concesionBasica?.IdVehiculoActual ?? "",
-      //       idVehiculoAnterior: concesionBasica?.IdVehiculoAnterior ?? "",
-      //       idDelegacion: concesionBasica?.IdDelegacion ?? 0,
-      //       delegacion: concesionBasica?.Delegacion ?? "",
-      //       idConcesionarioActual: concesionBasica?.IdConcesionarioActual ?? "",
-      //       idConcesionarioAnterior: concesionBasica?.IdConcesionarioAnterior ?? "",
-      //       tipoServicio: concesionBasica?.TipoServicio ?? "",
-      //       tipoServicioAbreviatura: concesionBasica?.TipoServicioAbreviatura ?? "",
-      //       idPropietario: concesionBasica?.IdPropietario ?? "",
-      //       idTipoPlaca: concesionBasica?.IdTipoPlaca ?? "",
-      //       tipoPlaca: concesionBasica?.TipoPlaca ?? "",
-      //       idClaseUnidad: concesionBasica?.IdClaseUnidad ?? "",
-      //       claseUnidad: concesionBasica?.ClaseUnidad ?? "",
-      //       idTipoUnidad: concesionBasica?.IdTipoUnidad ?? "",
-      //       tipoUnidad: concesionBasica?.TipoUnidad ?? "",
-      //       idUsoUnidad: concesionBasica?.IdUsoUnidad ?? "",
-      //       usoUnidad: concesionBasica?.UsoUnidad ?? "",
-      //       idTipoConcesion: concesionBasica?.IdTipoConcesion ?? "",
-      //       clave: concesionBasica?.Clave ?? "",
-      //       tipoConcesion: concesionBasica?.TipoConcesion ?? "",
-      //       idModalidad: concesionBasica?.IdModalidad ?? 0,
-      //       modalidad: concesionBasica?.Modalidad ?? "",
-      //       esConcesion: concesionBasica?.EsConcesion ?? false,
-      //       numeroExpediente: concesionBasica?.NumeroExpediente ?? "",
-      //       idSubmodalidad: concesionBasica?.IdSubmodalidad ?? 0,
-      //       subModalidad: concesionBasica?.SubModalidad ?? "",
-      //       mnemotecnia: concesionBasica?.Mnemotecnia ?? "",
-      //       idRuta: concesionBasica?.IdRuta ?? 0,
-      //       idLocalidadAutorizada: concesionBasica?.IdLocalidadAutorizada ?? 0,
-      //       localidadAutorizada: concesionBasica?.LocalidadAutorizada ?? "",
-      //       observaciones: concesionBasica?.Observaciones ?? "",
-      //       fechaRenovacion: concesionBasica?.FechaRenovacion ?? "",
-      //     };
-
-      //     // Puedes ver el objeto en consola para debug
-      //     console.log("Objeto concesionario para debug:", concesionarioDebugObj);
-
-      //     // Lo asignamos al estado como antes
-      //     setConcesionarioData(concesionarioDebugObj);
-      //   }
-
-      // }
+     
 
     } catch (err: any) {
       console.error("Error al seleccionar concesión:", err);

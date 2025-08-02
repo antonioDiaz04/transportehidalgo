@@ -1,9 +1,8 @@
 "use client";
-
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import { Search, FileText } from "lucide-react";
+import { Search, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -114,7 +113,6 @@ interface ConcesionarioData {
   domicilio: DomicilioData | null;
   beneficiarios: BeneficiarioData[];
   referencias: ReferenciaData[];
-  // Nuevos atributos agregados según el objeto data
   idConcesion: number | string;
   folio: string;
   fechaExpedicion: string;
@@ -170,7 +168,6 @@ interface ConcesionarioData {
 
 interface VehicleDetailsData {
   idV: string;
-  // Add other vehicle details properties if available from your API
 }
 
 export default function TitularModule() {
@@ -179,26 +176,23 @@ export default function TitularModule() {
   const [nombre, setNombre] = useState('');
   const [paterno, setPaterno] = useState('');
   const [materno, setMaterno] = useState('');
-  // const [rfc, setRfc] = useState('');
-
   const [isSearching, setIsSearching] = useState(false);
   const [selectedExpediente, setSelectedExpediente] = useState<Expediente | null>(null);
   const [openSections, setOpenSections] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [selectionError, setSelectionError] = useState<string | null>(null);
 
-  const [expedientes, setExpedientes] = useState<Expediente[]>([]); // Not directly used for display, but kept for consistency
+  const [expedientes, setExpedientes] = useState<Expediente[]>([]);
   const [concessionData, setConcessionData] = useState<ConcesionData | null>(null);
   const [seguroData, setSeguroData] = useState<SeguroData | null>(null);
   const [concesionarioData, setConcesionarioData] = useState<ConcesionarioData | null>(null);
   const [vehicleDetailsData, setVehicleDetailsData] = useState<VehicleDetailsData | null>(null);
-
+  const [isLoadingSelection, setIsLoadingSelection] = useState(false);
   const [concesionariosEncontrados, setConcesionariosEncontrados] = useState<any[]>([]);
-  const [concesionarioSeleccionado, setConcesionarioSeleccionado] = useState<any>(null); // Stores the fully selected concessionaire object
+  const [concesionarioSeleccionado, setConcesionarioSeleccionado] = useState<any>(null);
   const [concesionesSeleccionadas, setConcesionesSeleccionadas] = useState<string[]>([]);
-
   const [activeTab, setActiveTab] = useState(0);
 
-  // Prefetch de rutas comunes
   useEffect(() => {
     router.prefetch("/dashboard/ModificacionVehiculo");
     router.prefetch("/dashboard/iv");
@@ -223,8 +217,9 @@ export default function TitularModule() {
 
     setIsSearching(true);
     setError(null);
-    setConcesionariosEncontrados([]); // Clear previous search results
-    setConcesionarioSeleccionado(null); // Clear previous selection
+    setSelectionError(null);
+    setConcesionariosEncontrados([]);
+    setConcesionarioSeleccionado(null);
     setConcessionData(null);
     setSeguroData(null);
     setConcesionarioData(null);
@@ -232,9 +227,8 @@ export default function TitularModule() {
     setSelectedExpediente(null);
 
     try {
-      // Paginación: puedes agregar estados para page y pageSize si lo deseas
-      const page = 1; // O usa un estado para la página actual
-      const pageSize = 10; // O usa un estado para el tamaño de página
+      const page = 1;
+      const pageSize = 10;
 
       const searchParams = new URLSearchParams();
       if (nombre.trim()) searchParams.append("nombre", nombre.trim());
@@ -242,14 +236,6 @@ export default function TitularModule() {
       if (materno.trim()) searchParams.append("materno", materno.trim());
       searchParams.append("page", page.toString());
       searchParams.append("pageSize", pageSize.toString());
-
-      console.log("Buscando titular con parámetros:", {
-        nombre,
-        paterno,
-        materno,
-        page,
-        pageSize,
-      });
 
       const { data } = await apiClient(
         `/concesion/titular?${searchParams.toString()}`,
@@ -259,87 +245,85 @@ export default function TitularModule() {
         }
       );
 
-      console.log("Respuesta de la API (búsqueda de titular):", data);
+      const searchResults = data || [];
 
-      if (data) {
-        setConcesionariosEncontrados(data);
-        console.log("Concesionarios encontrados:", data);
-        // If only one result, automatically select it and load details
-        if (data.length === 1) {
-          console.log("Solo un concesionario encontrado, seleccionando automáticamente:", data.data[0]);
-          handleSelectConcesionario(data.data[0]);
+      if (searchResults.length > 0) {
+        setConcesionariosEncontrados(searchResults);
+        console.log("Resultados de búsqueda:", searchResults);
+        if (searchResults.length === 1) {
+          handleSelectConcesionario(searchResults[0]);
         }
       } else {
         setConcesionariosEncontrados([]);
         setError("No se encontraron resultados para la búsqueda.");
-        console.log("No se encontraron resultados para la búsqueda.");
       }
+
     } catch (err) {
       console.error("Error al buscar titular:", err);
       setError("Error al buscar titular. Por favor, intenta de nuevo.");
     } finally {
       setIsSearching(false);
-      console.log("Búsqueda finalizada.");
     }
   };
 
+
   const handleSelectConcesionario = async (concesionario: any) => {
-    setConcesionarioSeleccionado(concesionario); // Set the selected concessionaire for highlighting
-    setError(null); // Clear any previous errors
+    setIsLoadingSelection(true);
+    setConcesionarioSeleccionado(concesionario);
+    setError(null);
+    setSelectionError(null);
     console.log("Concesionario seleccionado:", concesionario);
 
-    const idConcesionario = Number(concesionario.idConcesionario)
+    const idConcesionario = Number(concesionario.idConcesionario);
 
     try {
-      // Make a single API call to the comprehensive endpoint
-      const response = await apiClient(
-        `/concesion/concesionario/${idConcesionario}`,
+      console.log("Obteniendo detalle de concesión para concesionario ID:", idConcesionario);
 
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
+      // PRIMERA LLAMADA: Obtiene el detalle del concesionario
+      const response = await apiClient(`/concesion/concesionario/${idConcesionario}`, {
+        method: 'GET',
+        headers: { "Content-Type": "application/json" },
+        withCredentials: true,
+      });
+
+      console.log("Respuesta de la API para concesionario seleccionado:", response);
+
+      let fullConcessionData;
+
+      // --- LÓGICA DE AJUSTE SIMPLIFICADA ---
+      // Si la respuesta es un objeto con concesionario, la usamos directamente.
+      // Si la respuesta es un array con un ID de concesión, hacemos una segunda llamada.
+      if (response?.concesionario?.data) {
+        console.log("Se recibieron los datos completos en la primera llamada.");
+        fullConcessionData = response;
+      } else if (Array.isArray(response?.data) && response.data.length > 0) {
+        const primeraConcesion = response.data[0];
+        const idConcesion = Number(primeraConcesion.idConcesion); // Usar IdConcesion como en la API
+
+        if (!idConcesion) {
+          throw new Error("No se pudo obtener un ID de concesión válido para la segunda llamada.");
         }
-      );
-      console.log("Respuesta de la API para concesionario seleccionado:", response.data);
-      const primeraConcesion = response.data[0];
-      const idC = Number(primeraConcesion.idConcesion); // Asegúrate que el campo se llama idConcesion (minúscula según tu respuesta)
 
-      console.log("ID de concesión a buscar:", idC);
-
-      // Make a single API call to the comprehensive endpoint
-      const resdata = await apiClient(
-        `/concesion/${idC}`,
-        {
+        console.log("Se recibió un array de concesiones. Realizando segunda llamada con ID:", idConcesion);
+        const resdata = await apiClient(`/concesion/${idConcesion}`, {
           method: 'GET',
-
           withCredentials: true,
-        }
-      );
-      const fullConcessionData = resdata;
+        });
+        fullConcessionData = resdata;
+      } else {
+        throw new Error("La respuesta de la API no contiene los datos de concesión esperados.");
+      }
+
+      // A partir de aquí, el código maneja de forma segura los datos
       console.log("Respuesta de la API para detalle de concesión (full data):", fullConcessionData);
 
-      // El objeto real está en fullConcessionData.data
-      // fullConcessionData.data is an array of concessions
-      // For backward compatibility, pick the first concession as "main" data
-      // const data = Array.isArray(fullConcessionData.data) && fullConcessionData.data.length > 0
-      //   ? fullConcessionData.data[0]
-      //   : fullConcessionData.data;
-      console.log("Datos de la concesión obtenidos:", fullConcessionData);
-      // fullConcessionData.data is now an array of concessions
-      // Adapt to new API response structure (object with .concesion, .concesionario, etc.)
-      const concesionItem = fullConcessionData.concesion?.data;
-      const concesionarioItem = fullConcessionData.concesionario?.data;
-      const beneficiariosArr = fullConcessionData.beneficiarios?.data ?? [];
-      const referenciasArr = fullConcessionData.referencias?.data ?? [];
-      const direccionesArr = fullConcessionData.direcciones?.data ?? [];
-      const seguroItem = fullConcessionData.seguro?.data;
-      const vehiculoItem = fullConcessionData.vehiculo?.data;
+      // --- MAPEO DE DATOS SEGURO ---
+      // Cada bloque de mapeo es independiente para evitar errores cuando falte información.
 
-      if (concesionItem && concesionarioItem) {
-        // ConcesionData
-        const concession: ConcesionData = {
+      // Mapeo de la concesión
+      if (fullConcessionData.concesion?.data) {
+        const concesionItem = fullConcessionData.concesion.data;
+        const concession = {
           idC: concesionItem.IdConcesion,
           folio: concesionItem.Folio ?? "",
           tipoServicio: concesionItem.TipoServicio ?? "",
@@ -349,7 +333,7 @@ export default function TitularModule() {
           municipioAutorizado: concesionItem.MunicipioAutorizado ?? "",
           claseUnidad: concesionItem.ClaseUnidad ?? "",
           vigencia: concesionItem.VigenciaAnios ? `${concesionItem.VigenciaAnios} años` : "",
-          estatus: concesionItem.Estatus ?? concesionItem.estatus ?? "",
+          estatus: concesionItem.Estatus ?? "",
           seriePlaca: concesionItem.SeriePlacaActual ?? "",
           fechaRegistro: concesionItem.FechaExpedicion ?? "",
           fechaRenovacion: concesionItem.FechaRenovacion ?? "",
@@ -362,46 +346,26 @@ export default function TitularModule() {
           observaciones: concesionItem.Observaciones ?? "",
         };
         setConcessionData(concession);
-
-        // Set selected concesionario and all their concessions for the table (simulate single concession)
-        setConcesionarioSeleccionado({
-          ...concesionario,
-          ...concesionarioItem,
-          nombreCompleto: concesionarioItem.NombreConcesionario ?? `${concesionarioItem.Nombre} ${concesionarioItem.ApellidoPaterno} ${concesionarioItem.ApellidoMaterno}`,
-          concesiones: [
-            {
-              idConcesion: concesionItem.IdConcesion,
-              folio: concesionItem.Folio,
-              seriePlaca: concesionItem.SeriePlacaActual,
-              numeroExpediente: concesionItem.NumeroExpediente,
-            },
-          ],
-        });
-
         setSelectedExpediente({
           id: concession.numeroExpediente,
           concesion: concession.folio,
-          titular:
-            concesionarioItem.NombreConcesionario ??
-            `${concesionarioItem.Nombre} ${concesionarioItem.ApellidoPaterno} ${concesionarioItem.ApellidoMaterno}`,
+          titular: concesionario.nombreCompleto,
           tipo: concession.tipoServicio,
         });
+      } else {
+        setConcessionData(null);
+        setSelectedExpediente(null);
+      }
 
-        // Seguro
-        if (seguroItem) {
-          setSeguroData({
-            aseguradora: seguroItem.NombreAseguradora ?? "",
-            folioPago: seguroItem.FolioPago ?? "",
-            fechaVencimiento: seguroItem.FechaVencimiento ?? "",
-            numeroPoliza: seguroItem.NumeroPoliza ?? "",
-            fechaExpedicion: seguroItem.FechaExpedicion ?? "",
-            observaciones: seguroItem.Observaciones ?? "",
-          });
-        } else {
-          setSeguroData(null);
-        }
+      // Mapeo del concesionario
+      // --- 2. Mapeo del Concesionario y su Domicilio ---
+      if (fullConcessionData.concesionario?.data) {
+        const concesionarioItem = fullConcessionData.concesionario.data;
+        const concesionItem = fullConcessionData.concesion?.data; // Obtiene los datos de la concesión
+        const direccionesArr = fullConcessionData.direcciones?.data ?? [];
+        const beneficiariosArr = fullConcessionData.beneficiarios?.data ?? [];
+        const referenciasArr = fullConcessionData.referencias?.data ?? [];
 
-        // ConcesionarioData
         setConcesionarioData({
           tipoPersona: concesionarioItem.TipoPersona ?? "",
           identificador: concesionarioItem.IdConcesionario ?? "",
@@ -418,134 +382,435 @@ export default function TitularModule() {
           fechaAlta: concesionarioItem.FechaAlta ?? "",
           estatus: concesionarioItem.Estatus ?? "",
           observacionesConcesionario: concesionarioItem.Observaciones ?? "",
-          domicilio:
-            Array.isArray(direccionesArr) && direccionesArr.length > 0
-              ? {
-                calle: direccionesArr[0].Calle ?? "",
-                colonia: direccionesArr[0].Colonia ?? "",
-                cruzaCon: direccionesArr[0].CruceCalles ?? "",
-                referencia: direccionesArr[0].Referencia ?? "",
-                numeroExterior: direccionesArr[0].NumExterior ?? "",
-                numeroInterior: direccionesArr[0].NumInterior ?? "",
-                estado: direccionesArr[0].Estado ?? "",
-                codigoPostal: direccionesArr[0].CodigoPostal ?? "",
-                municipio: direccionesArr[0].Municipio ?? "",
-                localidad: direccionesArr[0].Localidad ?? "",
-                tipoDireccion: direccionesArr[0].TipoDireccion ?? "",
-                esFiscal: direccionesArr[0].EsFiscal ?? false,
-                telefono: direccionesArr[0].Telefono ?? "",
-                fax: direccionesArr[0].Fax ?? "",
-              }
-              : null,
+
+          // Se corrige el tipo de dato null para evitar errores de TypeScript
+          domicilio: direccionesArr.length > 0
+            ? {
+              calle: direccionesArr[0].Calle ?? "",
+              colonia: direccionesArr[0].Colonia ?? "",
+              cruzaCon: direccionesArr[0].CruceCalles ?? "",
+              referencia: direccionesArr[0].Referencia ?? "",
+              numeroExterior: direccionesArr[0].NumExterior ?? "",
+              numeroInterior: direccionesArr[0].NumInterior ?? "",
+              estado: direccionesArr[0].Estado ?? "",
+              codigoPostal: direccionesArr[0].CodigoPostal ?? "",
+              municipio: direccionesArr[0].Municipio ?? "",
+              localidad: direccionesArr[0].Localidad ?? "",
+              tipoDireccion: direccionesArr[0].TipoDireccion ?? "",
+              esFiscal: direccionesArr[0].EsFiscal ?? false,
+              telefono: direccionesArr[0].Telefono ?? "",
+              fax: direccionesArr[0].Fax ?? "",
+            }
+            : null,
+
           beneficiarios: Array.isArray(beneficiariosArr)
-            ? beneficiariosArr.map((b: any) => ({
-              nombre: b.NombreCompleto ?? "",
-              parentesco: b.Parentesco ?? "",
-            }))
+            ? beneficiariosArr.map((b: any) => ({ nombre: b.Nombre ?? "", parentesco: b.Parentesco ?? "" }))
             : [],
           referencias: Array.isArray(referenciasArr)
-            ? referenciasArr.map((r: any) => ({
-              nombreCompleto: r.NombreCompleto ?? "",
-              parentesco: r.Parentesco ?? "",
-              calle: r.Calle ?? "",
-              colonia: r.Colonia ?? "",
-              cruzaCon: r.CruceCalles ?? "",
-              referencia: r.Referencia ?? "",
-              numeroExterior: r.NumExterior ?? "",
-              numeroInterior: r.NumInterior ?? "",
-              estado: r.Estado ?? "",
-              codigoPostal: r.CodigoPostal ?? "",
-              municipio: r.Municipio ?? "",
-              localidad: r.Localidad ?? "",
-              tipoDireccion: r.TipoDireccion ?? "",
-              telefonoParticular: r.Telefono ?? "",
-              fax: r.Fax ?? "",
-            }))
+            ? referenciasArr.map((r: any) => ({ ...r, nombreCompleto: r.NombreCompleto ?? "", parentesco: r.Parentesco ?? "", telefonoParticular: r.Telefono ?? "" }))
             : [],
-          idConcesion: concesionItem.IdConcesion ?? "",
-          folio: concesionItem.Folio ?? "",
-          fechaExpedicion: concesionItem.FechaExpedicion ?? "",
-          fechaVencimiento: concesionItem.FechaVencimiento ?? "",
-          vigenciaAnios: concesionItem.VigenciaAnios ?? 0,
-          seriePlacaActual: concesionItem.SeriePlacaActual ?? "",
-          seriePlacaAnterior: concesionItem.SeriePlacaAnterior ?? "",
-          ultimaActualizacion: concesionItem.UltimaActualizacion ?? "",
-          idItinerario: concesionItem.IdItinerario ?? 0,
-          itinerario: concesionItem.Itinerario ?? "",
-          ruta: concesionItem.Ruta ?? "",
-          idServicio: concesionItem.IdServicio ?? 0,
-          idMunicipioAutorizado: concesionItem.IdMunicipioAutorizado ?? 0,
-          estadoExpedicion: concesionItem.EstadoExpedicion ?? "",
-          municipioAutorizado: concesionItem.MunicipioAutorizado ?? "",
-          idMunicipioExpedicion: concesionItem.IdMunicipioExpedicion ?? 0,
-          municipioExpedicion: concesionItem.MunicipioExpedicion ?? "",
-          idEstadoExpedicion: concesionItem.IdEstadoExpedicion ?? 0,
-          idEstatus: concesionItem.IdEstatus ?? 0,
-          idVehiculoActual: concesionItem.IdVehiculoActual ?? "",
-          idVehiculoAnterior: concesionItem.IdVehiculoAnterior ?? "",
-          idDelegacion: concesionItem.IdDelegacion ?? 0,
-          delegacion: concesionItem.Delegacion ?? "",
-          idConcesionarioActual: concesionItem.IdConcesionarioActual ?? "",
-          idConcesionarioAnterior: concesionItem.IdConcesionarioAnterior ?? "",
-          tipoServicio: concesionItem.TipoServicio ?? "",
-          tipoServicioAbreviatura: concesionItem.TipoServicioAbreviatura ?? "",
-          idPropietario: concesionItem.IdPropietario ?? "",
-          idTipoPlaca: concesionItem.IdTipoPlaca ?? "",
-          tipoPlaca: concesionItem.TipoPlaca ?? "",
-          idClaseUnidad: concesionItem.IdClaseUnidad ?? "",
-          claseUnidad: concesionItem.ClaseUnidad ?? "",
-          idTipoUnidad: concesionItem.IdTipoUnidad ?? "",
-          tipoUnidad: concesionItem.TipoUnidad ?? "",
-          idUsoUnidad: concesionItem.IdUsoUnidad ?? "",
-          usoUnidad: concesionItem.UsoUnidad ?? "",
-          idTipoConcesion: concesionItem.IdTipoConcesion ?? "",
-          clave: concesionItem.Clave ?? "",
-          tipoConcesion: concesionItem.TipoConcesion ?? "",
-          idModalidad: concesionItem.IdModalidad ?? 0,
-          modalidad: concesionItem.Modalidad ?? "",
-          esConcesion: concesionItem.EsConcesion ?? false,
-          numeroExpediente: concesionItem.NumeroExpediente ?? "",
-          idSubmodalidad: concesionItem.IdSubmodalidad ?? 0,
-          subModalidad: concesionItem.SubModalidad ?? "",
-          mnemotecnia: concesionItem.Mnemotecnia ?? "",
-          idRuta: concesionItem.IdRuta ?? 0,
-          idLocalidadAutorizada: concesionItem.IdLocalidadAutorizada ?? 0,
-          localidadAutorizada: concesionItem.LocalidadAutorizada ?? "",
-          observaciones: concesionItem.Observaciones ?? "",
-          fechaRenovacion: concesionItem.FechaRenovacion ?? "",
+
+          // AÑADIDO: Volvemos a incluir los datos de la concesión aquí
+          // Usamos el operador ?. para manejar el caso en que concesionItem es null
+          idConcesion: concesionItem?.IdConcesion ?? "",
+          folio: concesionItem?.Folio ?? "",
+          fechaExpedicion: concesionItem?.FechaExpedicion ?? "",
+          fechaVencimiento: concesionItem?.FechaVencimiento ?? "",
+          vigenciaAnios: concesionItem?.VigenciaAnios ?? 0,
+          seriePlacaActual: concesionItem?.SeriePlacaActual ?? "",
+          seriePlacaAnterior: concesionItem?.SeriePlacaAnterior ?? "",
+          ultimaActualizacion: concesionItem?.UltimaActualizacion ?? "",
+          idItinerario: concesionItem?.IdItinerario ?? 0,
+          itinerario: concesionItem?.Itinerario ?? "",
+          ruta: concesionItem?.Ruta ?? "",
+          idServicio: concesionItem?.IdServicio ?? 0,
+          idMunicipioAutorizado: concesionItem?.IdMunicipioAutorizado ?? 0,
+          estadoExpedicion: concesionItem?.EstadoExpedicion ?? "",
+          municipioAutorizado: concesionItem?.MunicipioAutorizado ?? "",
+          idMunicipioExpedicion: concesionItem?.IdMunicipioExpedicion ?? 0,
+          municipioExpedicion: concesionItem?.MunicipioExpedicion ?? "",
+          idEstadoExpedicion: concesionItem?.IdEstadoExpedicion ?? 0,
+          idEstatus: concesionItem?.IdEstatus ?? 0,
+          idVehiculoActual: concesionItem?.IdVehiculoActual ?? "",
+          idVehiculoAnterior: concesionItem?.IdVehiculoAnterior ?? "",
+          idDelegacion: concesionItem?.IdDelegacion ?? 0,
+          delegacion: concesionItem?.Delegacion ?? "",
+          idConcesionarioActual: concesionItem?.IdConcesionarioActual ?? "",
+          idConcesionarioAnterior: concesionItem?.IdConcesionarioAnterior ?? "",
+          tipoServicio: concesionItem?.TipoServicio ?? "",
+          tipoServicioAbreviatura: concesionItem?.TipoServicioAbreviatura ?? "",
+          idPropietario: concesionItem?.IdPropietario ?? "",
+          idTipoPlaca: concesionItem?.IdTipoPlaca ?? "",
+          tipoPlaca: concesionItem?.TipoPlaca ?? "",
+          idClaseUnidad: concesionItem?.IdClaseUnidad ?? "",
+          claseUnidad: concesionItem?.ClaseUnidad ?? "",
+          idTipoUnidad: concesionItem?.IdTipoUnidad ?? "",
+          tipoUnidad: concesionItem?.TipoUnidad ?? "",
+          idUsoUnidad: concesionItem?.IdUsoUnidad ?? "",
+          usoUnidad: concesionItem?.UsoUnidad ?? "",
+          idTipoConcesion: concesionItem?.IdTipoConcesion ?? "",
+          clave: concesionItem?.Clave ?? "",
+          tipoConcesion: concesionItem?.TipoConcesion ?? "",
+          idModalidad: concesionItem?.IdModalidad ?? 0,
+          modalidad: concesionItem?.Modalidad ?? "",
+          esConcesion: concesionItem?.EsConcesion ?? false,
+          numeroExpediente: concesionItem?.NumeroExpediente ?? "",
+          idSubmodalidad: concesionItem?.IdSubmodalidad ?? 0,
+          subModalidad: concesionItem?.SubModalidad ?? "",
+          mnemotecnia: concesionItem?.Mnemotecnia ?? "",
+          idRuta: concesionItem?.IdRuta ?? 0,
+          idLocalidadAutorizada: concesionItem?.IdLocalidadAutorizada ?? 0,
+          localidadAutorizada: concesionItem?.LocalidadAutorizada ?? "",
+          observaciones: concesionItem?.Observaciones ?? "",
+          fechaRenovacion: concesionItem?.FechaRenovacion ?? "",
         });
-
-        // Vehículo
-        if (vehiculoItem) {
-          setVehicleDetailsData({
-            idV: vehiculoItem.IdVehiculo ?? "",
-            // Puedes agregar más campos si los necesitas
-          });
-        } else {
-          setVehicleDetailsData(null);
-        }
-
-        setOpenSections([0]);
-        setActiveTab(0);
       } else {
-        setError("No se encontraron datos detallados para esta concesión.");
+        setConcesionarioData(null);
       }
+
+      // Mapeo del seguro
+      if (fullConcessionData.seguro?.data) {
+        const seguroItem = fullConcessionData.seguro.data;
+        setSeguroData({
+          aseguradora: seguroItem.NombreAseguradora ?? "",
+          folioPago: seguroItem.FolioPago ?? "",
+          fechaVencimiento: seguroItem.FechaVencimiento ?? "",
+          numeroPoliza: seguroItem.NumeroPoliza ?? "",
+          fechaExpedicion: seguroItem.FechaExpedicion ?? "",
+          observaciones: seguroItem.Observaciones ?? "",
+        });
+      } else {
+        setSeguroData(null);
+      }
+
+      // Mapeo del vehículo
+      if (fullConcessionData.vehiculo?.data) {
+        const vehiculoItem = fullConcessionData.vehiculo.data;
+        setVehicleDetailsData({
+          idV: vehiculoItem.IdVehiculo ?? "",
+          // // clase: vehiculoItem.ClaseVehiculo ?? "",
+          // placaAnterior: vehiculoItem.PlacaAnterior ?? "",
+          // tipo: vehiculoItem.TipoVehiculo ?? "",
+          // categoria: vehiculoItem.Categoria ?? "",
+          // marca: vehiculoItem.Marca ?? "",
+          // rfv: vehiculoItem.RegFedVeh ?? "",
+          // subMarca: vehiculoItem.SubMarca ?? "",
+          // cilindros: vehiculoItem.NumeroCilindros?.toString() ?? "",
+          // version: vehiculoItem.Version ?? "",
+          // numeroPasajeros: vehiculoItem.NumeroPasajeros?.toString() ?? "",
+          // modelo: vehiculoItem.Modelo?.toString() ?? "",
+          // vigencia: vehiculoItem.Vigencia ?? "",
+          // tipoPlaca: vehiculoItem.TipoPlaca ?? "",
+          // numeroPuertas: vehiculoItem.NumeroPuertas?.toString() ?? "",
+          // tipoServicio: vehiculoItem.TipoServicio ?? "",
+          // numeroToneladas: vehiculoItem.NumeroToneladas ?? "",
+          // fechaFactura: vehiculoItem.FechaFactura ?? "",
+          // centimetrosCubicos: vehiculoItem.CentrimetrosCubicos ?? "",
+          // folioFactura: vehiculoItem.NumeroFactura ?? "",
+          // color: vehiculoItem.Color ?? "",
+          // importeFactura: vehiculoItem.ImporteFactura?.toString() ?? "",
+          // numeroMotor: vehiculoItem.Motor ?? "",
+          // polizaSeguro: vehiculoItem.PolizaSeguro ?? "",
+          // numeroSerie: vehiculoItem.SerieNIV ?? "",
+          // origen: vehiculoItem.VehiculoOrigen ?? "",
+          // capacidad: vehiculoItem.Capacidad ?? "",
+          // estadoProcedencia: vehiculoItem.EstadoProcedencia ?? "",
+          // combustible: vehiculoItem.Combustible ?? "",
+          // estatus: vehiculoItem.IdEstatus?.toString() ?? "",
+          // nrpv: vehiculoItem.NRPV ?? "",
+        });
+      } else {
+        setVehicleDetailsData(null);
+      }
+
+      // Se establece el estado del concesionario seleccionado con la información actualizada
+      const updatedConcesionarioSeleccionado = {
+        ...concesionario,
+        ...fullConcessionData.concesionario?.data,
+        nombreCompleto: fullConcessionData.concesionario?.data?.NombreConcesionario ?? `${fullConcessionData.concesionario?.data?.Nombre} ${fullConcessionData.concesionario?.data?.ApellidoPaterno} ${fullConcessionData.concesionario?.data?.ApellidoMaterno}`,
+        concesiones: fullConcessionData.concesion?.data
+          ? [
+            {
+              idConcesion: fullConcessionData.concesion.data.IdConcesion,
+              folio: fullConcessionData.concesion.data.Folio,
+              seriePlaca: fullConcessionData.concesion.data.SeriePlacaActual,
+              numeroExpediente: fullConcessionData.concesion.data.NumeroExpediente,
+            },
+          ]
+          : [],
+      };
+      setConcesionarioSeleccionado(updatedConcesionarioSeleccionado);
+
+      // Se abren las secciones y se establece la pestaña activa
+      setOpenSections([0]);
+      setActiveTab(0);
+
     } catch (err) {
       console.error("Error al obtener detalle de la concesión:", err);
-      setError("No se pudo obtener el detalle de la concesión. Por favor, intenta de nuevo.");
+      setSelectionError("No se pudo obtener el detalle de la concesión. Por favor, intenta de nuevo.");
       setConcessionData(null);
       setSeguroData(null);
       setConcesionarioData(null);
       setVehicleDetailsData(null);
       setSelectedExpediente(null);
+    } finally {
+      setIsLoadingSelection(false);
     }
   };
+  // const handleSelectConcesionario = async (concesionario: any) => {
+  //   setIsLoadingSelection(true);
+  //   setConcesionarioSeleccionado(concesionario);
+  //   setError(null);
+  //   setSelectionError(null);
+  //   console.log("Concesionario seleccionado:", concesionario);
+
+  //   const idConcesionario = Number(concesionario.idConcesionario)
+
+  //   try {
+  //     console.log("Obteniendo detalle de concesión para concesionario ID:", idConcesionario);
+
+  //     const response = await apiClient(`/concesion/concesionario/${idConcesionario}`,
+  //       {
+  //         method: 'GET',
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //         },
+  //         withCredentials: true,
+  //       }
+  //     );
+
+  //     console.log("Respuesta de la API para concesionario seleccionado:", response);
+  //     console.log("Respuesta de la API para concesionario seleccionado:", response.data);
+  //     const primeraConcesion = response.data[0];
+  //     const idC = Number(primeraConcesion.idConcesion)
+
+  //     console.log("ID de concesión a buscar:", idC);  
+
+  //     const resdata = await apiClient(
+  //       `/concesion/${idC}`,
+  //       {
+  //         method: 'GET',
+  //         withCredentials: true,
+  //       }
+  //     );
+  //     const fullConcessionData = resdata;
+  //     console.log("Respuesta de la API para detalle de concesión (full data):", fullConcessionData);
+
+  //     const concesionItem = fullConcessionData.concesion?.data;
+  //     const concesionarioItem = fullConcessionData.concesionario?.data;
+  //     const beneficiariosArr = fullConcessionData.beneficiarios?.data ?? [];
+  //     const referenciasArr = fullConcessionData.referencias?.data ?? [];
+  //     const direccionesArr = fullConcessionData.direcciones?.data ?? [];
+  //     const seguroItem = fullConcessionData.seguro?.data;
+  //     const vehiculoItem = fullConcessionData.vehiculo?.data;
+
+  //     if (concesionItem && concesionarioItem) {
+  //       const concession: ConcesionData = {
+  //         idC: concesionItem.IdConcesion,
+  //         folio: concesionItem.Folio ?? "",
+  //         tipoServicio: concesionItem.TipoServicio ?? "",
+  //         tipoPlaca: concesionItem.TipoPlaca ?? "",
+  //         mnemotecnia: concesionItem.Mnemotecnia ?? "",
+  //         modalidad: concesionItem.Modalidad ?? "",
+  //         municipioAutorizado: concesionItem.MunicipioAutorizado ?? "",
+  //         claseUnidad: concesionItem.ClaseUnidad ?? "",
+  //         vigencia: concesionItem.VigenciaAnios ? `${concesionItem.VigenciaAnios} años` : "",
+  //         estatus: concesionItem.Estatus ?? concesionItem.estatus ?? "",
+  //         seriePlaca: concesionItem.SeriePlacaActual ?? "",
+  //         fechaRegistro: concesionItem.FechaExpedicion ?? "",
+  //         fechaRenovacion: concesionItem.FechaRenovacion ?? "",
+  //         numeroExpediente: concesionItem.NumeroExpediente ?? "",
+  //         submodalidad: concesionItem.SubModalidad ?? "",
+  //         localidadAutorizada: concesionItem.LocalidadAutorizada ?? "",
+  //         tipoUnidad: concesionItem.TipoUnidad ?? "",
+  //         seriePlacaAnterior: concesionItem.SeriePlacaAnterior ?? "",
+  //         fechaVencimiento: concesionItem.FechaVencimiento ?? "",
+  //         observaciones: concesionItem.Observaciones ?? "",
+  //       };
+  //       setConcessionData(concession);
+
+  //       setConcesionarioSeleccionado({
+  //         ...concesionario,
+  //         ...concesionarioItem,
+  //         nombreCompleto: concesionarioItem.NombreConcesionario ?? `${concesionarioItem.Nombre} ${concesionarioItem.ApellidoPaterno} ${concesionarioItem.ApellidoMaterno}`,
+  //         concesiones: [
+  //           {
+  //             idConcesion: concesionItem.IdConcesion,
+  //             folio: concesionItem.Folio,
+  //             seriePlaca: concesionItem.SeriePlacaActual,
+  //             numeroExpediente: concesionItem.NumeroExpediente,
+  //           },
+  //         ],
+  //       });
+
+  //       setSelectedExpediente({
+  //         id: concession.numeroExpediente,
+  //         concesion: concession.folio,
+  //         titular:
+  //           concesionarioItem.NombreConcesionario ??
+  //           `${concesionarioItem.Nombre} ${concesionarioItem.ApellidoPaterno} ${concesionarioItem.ApellidoMaterno}`,
+  //         tipo: concession.tipoServicio,
+  //       });
+
+  //       if (seguroItem) {
+  //         setSeguroData({
+  //           aseguradora: seguroItem.NombreAseguradora ?? "",
+  //           folioPago: seguroItem.FolioPago ?? "",
+  //           fechaVencimiento: seguroItem.FechaVencimiento ?? "",
+  //           numeroPoliza: seguroItem.NumeroPoliza ?? "",
+  //           fechaExpedicion: seguroItem.FechaExpedicion ?? "",
+  //           observaciones: seguroItem.Observaciones ?? "",
+  //         });
+  //       } else {
+  //         setSeguroData(null);
+  //       }
+
+  //       setConcesionarioData({
+  //         tipoPersona: concesionarioItem.TipoPersona ?? "",
+  //         identificador: concesionarioItem.IdConcesionario ?? "",
+  //         nombre: concesionarioItem.Nombre ?? "",
+  //         apellidoPaterno: concesionarioItem.ApellidoPaterno ?? "",
+  //         apellidoMaterno: concesionarioItem.ApellidoMaterno ?? "",
+  //         fechaNacimiento: concesionarioItem.FechaNacimiento ?? "",
+  //         lugarNacimiento: concesionarioItem.LugarNacimiento ?? "",
+  //         genero: concesionarioItem.Genero ?? "",
+  //         rfc: concesionarioItem.RFC ?? "",
+  //         nacionalidad: concesionarioItem.Nacionalidad ?? "",
+  //         correoElectronico: concesionarioItem.Mail ?? "",
+  //         estadoCivil: concesionarioItem.EstadoCivil ?? "",
+  //         fechaAlta: concesionarioItem.FechaAlta ?? "",
+  //         estatus: concesionarioItem.Estatus ?? "",
+  //         observacionesConcesionario: concesionarioItem.Observaciones ?? "",
+  //         domicilio:
+  //           Array.isArray(direccionesArr) && direccionesArr.length > 0
+  //             ? {
+  //               calle: direccionesArr[0].Calle ?? "",
+  //               colonia: direccionesArr[0].Colonia ?? "",
+  //               cruzaCon: direccionesArr[0].CruceCalles ?? "",
+  //               referencia: direccionesArr[0].Referencia ?? "",
+  //               numeroExterior: direccionesArr[0].NumExterior ?? "",
+  //               numeroInterior: direccionesArr[0].NumInterior ?? "",
+  //               estado: direccionesArr[0].Estado ?? "",
+  //               codigoPostal: direccionesArr[0].CodigoPostal ?? "",
+  //               municipio: direccionesArr[0].Municipio ?? "",
+  //               localidad: direccionesArr[0].Localidad ?? "",
+  //               tipoDireccion: direccionesArr[0].TipoDireccion ?? "",
+  //               esFiscal: direccionesArr[0].EsFiscal ?? false,
+  //               telefono: direccionesArr[0].Telefono ?? "",
+  //               fax: direccionesArr[0].Fax ?? "",
+  //             }
+  //             : null,
+  //         beneficiarios: Array.isArray(beneficiariosArr)
+  //           ? beneficiariosArr.map((b: any) => ({
+  //             nombre: b.NombreCompleto ?? "",
+  //             parentesco: b.Parentesco ?? "",
+  //           }))
+  //           : [],
+  //         referencias: Array.isArray(referenciasArr)
+  //           ? referenciasArr.map((r: any) => ({
+  //             nombreCompleto: r.NombreCompleto ?? "",
+  //             parentesco: r.Parentesco ?? "",
+  //             calle: r.Calle ?? "",
+  //             colonia: r.Colonia ?? "",
+  //             cruzaCon: r.CruceCalles ?? "",
+  //             referencia: r.Referencia ?? "",
+  //             numeroExterior: r.NumExterior ?? "",
+  //             numeroInterior: r.NumInterior ?? "",
+  //             estado: r.Estado ?? "",
+  //             codigoPostal: r.CodigoPostal ?? "",
+  //             municipio: r.Municipio ?? "",
+  //             localidad: r.Localidad ?? "",
+  //             tipoDireccion: r.TipoDireccion ?? "",
+  //             telefonoParticular: r.Telefono ?? "",
+  //             fax: r.Fax ?? "",
+  //           }))
+  //           : [],
+  //         idConcesion: concesionItem.IdConcesion ?? "",
+  //         folio: concesionItem.Folio ?? "",
+  //         fechaExpedicion: concesionItem.FechaExpedicion ?? "",
+  //         fechaVencimiento: concesionItem.FechaVencimiento ?? "",
+  //         vigenciaAnios: concesionItem.VigenciaAnios ?? 0,
+  //         seriePlacaActual: concesionItem.SeriePlacaActual ?? "",
+  //         seriePlacaAnterior: concesionItem.SeriePlacaAnterior ?? "",
+  //         ultimaActualizacion: concesionItem.UltimaActualizacion ?? "",
+  //         idItinerario: concesionItem.IdItinerario ?? 0,
+  //         itinerario: concesionItem.Itinerario ?? "",
+  //         ruta: concesionItem.Ruta ?? "",
+  //         idServicio: concesionItem.IdServicio ?? 0,
+  //         idMunicipioAutorizado: concesionItem.IdMunicipioAutorizado ?? 0,
+  //         estadoExpedicion: concesionItem.EstadoExpedicion ?? "",
+  //         municipioAutorizado: concesionItem.MunicipioAutorizado ?? "",
+  //         idMunicipioExpedicion: concesionItem.IdMunicipioExpedicion ?? 0,
+  //         municipioExpedicion: concesionItem.MunicipioExpedicion ?? "",
+  //         idEstadoExpedicion: concesionItem.IdEstadoExpedicion ?? 0,
+  //         idEstatus: concesionItem.IdEstatus ?? 0,
+  //         idVehiculoActual: concesionItem.IdVehiculoActual ?? "",
+  //         idVehiculoAnterior: concesionItem.IdVehiculoAnterior ?? "",
+  //         idDelegacion: concesionItem.IdDelegacion ?? 0,
+  //         delegacion: concesionItem.Delegacion ?? "",
+  //         idConcesionarioActual: concesionItem.IdConcesionarioActual ?? "",
+  //         idConcesionarioAnterior: concesionItem.IdConcesionarioAnterior ?? "",
+  //         tipoServicio: concesionItem.TipoServicio ?? "",
+  //         tipoServicioAbreviatura: concesionItem.TipoServicioAbreviatura ?? "",
+  //         idPropietario: concesionItem.IdPropietario ?? "",
+  //         idTipoPlaca: concesionItem.IdTipoPlaca ?? "",
+  //         tipoPlaca: concesionItem.TipoPlaca ?? "",
+  //         idClaseUnidad: concesionItem.IdClaseUnidad ?? "",
+  //         claseUnidad: concesionItem.ClaseUnidad ?? "",
+  //         idTipoUnidad: concesionItem.IdTipoUnidad ?? "",
+  //         tipoUnidad: concesionItem.TipoUnidad ?? "",
+  //         idUsoUnidad: concesionItem.IdUsoUnidad ?? "",
+  //         usoUnidad: concesionItem.UsoUnidad ?? "",
+  //         idTipoConcesion: concesionItem.IdTipoConcesion ?? "",
+  //         clave: concesionItem.Clave ?? "",
+  //         tipoConcesion: concesionItem.TipoConcesion ?? "",
+  //         idModalidad: concesionItem.IdModalidad ?? 0,
+  //         modalidad: concesionItem.Modalidad ?? "",
+  //         esConcesion: concesionItem.EsConcesion ?? false,
+  //         numeroExpediente: concesionItem.NumeroExpediente ?? "",
+  //         idSubmodalidad: concesionItem.IdSubmodalidad ?? 0,
+  //         subModalidad: concesionItem.SubModalidad ?? "",
+  //         mnemotecnia: concesionItem.Mnemotecnia ?? "",
+  //         idRuta: concesionItem.IdRuta ?? 0,
+  //         idLocalidadAutorizada: concesionItem.IdLocalidadAutorizada ?? 0,
+  //         localidadAutorizada: concesionItem.LocalidadAutorizada ?? "",
+  //         observaciones: concesionItem.Observaciones ?? "",
+  //         fechaRenovacion: concesionItem.FechaRenovacion ?? "",
+  //       });
+
+  //       if (vehiculoItem) {
+  //         setVehicleDetailsData({
+  //           idV: vehiculoItem.IdVehiculo ?? "",
+  //         });
+  //       } else {
+  //         setVehicleDetailsData(null);
+  //       }
+
+  //       setOpenSections([0]);
+  //       setActiveTab(0);
+  //     } else {
+  //       setSelectionError("No se encontraron datos detallados para esta concesión.");
+  //     }
+  //   } catch (err) {
+  //     console.error("Error al obtener detalle de la concesión:", err);
+  //     setSelectionError("No se pudo obtener el detalle de la concesión. Por favor, intenta de nuevo.");
+  //     setConcessionData(null);
+  //     setSeguroData(null);
+  //     setConcesionarioData(null);
+  //     setVehicleDetailsData(null);
+  //     setSelectedExpediente(null);
+  //   }
+  //   finally {
+  //     setIsLoadingSelection(false);
+  //   }
+  // };
+
   const handleSelectConcesion = async (folio: string) => {
     setConcesionesSeleccionadas([folio]);
     setError(null);
+    setSelectionError(null);
 
     try {
-      // 1. PRIMERA PETICIÓN: Buscar por folio
       const params = new URLSearchParams();
       params.append("folio", folio);
 
@@ -556,7 +821,6 @@ export default function TitularModule() {
           withCredentials: true,
         }
       );
-      console.log("Respuesta de la API (búsqueda por folio):", basicData);
 
       const concesionBasica = basicData.data;
 
@@ -582,7 +846,6 @@ export default function TitularModule() {
         fechaVencimiento: concesionBasica.FechaVencimiento ?? "",
         observaciones: concesionBasica.Observaciones ?? "",
       };
-      console.log("Concesión básica obtenida:", concesion);
 
       setConcessionData(concesion);
       setSeguroData(null);
@@ -591,184 +854,15 @@ export default function TitularModule() {
       setSelectedExpediente({
         id: concesionBasica.NumeroExpediente ?? "",
         concesion: concesionBasica.Folio ?? "",
-        titular: "", // aún no viene
+        titular: "",
         tipo: concesionBasica.TipoServicio ?? ""
       });
 
-      // 2. SEGUNDA PETICIÓN: Obtener detalles por IdConcesion
-      if (concesion.idC) {
-        const { data: detailData } = await apiClient(
-          `/concesion/${concesion.idC}`,
-          {
-            headers: { "Content-Type": "application/json" },
-            withCredentials: true,
-          }
-        );
-
-        const detalle = detailData;
-
-        // Concesionario
-        if (detalle.concesionario?.data) {
-          const c = detalle.concesionario.data;
-
-          // Creamos un objeto para inspección/debug
-          const concesionarioDebugObj = {
-            // Datos personales
-            tipoPersona: c.TipoPersona ?? "",
-            identificador: c.IdConcesionario ?? "",
-            nombre: c.Nombre ?? "",
-            apellidoPaterno: c.ApellidoPaterno ?? "",
-            apellidoMaterno: c.ApellidoMaterno ?? "",
-            fechaNacimiento: c.FechaNacimiento ?? "",
-            lugarNacimiento: c.LugarNacimiento ?? "",
-            genero: c.Genero ?? "",
-            rfc: c.RFC ?? "",
-            nacionalidad: c.Nacionalidad ?? "",
-            correoElectronico: c.Mail ?? "",
-            estadoCivil: c.EstadoCivil ?? "",
-            fechaAlta: c.FechaAlta ?? "",
-            estatus: c.Estatus ?? "",
-            observacionesConcesionario: c.Observaciones ?? "",
-            domicilio: detalle.direcciones?.data && detalle.direcciones.data.length > 0
-              ? {
-                calle: detalle.direcciones.data[0].Calle ?? "",
-                colonia: detalle.direcciones.data[0].Colonia ?? "",
-                cruzaCon: detalle.direcciones.data[0].CruceCalles ?? "",
-                referencia: detalle.direcciones.data[0].Referencia ?? "",
-                numeroExterior: detalle.direcciones.data[0].NumExterior ?? "",
-                numeroInterior: detalle.direcciones.data[0].NumInterior ?? "",
-                estado: detalle.direcciones.data[0].Estado ?? "",
-                codigoPostal: detalle.direcciones.data[0].CodigoPostal ?? "",
-                municipio: detalle.direcciones.data[0].Municipio ?? "",
-                localidad: detalle.direcciones.data[0].Localidad ?? "",
-                tipoDireccion: detalle.direcciones.data[0].TipoDireccion ?? "",
-                esFiscal: detalle.direcciones.data[0].EsFiscal ?? false,
-                telefono: detalle.direcciones.data[0].Telefono ?? "",
-                fax: detalle.direcciones.data[0].Fax ?? "",
-              }
-              : null,
-            beneficiarios: Array.isArray(detalle.beneficiarios?.data)
-              ? detalle.beneficiarios.data.map((b: any) => ({
-                nombre: b.NombreCompleto ?? "",
-                parentesco: b.Parentesco ?? "",
-              }))
-              : [],
-            referencias: Array.isArray(detalle.referencias?.data)
-              ? detalle.referencias.data.map((r: any) => ({
-                nombreCompleto: r.NombreCompleto ?? "",
-                parentesco: r.Parentesco ?? "",
-                calle: r.Calle ?? "",
-                colonia: r.Colonia ?? "",
-                cruzaCon: r.CruceCalles ?? "",
-                referencia: r.Referencia ?? "",
-                numeroExterior: r.NumExterior ?? "",
-                numeroInterior: r.NumInterior ?? "",
-                estado: r.Estado ?? "",
-                codigoPostal: r.CodigoPostal ?? "",
-                municipio: r.Municipio ?? "",
-                localidad: r.Localidad ?? "",
-                tipoDireccion: r.TipoDireccion ?? "",
-                telefonoParticular: r.Telefono ?? "",
-                fax: r.Fax ?? "",
-              }))
-              : [],
-            // Datos de concesión (rellenar con los datos del objeto detalle principal)
-            idConcesion: concesionBasica?.IdConcesion ?? "",
-            folio: concesionBasica?.Folio ?? "",
-            fechaExpedicion: concesionBasica?.FechaExpedicion ?? "",
-            fechaVencimiento: concesionBasica?.FechaVencimiento ?? "",
-            vigenciaAnios: concesionBasica?.VigenciaAnios ?? 0,
-            seriePlacaActual: concesionBasica?.SeriePlacaActual ?? "",
-            seriePlacaAnterior: concesionBasica?.SeriePlacaAnterior ?? "",
-            ultimaActualizacion: concesionBasica?.UltimaActualizacion ?? "",
-            idItinerario: concesionBasica?.IdItinerario ?? 0,
-            itinerario: concesionBasica?.Itinerario ?? "",
-            ruta: concesionBasica?.Ruta ?? "",
-            idServicio: concesionBasica?.IdServicio ?? 0,
-            idMunicipioAutorizado: concesionBasica?.IdMunicipioAutorizado ?? 0,
-            estadoExpedicion: concesionBasica?.EstadoExpedicion ?? "",
-            municipioAutorizado: concesionBasica?.MunicipioAutorizado ?? "",
-            idMunicipioExpedicion: concesionBasica?.IdMunicipioExpedicion ?? 0,
-            municipioExpedicion: concesionBasica?.MunicipioExpedicion ?? "",
-            idEstadoExpedicion: concesionBasica?.IdEstadoExpedicion ?? 0,
-            idEstatus: concesionBasica?.IdEstatus ?? 0,
-            idVehiculoActual: concesionBasica?.IdVehiculoActual ?? "",
-            idVehiculoAnterior: concesionBasica?.IdVehiculoAnterior ?? "",
-            idDelegacion: concesionBasica?.IdDelegacion ?? 0,
-            delegacion: concesionBasica?.Delegacion ?? "",
-            idConcesionarioActual: concesionBasica?.IdConcesionarioActual ?? "",
-            idConcesionarioAnterior: concesionBasica?.IdConcesionarioAnterior ?? "",
-            tipoServicio: concesionBasica?.TipoServicio ?? "",
-            tipoServicioAbreviatura: concesionBasica?.TipoServicioAbreviatura ?? "",
-            idPropietario: concesionBasica?.IdPropietario ?? "",
-            idTipoPlaca: concesionBasica?.IdTipoPlaca ?? "",
-            tipoPlaca: concesionBasica?.TipoPlaca ?? "",
-            idClaseUnidad: concesionBasica?.IdClaseUnidad ?? "",
-            claseUnidad: concesionBasica?.ClaseUnidad ?? "",
-            idTipoUnidad: concesionBasica?.IdTipoUnidad ?? "",
-            tipoUnidad: concesionBasica?.TipoUnidad ?? "",
-            idUsoUnidad: concesionBasica?.IdUsoUnidad ?? "",
-            usoUnidad: concesionBasica?.UsoUnidad ?? "",
-            idTipoConcesion: concesionBasica?.IdTipoConcesion ?? "",
-            clave: concesionBasica?.Clave ?? "",
-            tipoConcesion: concesionBasica?.TipoConcesion ?? "",
-            idModalidad: concesionBasica?.IdModalidad ?? 0,
-            modalidad: concesionBasica?.Modalidad ?? "",
-            esConcesion: concesionBasica?.EsConcesion ?? false,
-            numeroExpediente: concesionBasica?.NumeroExpediente ?? "",
-            idSubmodalidad: concesionBasica?.IdSubmodalidad ?? 0,
-            subModalidad: concesionBasica?.SubModalidad ?? "",
-            mnemotecnia: concesionBasica?.Mnemotecnia ?? "",
-            idRuta: concesionBasica?.IdRuta ?? 0,
-            idLocalidadAutorizada: concesionBasica?.IdLocalidadAutorizada ?? 0,
-            localidadAutorizada: concesionBasica?.LocalidadAutorizada ?? "",
-            observaciones: concesionBasica?.Observaciones ?? "",
-            fechaRenovacion: concesionBasica?.FechaRenovacion ?? "",
-          };
-
-          // Puedes ver el objeto en consola para debug
-          console.log("Objeto concesionario para debug:", concesionarioDebugObj);
-
-          // Lo asignamos al estado como antes
-          setConcesionarioData(concesionarioDebugObj);
-        }
-
-        // Vehículo
-        // if (detalle.vehiculo?.data) {
-        //   const v = detalle.vehiculo.data;
-        //   setVehicleDetailsData({
-        //     idV: v.IdVehiculo,
-        //     clase: v.ClaseVehiculo,
-        //     tipo: v.TipoVehiculo,
-        //     marca: v.Marca,
-        //     modelo: v.Modelo?.toString(),
-        //     numeroSerie: v.SerieNIV,
-        //     color: v.Color,
-        //     numeroMotor: v.Motor,
-        //     // ...otros campos si los necesitas
-        //   });
-        // }
-
-        // Seguro
-        // if (detalle.seguro?.data) {
-        //   const s = detalle.seguro.data;
-        //   setSeguroData({
-        //     aseguradora: s.NombreAseguradora,
-        //     folioPago: s.FolioPago,
-        //     fechaVencimiento: s.FechaVencimiento,
-        //     numeroPoliza: s.NumeroPoliza,
-        //     fechaExpedicion: s.FechaExpedicion,
-        //     observaciones: s.Observaciones,
-        //   });
-        // }
-      }
-
     } catch (err: any) {
       console.error("Error al seleccionar concesión:", err);
-      setError("No se pudo obtener el detalle de la concesión.");
+      setSelectionError("No se pudo obtener el detalle de la concesión.");
     }
   };
-
 
   const toggleConcesionSeleccionada = (id: string) => {
     setConcesionesSeleccionadas(prev =>
@@ -907,14 +1001,9 @@ export default function TitularModule() {
     },
   ];
 
-  // Nuevo: Estado para el término de búsqueda de la segunda tabla
-  const [searchTerm, setSearchTerm] = useState("");
-
   return (
     <div className="max-w-full mx-auto md:p-6">
       <Card className="bg-transparent items-start border-none shadow-none">
-
-
         <div className="text-start items-start mb-4">
           <div className="flex flex-col">
             <h1 className="text-2xl font-extrabold text-gray-800">Detalle de Vehículo y Seguro</h1>
@@ -923,7 +1012,6 @@ export default function TitularModule() {
         </div>
 
         <CardContent className="p-6 bg-white shadow-[#B4BFC2] rounded-xl overflow-hidden shadow-md border-[#ECEFF0] space-y-6">
-          {/* Sección de búsqueda */}
           <div className="space-y-4">
             <h2 className="text-lg font-medium text-gray-800">Datos de búsqueda</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -957,7 +1045,6 @@ export default function TitularModule() {
                   onChange={e => setMaterno(e.target.value)}
                 />
               </div>
-
             </div>
             <Button
               onClick={handleSearch}
@@ -976,7 +1063,6 @@ export default function TitularModule() {
 
           {concesionariosEncontrados.length > 0 ? (
             <>
-              {/* Tabla de resultados */}
               <div className="bg-white rounded-lg border border-gray-200 mb-6 overflow-x-auto">
                 <h3 className="px-4 py-3 text-lg font-semibold text-gray-800 border-b">Resultados de la Búsqueda</h3>
                 <table className="min-w-full border border-gray-300">
@@ -1011,9 +1097,17 @@ export default function TitularModule() {
                     ))}
                   </tbody>
                 </table>
+
+                {/* Mostrar error de selección debajo de la tabla */}
+                {selectionError && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-b-lg shadow-sm text-sm">
+                    <p>{selectionError}</p>
+                  </div>
+                )}
+
                 {concesionarioSeleccionado && Array.isArray(concesionarioSeleccionado.concesiones) && (
                   <Card className="border-none shadow-none rounded-xl overflow-hidden">
-                    <CardHeader className="border-b  p-6">
+                    <CardHeader className="border-b p-6">
                       <div className="flex flex-col space-y-1.5">
                         <h2 className="text-xl font-extrabold text-gray-800">Concesiones del Titular Seleccionado</h2>
                         <p className="text-sm">
@@ -1022,7 +1116,7 @@ export default function TitularModule() {
                       </div>
                       <div className="mt-4 border-t pt-4">
                         <table className="w-full text-sm text-gray-700 border border-gray-300 rounded-lg overflow-hidden">
-                          <thead className=" border border-gray-300">
+                          <thead className="border border-gray-300">
                             <tr>
                               <th className="font-medium pr-4 py-2 border border-gray-300 bg-gray-50">Seleccionar</th>
                               <th className="font-medium pr-4 py-2 border border-gray-300 bg-gray-50">ID Concesión</th>
@@ -1042,9 +1136,6 @@ export default function TitularModule() {
                                     onChange={() => handleSelectConcesion(item.folio)}
                                     className="accent-blue-600 cursor-pointer"
                                   />
-                                  <div className="text-xs text-gray-400">
-                                    debug: {String(concessionData?.folio?.toString().trim())} == {String(item.folio?.toString().trim()) ? "true" : "false"}
-                                  </div>
                                 </td>
                                 <td className="py-2 px-2 border-r border-gray-200">{item.idConcesion || 'N/A'}</td>
                                 <td className="py-2 px-2 border-r border-gray-200">{item.folio || 'N/A'}</td>
@@ -1061,7 +1152,6 @@ export default function TitularModule() {
               </div>
             </>
           ) : (
-            // No results or initial state
             !isSearching && !error && (
               <div className="flex flex-col items-center justify-center py-20 space-y-6 text-center bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="p-4 bg-gray-100 rounded-full">
@@ -1076,7 +1166,7 @@ export default function TitularModule() {
               </div>
             )
           )}
-          {/* Botón para continuar */}
+
           <div className="flex justify-end mb-6">
             <Button
               variant="outline"
@@ -1086,40 +1176,49 @@ export default function TitularModule() {
               Continuar modificación
             </Button>
           </div>
-          {/* Sistema de Tabs y  FContenido */}
-          <div className="bg-white rounded-lg border border-gray-200">
-            {/* Pestañas */}
-            <div className="flex border-b bg-[#f7fafc] border-gray-200 px-4">
-              {cardSections.map((section, index) => (
-                <button
-                  key={index}
-                  className={`
-                  px-5 py-3 font-medium text-sm relative transition-colors duration-200
-                  ${activeTab === index
-                      ? 'text-blue-600 border-b-2 border-blue-600'
-                      : 'text-gray-700 hover:text-blue-500'
-                    }
-                  ${index === 0 ? 'ml-0' : '-ml-px'}
-                  `}
-                  onClick={() => setActiveTab(index)}
-                >
-                  {section.title}
-                </button>
-              ))}
-            </div>
 
-            {/* Contenido de la Tab activa */}
-            <div className="p-6 bg-white max-h-[500px] overflow-y-auto">
-              {cardSections[activeTab]?.content || (
-                <p className="text-gray-500 italic text-base">
-                  Seleccione una pestaña para ver su contenido.
-                </p>
+          {concesionarioSeleccionado && (
+            <div className="mt-8">
+              <h2 className="text-2xl font-bold mb-4 text-gray-800">Detalles del Concesionario</h2>
+              {isLoadingSelection ? (
+                <div className="flex items-center justify-center p-8 bg-white rounded-lg shadow-md">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-600 mr-2" />
+                  <p className="text-gray-600">Cargando...</p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-lg border border-gray-200">
+                  <div className="flex border-b bg-gray-50 border-gray-200 px-4">
+                    {cardSections.map((section, index) => (
+                      <button
+                        key={index}
+                        className={`
+                          -mb-px px-5 py-3 font-medium text-sm transition-colors duration-200
+                          ${activeTab === index
+                            ? 'text-blue-600 border-b-2 border-blue-600'
+                            : 'text-gray-700 hover:text-blue-500'
+                          }
+                          ${index > 0 ? 'ml-0' : ''}
+                        `}
+                        onClick={() => setActiveTab(index)}
+                      >
+                        {section.title}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="p-6 bg-white max-h-[500px] overflow-y-auto">
+                    {cardSections[activeTab]?.content || (
+                      <p className="text-gray-500 italic text-base">
+                        Seleccione una pestaña para ver su contenido.
+                      </p>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
-          </div>
-
+          )}
         </CardContent>
       </Card>
-    </div >
+    </div>
   );
 }

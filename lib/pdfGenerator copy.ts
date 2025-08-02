@@ -217,50 +217,8 @@ export async function generarPDF(idRV: string) { // Accept idRV as parameter
 
         y += 15; // Move down for images
         doc.text('No. DE MOTOR:', 15, y);
-        // Uncomment and test these blocks when you have actual images and want to add them
-        // if (motorImageBase64) {
-        //     try {
-        //         const imgProps = doc.getImageProperties(motorImageBase64);
-        //         const imgWidth = 60; // Desired width for image
-        //         const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-        //         doc.addImage(motorImageBase64, imgProps.fileType, 15, y + 2, imgWidth, imgHeight); // Use imgProps.fileType
-        //         y += imgHeight + 5;
-        //     } catch (e) {
-        //         console.error("Error adding motor image to PDF:", e);
-        //         doc.text('No se pudo cargar imagen de motor.', 15, y + 5);
-        //         y += 10;
-        //     }
-        // } else {
-        //     doc.text('No se encontró imagen de motor.', 15, y + 5);
-        //     y += 10;
-        // }
-
-        // y = y - (motorImageBase64 ? doc.getImageProperties(motorImageBase64).height : 0) - 5; // This line might need adjustment or removal depending on exact image placement
-        // To handle two images side-by-side, you'd place the second one at a different X coordinate.
-        // A simpler approach for now is to let them flow vertically if you uncomment both image blocks.
-        // If you want them side-by-side, calculate the max height of the two images and advance Y based on that.
-
+       
         doc.text('No. DE SERIE:', 120, y);
-        // if (serieImageBase64) {
-        //     try {
-        //         const imgProps = doc.getImageProperties(serieImageBase64);
-        //         const imgWidth = 60;
-        //         const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-        //         doc.addImage(serieImageBase64, imgProps.fileType, 120, y + 2, imgWidth, imgHeight); // Use imgProps.fileType
-        //         y += Math.max(imgHeight, (motorImageBase64 ? doc.getImageProperties(motorImageBase64).height * 60 / doc.getImageProperties(motorImageBase64).width : 0)) + 5; // Advance Y based on taller image
-        //     } catch (e) {
-        //         console.error("Error adding serie image to PDF:", e);
-        //         doc.text('No se pudo cargar imagen de serie.', 120, y + 5);
-        //         y += 10;
-        //     }
-        // } else {
-        //     doc.text('No se encontró imagen de serie.', 120, y + 5);
-        //     y += 10;
-        // }
-        // The y calculation here is tricky with side-by-side. If images are going to be side-by-side,
-        // you'd advance `y` *after* both are placed, based on the taller image.
-        // For now, I've commented out the image placement to focus on text.
-        // Assuming images won't excessively push `y` down for the rest of the content:
         y = Math.max(y, doc.internal.pageSize.height / 2 + 30); // Ensure Y is past the middle, adjust as needed
 
         doc.setFont('helvetica', 'bold');

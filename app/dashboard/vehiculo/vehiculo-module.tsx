@@ -227,7 +227,7 @@ export default function VehiculoModule() {
       // const [numMotor, setNumMotor] = useState('')
 
       const { data } = await apiClient(`/vehiculo/buscar?${searchParams.toString()}`, {
-                 method:'GET',
+        method: 'GET',
 
         withCredentials: true
       });
@@ -258,10 +258,10 @@ export default function VehiculoModule() {
         // setConcesionarioData(null);
         // setVehicleDetailsData(null);
         setSelectedExpediente({
-          id:expData.NumeroExpediente ?? "",
-          concesion:expData.Folio ?? "",
+          id: expData.NumeroExpediente ?? "",
+          concesion: expData.Folio ?? "",
           titular: "", // No viene en la respuesta
-          tipo:expData.TipoServicio ?? ""
+          tipo: expData.TipoServicio ?? ""
         });
         console.log("Respuesta de la API:", expediente.idC);
 
@@ -269,22 +269,21 @@ export default function VehiculoModule() {
         if (expediente.idC) {
           try {
             const detalle = await apiClient(`/concesion/${expediente.idC}`, {
-                        method:'GET',
+              method: 'GET',
               withCredentials: true
             });
-            // const detalle = detalleResp.data?.data;
 
-            // Mapear datos relacionados si existen
-            // El API regresa los datos anidados en .data.data, por lo que hay que desestructurar correctamente
             console.log("Respuesta de la API 2:", detalle);
+
             const detalleData = detalle;
-            console.log("Respuesta de la API 3:", detalleData);
+
+            // La variable 'detalleData' es el objeto completo de la respuesta de la API
             if (detalleData) {
-              // consesion
-              
-              if (detalleData.concesion.data) {
-                const dataC = detalleData.concesion.data
-                console.log(dataC)
+              // --- Concesión ---
+              if (detalleData.concesion?.data) {
+                const dataC = detalleData.concesion.data;
+                console.log("Datos de Concesión:", dataC);
+
                 const concesion = {
                   idC: dataC.IdConcesion,
                   folio: dataC.Folio ?? "",
@@ -294,8 +293,8 @@ export default function VehiculoModule() {
                   modalidad: dataC.Modalidad ?? "",
                   municipioAutorizado: dataC.MunicipioAutorizado ?? "",
                   claseUnidad: dataC.ClaseUnidad ?? "",
-                  vigencia: dataC.VigenciaAnios ? `${data.data.VigenciaAnios} años` : "",
-                  estatus: "", // No viene en la respuesta, dejar vacío o mapear si existe
+                  vigencia: dataC.VigenciaAnios ? `${dataC.VigenciaAnios} años` : "",
+                  estatus: dataC.Estatus ?? "", // Usar Estatus de la respuesta
                   seriePlaca: dataC.SeriePlacaActual ?? "",
                   fechaRegistro: dataC.FechaExpedicion ?? "",
                   fechaRenovacion: dataC.FechaRenovacion ?? "",
@@ -307,134 +306,152 @@ export default function VehiculoModule() {
                   fechaVencimiento: dataC.FechaVencimiento ?? "",
                   observaciones: dataC.Observaciones ?? "",
                 };
-
                 setConcessionData(concesion);
+              } else {
+                setConcessionData(null);
               }
 
-              // Seguro
+              // --- Seguro ---
               if (detalleData.seguro?.data) {
+                const dataSeguro = detalleData.seguro.data;
                 setSeguroData({
-                  aseguradora: detalleData.seguro.data.NombreAseguradora,
-                  folioPago: detalleData.seguro.data.FolioPago,
-                  fechaVencimiento: detalleData.seguro.data.FechaVencimiento,
-                  numeroPoliza: detalleData.seguro.data.NumeroPoliza,
-                  fechaExpedicion: detalleData.seguro.data.FechaExpedicion,
-                  observaciones: detalleData.seguro.data.Observaciones,
+                  aseguradora: dataSeguro.NombreAseguradora ?? "",
+                  folioPago: dataSeguro.FolioPago ?? "",
+                  fechaVencimiento: dataSeguro.FechaVencimiento ?? "",
+                  numeroPoliza: dataSeguro.NumeroPoliza ?? "",
+                  fechaExpedicion: dataSeguro.FechaExpedicion ?? "",
+                  observaciones: dataSeguro.Observaciones ?? "",
                 });
+              } else {
+                setSeguroData(null);
               }
-              // Concesionario
+
+              // --- Concesionario ---
               if (detalleData.concesionario?.data) {
+                const dataConcesionario = detalleData.concesionario.data;
+                const direccionesArr = detalleData.direcciones?.data ?? [];
+                const beneficiariosArr = detalleData.beneficiarios?.data ?? [];
+                const referenciasArr = detalleData.referencias?.data ?? [];
 
-                setConcesionarioData(
-                  {
+                setConcesionarioData({
+                  tipoPersona: dataConcesionario.TipoPersona ?? "",
+                  nombre: dataConcesionario.Nombre ?? "",
+                  apellidoPaterno: dataConcesionario.ApellidoPaterno ?? "",
+                  apellidoMaterno: dataConcesionario.ApellidoMaterno ?? "",
+                  fechaNacimiento: dataConcesionario.FechaNacimiento ?? "",
+                  lugarNacimiento: dataConcesionario.LugarNacimiento ?? "",
+                  identificador: dataConcesionario.IdConcesionario ?? "",
+                  genero: dataConcesionario.Genero ?? "",
+                  rfc: dataConcesionario.RFC ?? "",
+                  nacionalidad: dataConcesionario.Nacionalidad ?? "",
+                  correoElectronico: dataConcesionario.Mail ?? "",
+                  estadoCivil: dataConcesionario.EstadoCivil ?? "",
+                  fechaAlta: dataConcesionario.FechaAlta ?? "",
+                  estatus: dataConcesionario.Estatus ?? "",
+                  observacionesConcesionario: dataConcesionario.Observaciones ?? "",
 
-                    tipoPersona: detalleData.concesionario.data.TipoPersona,
-                    nombre: detalleData.concesionario.data.Nombre,
-                    apellidoPaterno: detalleData.concesionario.data.ApellidoPaterno,
-                    apellidoMaterno: detalleData.concesionario.data.ApellidoMaterno,
-                    fechaNacimiento: detalleData.concesionario.data.FechaNacimiento,
-                    lugarNacimiento: detalleData.concesionario.data.LugarNacimiento,
-                    identificador: detalleData.concesionario.data.IdConcesionario,
-                    genero: detalleData.concesionario.data.Genero,
-                    rfc: detalleData.concesionario.data.RFC,
-                    nacionalidad: detalleData.concesionario.data.Nacionalidad,
-                    correoElectronico: detalleData.concesionario.data.Mail,
-                    estadoCivil: detalleData.concesionario.data.EstadoCivil,
-                    fechaAlta: detalleData.concesionario.data.FechaAlta,
-                    estatus: detalleData.concesionario.data.Estatus,
-                    observacionesConcesionario: detalleData.concesionario.data.Observaciones,
-                    domicilio: {
-                      calle: detalleData.direcciones?.data?.[0]?.Calle,
-                      colonia: detalleData.direcciones?.data?.[0]?.Colonia,
-                      cruzaCon: detalleData.direcciones?.data?.[0]?.CruceCalles,
-                      referencia: detalleData.direcciones?.data?.[0]?.Referencia,
-                      numeroExterior: detalleData.direcciones?.data?.[0]?.NumExterior,
-                      numeroInterior: detalleData.direcciones?.data?.[0]?.NumInterior,
-                      estado: detalleData.direcciones?.data?.[0]?.Estado,
-                      codigoPostal: detalleData.direcciones?.data?.[0]?.CodigoPostal,
-                      municipio: detalleData.direcciones?.data?.[0]?.Municipio,
-                      localidad: detalleData.direcciones?.data?.[0]?.Localidad,
-                      tipoDireccion: detalleData.direcciones?.data?.[0]?.TipoDireccion,
-                      esFiscal: detalleData.direcciones?.data?.[0]?.EsFiscal ?? false,
-                      telefono: detalleData.direcciones?.data?.[0]?.Telefono,
-                      fax: detalleData.direcciones?.data?.[0]?.Fax,
+                  // CORRECCIÓN: Si existe la dirección, mapea sus propiedades.
+                  // Si no, crea un objeto con propiedades vacías para satisfacer a TypeScript.
+                  domicilio: direccionesArr.length > 0
+                    ? {
+                      calle: direccionesArr[0].Calle ?? "",
+                      colonia: direccionesArr[0].Colonia ?? "",
+                      cruzaCon: direccionesArr[0].CruceCalles ?? "",
+                      referencia: direccionesArr[0].Referencia ?? "",
+                      numeroExterior: direccionesArr[0].NumExterior ?? "",
+                      numeroInterior: direccionesArr[0].NumInterior ?? "",
+                      estado: direccionesArr[0].Estado ?? "",
+                      codigoPostal: direccionesArr[0].CodigoPostal ?? "",
+                      municipio: direccionesArr[0].Municipio ?? "",
+                      localidad: direccionesArr[0].Localidad ?? "",
+                      tipoDireccion: direccionesArr[0].TipoDireccion ?? "",
+                      esFiscal: direccionesArr[0].EsFiscal ?? false,
+                      telefono: direccionesArr[0].Telefono ?? "",
+                      fax: direccionesArr[0].Fax ?? "",
+                    }
+                    : {
+                      calle: "",
+                      colonia: "",
+                      cruzaCon: "",
+                      referencia: "",
+                      numeroExterior: "",
+                      numeroInterior: "",
+                      estado: "",
+                      codigoPostal: "",
+                      municipio: "",
+                      localidad: "",
+                      tipoDireccion: "",
+                      esFiscal: false,
+                      telefono: "",
+                      fax: "",
                     },
-                    beneficiarios: Array.isArray(detalleData.beneficiarios?.data)
-                      ? detalleData.beneficiarios.data.map((b: any) => ({
-                        nombre: b.NombreCompleto,
-                        parentesco: b.Parentesco,
-                      }))
-                      : [],
-                    referencias: Array.isArray(detalleData.referencias?.data)
-                      ? detalleData.referencias.data.map((r: any) => ({
-                        nombreCompleto: r.NombreCompleto,
-                        parentesco: r.Parentesco,
-                        calle: r.Calle,
-                        colonia: r.Colonia,
-                        cruzaCon: r.CruceCalles,
-                        referencia: r.Referencia,
-                        numeroExterior: r.NumExterior,
-                        numeroInterior: r.NumInterior,
-                        estado: r.Estado,
-                        codigoPostal: r.CodigoPostal,
-                        municipio: r.Municipio,
-                        localidad: r.Localidad,
-                        tipoDireccion: r.TipoDireccion,
-                        telefonoParticular: r.Telefono,
-                        fax: r.Fax,
-                      }))
-                      : [],
-                  }
-                )
-                // setConcesionarioData(vehiculo);
+
+                  beneficiarios: Array.isArray(beneficiariosArr)
+                    ? beneficiariosArr.map((b: any) => ({
+                      nombre: b.Nombre ?? "",
+                      parentesco: b.Parentesco ?? "",
+                    }))
+                    : [],
+                  referencias: Array.isArray(referenciasArr)
+                    ? referenciasArr.map((r: any) => ({
+                      ...r,
+                      nombreCompleto: r.NombreCompleto ?? "",
+                      parentesco: r.Parentesco ?? "",
+                      telefonoParticular: r.Telefono ?? "",
+                    }))
+                    : [],
+                });
+              } else {
+                setConcesionarioData(null);
               }
-              // Vehículo
+
+              // --- Vehículo ---
               if (detalleData.vehiculo?.data) {
-                console.log(detalleData.vehiculo.data.IdVehiculo)
+                const dataVehiculo = detalleData.vehiculo.data;
+                console.log("Datos de Vehículo:", dataVehiculo.IdVehiculo);
                 const vehiculo = {
-
-                  idV: detalleData.vehiculo.data.IdVehiculo, // Obtener el ID del vehículo si existe
-                  clase: detalleData.vehiculo.data.ClaseVehiculo,
-                  placaAnterior: detalleData.vehiculo.data.PlacaAnterior,
-                  tipo: detalleData.vehiculo.data.TipoVehiculo,
-                  categoria: detalleData.vehiculo.data.Categoria,
-                  marca: detalleData.vehiculo.data.Marca,
-                  rfv: detalleData.vehiculo.data.RegFedVeh,
-                  subMarca: detalleData.vehiculo.data.SubMarca,
-                  cilindros: detalleData.vehiculo.data.NumeroCilindros?.toString(),
-                  version: detalleData.vehiculo.data.Version,
-                  numeroPasajeros: detalleData.vehiculo.data.NumeroPasajeros?.toString(),
-                  modelo: detalleData.vehiculo.data.Modelo?.toString(),
-                  vigencia: detalleData.vehiculo.data.Vigencia,
-                  tipoPlaca: detalleData.vehiculo.data.TipoPlaca,
-                  numeroPuertas: detalleData.vehiculo.data.NumeroPuertas?.toString(),
-                  tipoServicio: detalleData.vehiculo.data.TipoServicio,
-                  numeroToneladas: detalleData.vehiculo.data.NumeroToneladas,
-                  fechaFactura: detalleData.vehiculo.data.FechaFactura,
-                  centimetrosCubicos: detalleData.vehiculo.data.CentrimetrosCubicos,
-                  folioFactura: detalleData.vehiculo.data.NumeroFactura,
-                  color: detalleData.vehiculo.data.Color,
-                  importeFactura: detalleData.vehiculo.data.ImporteFactura?.toString(),
-                  numeroMotor: detalleData.vehiculo.data.Motor,
-                  polizaSeguro: detalleData.vehiculo.data.PolizaSeguro,
-                  numeroSerie: detalleData.vehiculo.data.SerieNIV,
-                  origen: detalleData.vehiculo.data.VehiculoOrigen,
-                  capacidad: detalleData.vehiculo.data.Capacidad,
-                  estadoProcedencia: detalleData.vehiculo.data.EstadoProcedencia,
-                  combustible: detalleData.vehiculo.data.Combustible,
-                  estatus: detalleData.vehiculo.data.IdEstatus?.toString(),
-                  nrpv: detalleData.vehiculo.data.NRPV,
-                }
+                  idV: dataVehiculo.IdVehiculo ?? "",
+                  clase: dataVehiculo.ClaseVehiculo ?? "",
+                  placaAnterior: dataVehiculo.PlacaAnterior ?? "",
+                  tipo: dataVehiculo.TipoVehiculo ?? "",
+                  categoria: dataVehiculo.Categoria ?? "",
+                  marca: dataVehiculo.Marca ?? "",
+                  rfv: dataVehiculo.RegFedVeh ?? "",
+                  subMarca: dataVehiculo.SubMarca ?? "",
+                  cilindros: dataVehiculo.NumeroCilindros?.toString() ?? "",
+                  version: dataVehiculo.Version ?? "",
+                  numeroPasajeros: dataVehiculo.NumeroPasajeros?.toString() ?? "",
+                  modelo: dataVehiculo.Modelo?.toString() ?? "",
+                  vigencia: dataVehiculo.Vigencia ?? "",
+                  tipoPlaca: dataVehiculo.TipoPlaca ?? "",
+                  numeroPuertas: dataVehiculo.NumeroPuertas?.toString() ?? "",
+                  tipoServicio: dataVehiculo.TipoServicio ?? "",
+                  numeroToneladas: dataVehiculo.NumeroToneladas ?? "",
+                  fechaFactura: dataVehiculo.FechaFactura ?? "",
+                  centimetrosCubicos: dataVehiculo.CentrimetrosCubicos ?? "",
+                  folioFactura: dataVehiculo.NumeroFactura ?? "",
+                  color: dataVehiculo.Color ?? "",
+                  importeFactura: dataVehiculo.ImporteFactura?.toString() ?? "",
+                  numeroMotor: dataVehiculo.Motor ?? "",
+                  polizaSeguro: dataVehiculo.PolizaSeguro ?? "",
+                  numeroSerie: dataVehiculo.SerieNIV ?? "",
+                  origen: dataVehiculo.VehiculoOrigen ?? "",
+                  capacidad: dataVehiculo.Capacidad ?? "",
+                  estadoProcedencia: dataVehiculo.EstadoProcedencia ?? "",
+                  combustible: dataVehiculo.Combustible ?? "",
+                  estatus: dataVehiculo.IdEstatus?.toString() ?? "",
+                  nrpv: dataVehiculo.NRPV ?? "",
+                };
                 setVehicleDetailsData(vehiculo);
-                console.log("Respuesta de la API 2.2:", vehiculo.idV);
-
+              } else {
+                setVehicleDetailsData(null);
               }
             }
+          } catch (detalleErr) {
+            // Mejorar el log para saber qué error ocurrió realmente
+            console.error("Error al obtener el detalle de la concesión:", detalleErr);
+            setError("No se pudo obtener el detalle de la concesión. Por favor, intente de nuevo.");
           }
-          catch (detalleErr) {
-            setError("No se pudo obtener el detalle de la concesión");
-          }
-
         } else {
           setError("No se encontraron datos");
         }
@@ -671,17 +688,17 @@ export default function VehiculoModule() {
             </div>
           </div>
           <div className="mt-6 flex justify-end">
-           <Button
-                         className="bg-blue-500 hover:bg-blue-600 text-white"
-                         onClick={() => {
-                           if (concessionData?.idC) {
-                             console.log("Sí hay idV:", concessionData.idC);
-                             router.push(`/dashboard/iv?idC=${concessionData.idC}`);
-                           } else {
-                             console.log("No hay idV");
-                           }
-                         }}
-                       >
+            <Button
+              className="bg-blue-500 hover:bg-blue-600 text-white"
+              onClick={() => {
+                if (concessionData?.idC) {
+                  console.log("Sí hay idV:", concessionData.idC);
+                  router.push(`/dashboard/iv?idC=${concessionData.idC}`);
+                } else {
+                  console.log("No hay idV");
+                }
+              }}
+            >
               Realizar Inspección
             </Button>
           </div>
@@ -702,38 +719,38 @@ export default function VehiculoModule() {
 
         <CardContent className="p-6  space-y-6">
           {/* Sección de búsqueda */}
-            <div className="space-y-3">
+          <div className="space-y-3">
             <h2 className="text-lg font-medium text-gray-800">Datos de búsqueda</h2>
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end w-full">
               <div className="flex-1 w-full">
-              <label htmlFor="placa" className="block text-sm font-medium text-gray-700 mb-1">Placa</label>
-              <Input
-                id="placa"
-                placeholder="Placa"
-                className="w-full"
-                value={placa}
-                onChange={(e) => setPlaca(e.target.value)}
-              />
+                <label htmlFor="placa" className="block text-sm font-medium text-gray-700 mb-1">Placa</label>
+                <Input
+                  id="placa"
+                  placeholder="Placa"
+                  className="w-full"
+                  value={placa}
+                  onChange={(e) => setPlaca(e.target.value)}
+                />
               </div>
               <div className="flex-1 w-full">
-              <label htmlFor="numSerie" className="block text-sm font-medium text-gray-700 mb-1">Núm. de Serie</label>
-              <Input
-                id="numSerie"
-                placeholder="Núm. de Serie"
-                className="w-full"
-                value={numSerie}
-                onChange={(e) => setNumSerie(e.target.value)}
-              />
+                <label htmlFor="numSerie" className="block text-sm font-medium text-gray-700 mb-1">Núm. de Serie</label>
+                <Input
+                  id="numSerie"
+                  placeholder="Núm. de Serie"
+                  className="w-full"
+                  value={numSerie}
+                  onChange={(e) => setNumSerie(e.target.value)}
+                />
               </div>
               <div className="flex-1 w-full">
-              <label htmlFor="numMotor" className="block text-sm font-medium text-gray-700 mb-1">Núm. de Motor</label>
-              <Input
-                id="numMotor"
-                placeholder="Núm. de Motor"
-                className="w-full"
-                value={numMotor}
-                onChange={(e) => setNumMotor(e.target.value)}
-              />
+                <label htmlFor="numMotor" className="block text-sm font-medium text-gray-700 mb-1">Núm. de Motor</label>
+                <Input
+                  id="numMotor"
+                  placeholder="Núm. de Motor"
+                  className="w-full"
+                  value={numMotor}
+                  onChange={(e) => setNumMotor(e.target.value)}
+                />
               </div>
             </div>
 
@@ -746,10 +763,10 @@ export default function VehiculoModule() {
             </Button>
             {error && (
               <div className="mt-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">
-              {error}
+                {error}
               </div>
             )}
-            </div>
+          </div>
 
           {/* Resultados o estado vacío */}
           {!selectedExpediente ? (
@@ -805,7 +822,7 @@ export default function VehiculoModule() {
                       <td className="px-4 py-3 text-gray-700">{expedienteData?.TipoVehiculo}</td>
                       <td className="px-4 py-3 text-gray-700">{expedienteData?.PlacaAnterior}</td>
                       <td className="px-4 py-3 text-gray-700">{expedienteData?.ClaseVehiculo}</td>
-                      
+
                     </tr>
                   </tbody>
                 </table>
