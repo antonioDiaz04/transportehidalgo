@@ -23,6 +23,7 @@ export default function LoginPage() {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+  const [loginError, setLoginError] = useState<string | null>(null) // Nuevo estado para el error
 
   // Verificar si ya está autenticado al cargar la página
   useEffect(() => {
@@ -67,9 +68,11 @@ export default function LoginPage() {
       router.push("/dashboard/autorizacion")
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        alert(error.response?.data?.message || error.message || "Error al iniciar sesión")
+        setLoginError("Credenciales incorrectas. Inténtelo de nuevo.")
+
       } else {
-        alert("Error desconocido")
+               setLoginError("Error desconocido al iniciar sesión.")
+
       }
     } finally {
       setIsLoading(false)
@@ -357,7 +360,12 @@ export default function LoginPage() {
                   </Button>
                 </div>
               </div>
-
+{/* NUEVO: Mostrar mensaje de error */}
+              {loginError && (
+                <p className="text-red-500 text-sm font-medium mt-2 text-center">
+                  <span>{loginError}</span>
+                </p>
+              )}
               <Button
                 type="submit"
                 className="w-full py-3 bg-gradient-to-r from-[#bc1c44] to-[#80142c] hover:from-[#80142c] hover:to-[#bc1c44] text-white font-bold rounded-lg shadow-lg transition-all duration-300 transform hover:-translate-y-1 flex items-center justify-center gap-2 text-lg"

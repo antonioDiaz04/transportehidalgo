@@ -11,7 +11,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "STCG - Sistema de Transporte y Control de Gestión",
+  title: "STCH - Sistema de Transporte y Control de Gestión",
   description: "A modern and minimalist ERP system",
 }
 
