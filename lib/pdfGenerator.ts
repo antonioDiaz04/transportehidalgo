@@ -324,7 +324,7 @@ export async function generarPDF(idRV: string): Promise<jsPDF> {
 
         y += 5;
         doc.setFont('helvetica', 'bold');
-        doc.text(`APROBADO: ${formatBoolean(inspectionData.Aprobado)}`, doc.internal.pageSize.width / 2, y, { align: 'center' });
+        doc.text(`APROBADO: ${formatSiNo(inspectionData.Aprobado)}`, doc.internal.pageSize.width / 2, y, { align: 'center' });
 
         // --- Signatures Section ---
         y += 12;
