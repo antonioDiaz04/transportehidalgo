@@ -178,7 +178,7 @@ export async function generarPDF(idRV: string): Promise<jsPDF> {
         y += 6;
 
         // Row 2
-        doc.text(`TIPO DE VEHÍCULO: ${truncateText(doc, inspectionData.TipoVehiculo, 50, 10, 20)}`, col1X, y);
+        doc.text(`TIPO: ${truncateText(doc, inspectionData.TipoVehiculo, 50, 10, 20)}`, col1X, y);
         doc.text(`SUBMARCA: ${truncateText(doc, inspectionData.SubMarca, 60, 10, 20)}`, col2X, y);
         doc.text(`IMAGEN CROMÁTICA: ${formatSiNo(inspectionData.ImagenCromaticaVer)}`, col3X, y);
         y += 6;
@@ -281,7 +281,7 @@ export async function generarPDF(idRV: string): Promise<jsPDF> {
         // --- Ponderation Details Section ---
         y += 8;
         doc.text(`MODELO: ${truncateText(doc, inspectionData.RangoAnio, 50, 10, 20)}`, col1X, y);
-        doc.text(`TIENE AIRE ACONDICIONADO: ${formatSiNo(inspectionData.TieneAire)}`, col2X, y);
+        doc.text(`CON AIRE ACONDICIONADO: ${formatSiNo(inspectionData.TieneAire)}`, col2X, y);
         doc.text(`CAPACIDAD: ${truncateText(doc, inspectionData.Capacidad, 50, 10, 20)}`, col3X, y);
         y += 2;
         // La línea corregida. 
