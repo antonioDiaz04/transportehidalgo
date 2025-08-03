@@ -18,6 +18,6 @@ const ModificacionVehiculomodule = dynamic(() => import("./ModificacionVehiculom
   ssr: false,
 })
 
-export default function InspeccionRevistaVehicularPage() {
+export default function ModificacionVehiculoPage() {
   return <ModificacionVehiculomodule/>
 }

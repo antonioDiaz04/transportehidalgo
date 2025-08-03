@@ -1,8 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
-import { Search, FileText, Loader2 } from "lucide-react";
+import { Search, FileText, Loader2, Car, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +13,7 @@ import {
 } from "@/components/ui/accordion";
 import apiClient from "@/lib/apiClient";
 
-// Define interfaces for your data structures
+// Interfaces de tipos
 interface Expediente {
   id: string;
   titular: string;
@@ -113,6 +112,7 @@ interface ConcesionarioData {
   domicilio: DomicilioData | null;
   beneficiarios: BeneficiarioData[];
   referencias: ReferenciaData[];
+  // Nuevos atributos agregados según el objeto data
   idConcesion: number | string;
   folio: string;
   fechaExpedicion: string;
@@ -166,55 +166,298 @@ interface ConcesionarioData {
   fechaRenovacion: string;
 }
 
+
 interface VehicleDetailsData {
   idV: string;
+  clase: string;
+  placaAnterior: string;
+  tipo: string;
+  categoria: string;
+  marca: string;
+  subMarca: string;
+  modelo: string;
+  numeroMotor: string;
+  numeroSerie: string;
+  polizaSeguro: string;
+  capacidad: string;
+  combustible: string;
+  estatus: string;
 }
 
 export default function TitularModule() {
   const router = useRouter();
 
+  // Estados para búsqueda
   const [nombre, setNombre] = useState('');
   const [paterno, setPaterno] = useState('');
   const [materno, setMaterno] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [selectedExpediente, setSelectedExpediente] = useState<Expediente | null>(null);
-  const [openSections, setOpenSections] = useState<number[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [selectionError, setSelectionError] = useState<string | null>(null);
 
+  // Estados para datos
+  const [selectedExpediente, setSelectedExpediente] = useState<Expediente | null>(null);
   const [expedientes, setExpedientes] = useState<Expediente[]>([]);
   const [concessionData, setConcessionData] = useState<ConcesionData | null>(null);
   const [seguroData, setSeguroData] = useState<SeguroData | null>(null);
   const [concesionarioData, setConcesionarioData] = useState<ConcesionarioData | null>(null);
   const [vehicleDetailsData, setVehicleDetailsData] = useState<VehicleDetailsData | null>(null);
+
+  // Estados para UI
+  const [error, setError] = useState<string | null>(null);
+  const [selectionError, setSelectionError] = useState<string | null>(null);
   const [isLoadingSelection, setIsLoadingSelection] = useState(false);
   const [concesionariosEncontrados, setConcesionariosEncontrados] = useState<any[]>([]);
   const [concesionarioSeleccionado, setConcesionarioSeleccionado] = useState<any>(null);
   const [concesionesSeleccionadas, setConcesionesSeleccionadas] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState(0);
 
+  // Prefetch de rutas
   useEffect(() => {
     router.prefetch("/dashboard/ModificacionVehiculo");
     router.prefetch("/dashboard/iv");
   }, [router]);
 
+  // Navegación
   const navigateToModification = useCallback(() => {
     if (!concessionData?.idC || !vehicleDetailsData?.idV) return;
-
-    const params = new URLSearchParams({
-      idC: concessionData.idC,
-      idV: vehicleDetailsData.idV,
-    });
-    router.push(`/dashboard/ModificacionVehiculo?${params.toString()}`);
+    router.push(`/dashboard/ModificacionVehiculo?idC=${concessionData.idC}&idV=${vehicleDetailsData.idV}`);
   }, [concessionData?.idC, vehicleDetailsData?.idV, router]);
 
   const navigateToInspection = useCallback(() => {
-    router.push("/dashboard/iv");
-  }, [router]);
+    if (!concessionData?.idC) return;
+    router.push(`/dashboard/iv?idC=${concessionData.idC}`);
+  }, [concessionData?.idC, router]);
 
+  // Componente para campos de solo lectura
+  function ReadonlyField({ label, value }: { label: string; value: string | undefined | null }) {
+    return (
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
+        <div className="flex items-center h-10 px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50">
+          {value || <span className="text-gray-400">No especificado</span>}
+        </div>
+      </div>
+    );
+  }
+
+  // Definición de las pestañas
+  const cardSections = [
+    {
+      title: "Información del Concesionario",
+      icon: <FileText className="w-4 h-4 text-gray-600" />,
+      content: (
+        <div className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="space-y-3">
+              <ReadonlyField label="Tipo de Persona" value={concesionarioData?.tipoPersona} />
+              <ReadonlyField label="Identificador" value={concesionarioData?.identificador} />
+              <ReadonlyField label="Nombre" value={concesionarioData?.nombre} />
+              <ReadonlyField label="Apellido Paterno" value={concesionarioData?.apellidoPaterno} />
+              <ReadonlyField label="Apellido Materno" value={concesionarioData?.apellidoMaterno} />
+              <ReadonlyField label="Fecha de Nacimiento" value={concesionarioData?.fechaNacimiento} />
+              <ReadonlyField label="Lugar de Nacimiento" value={concesionarioData?.lugarNacimiento} />
+              <ReadonlyField label="Género" value={concesionarioData?.genero} />
+            </div>
+            <div className="space-y-3">
+              <ReadonlyField label="RFC" value={concesionarioData?.rfc} />
+              <ReadonlyField label="Nacionalidad" value={concesionarioData?.nacionalidad} />
+              <ReadonlyField label="Correo Electrónico" value={concesionarioData?.correoElectronico} />
+              <ReadonlyField label="Estado Civil" value={concesionarioData?.estadoCivil} />
+              <ReadonlyField label="Fecha Alta" value={concesionarioData?.fechaAlta} />
+              <ReadonlyField label="Estatus" value={concesionarioData?.estatus} />
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <ReadonlyField label="Observaciones" value={concesionarioData?.observacionesConcesionario} />
+          </div>
+
+          <Accordion type="multiple" className="w-full space-y-2">
+            <AccordionItem value="beneficiarios" className="border rounded-lg overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gray-50">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Beneficiarios Registrados</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="p-4 bg-white">
+                {(concesionarioData?.beneficiarios ?? []).length > 0 ? (
+                  concesionarioData?.beneficiarios.map((b, i) => (
+                    <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                      <ReadonlyField label="Nombre" value={b.nombre} />
+                      <ReadonlyField label="Parentesco" value={b.parentesco} />
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-sm">No hay beneficiarios registrados.</p>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="domicilio" className="border rounded-lg overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gray-50">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Domicilio Registrado</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-4">
+                {concesionarioData?.domicilio ? (
+                  <>
+                    <ReadonlyField label="Calle" value={concesionarioData.domicilio.calle} />
+                    <ReadonlyField label="Colonia" value={concesionarioData.domicilio.colonia} />
+                    <ReadonlyField label="Cruza con" value={concesionarioData.domicilio.cruzaCon} />
+                    <ReadonlyField label="Referencia" value={concesionarioData.domicilio.referencia} />
+                    <ReadonlyField label="Número Exterior" value={concesionarioData.domicilio.numeroExterior} />
+                    <ReadonlyField label="Número Interior" value={concesionarioData.domicilio.numeroInterior} />
+                    <ReadonlyField label="Estado" value={concesionarioData.domicilio.estado} />
+                    <ReadonlyField label="Código Postal" value={concesionarioData.domicilio.codigoPostal} />
+                    <ReadonlyField label="Municipio" value={concesionarioData.domicilio.municipio} />
+                    <ReadonlyField label="Localidad" value={concesionarioData.domicilio.localidad} />
+                    <ReadonlyField label="Tipo de Dirección" value={concesionarioData.domicilio.tipoDireccion} />
+                    <ReadonlyField label="¿Es Fiscal?" value={concesionarioData.domicilio.esFiscal ? "Sí" : "No"} />
+                    <ReadonlyField label="Teléfono" value={concesionarioData.domicilio.telefono} />
+                    <ReadonlyField label="Fax" value={concesionarioData.domicilio.fax} />
+                  </>
+                ) : (
+                  <p className="text-gray-500 text-sm col-span-2">No hay domicilio registrado.</p>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="referencias" className="border rounded-lg overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gray-50">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Referencias Familiares</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="p-4 bg-white space-y-4">
+                {(concesionarioData?.referencias ?? []).length > 0 ? (
+                  concesionarioData?.referencias.map((r, i) => (
+                    <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <ReadonlyField label="Nombre Completo" value={r.nombreCompleto} />
+                      <ReadonlyField label="Parentesco" value={r.parentesco} />
+                      <ReadonlyField label="Calle" value={r.calle} />
+                      <ReadonlyField label="Colonia" value={r.colonia} />
+                      <ReadonlyField label="Cruza con" value={r.cruzaCon} />
+                      <ReadonlyField label="Referencia" value={r.referencia} />
+                      <ReadonlyField label="Número Exterior" value={r.numeroExterior} />
+                      <ReadonlyField label="Número Interior" value={r.numeroInterior} />
+                      <ReadonlyField label="Estado" value={r.estado} />
+                      <ReadonlyField label="Código Postal" value={r.codigoPostal} />
+                      <ReadonlyField label="Municipio" value={r.municipio} />
+                      <ReadonlyField label="Localidad" value={r.localidad} />
+                      <ReadonlyField label="Tipo de Dirección" value={r.tipoDireccion} />
+                      <ReadonlyField label="Teléfono Particular" value={r.telefonoParticular} />
+                      <ReadonlyField label="Fax" value={r.fax} />
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-sm">No hay referencias familiares registradas.</p>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      ),
+    },
+    {
+      title: "Concesión",
+      icon: <FileText className="w-4 h-4 text-gray-600" />,
+      content: (
+        <div className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <ReadonlyField label="Folio" value={concessionData?.folio} />
+              <ReadonlyField label="Tipo de Servicio" value={concessionData?.tipoServicio} />
+              <ReadonlyField label="Tipo Placa" value={concessionData?.tipoPlaca} />
+              <ReadonlyField label="Mnemotecnia" value={concessionData?.mnemotecnia} />
+              <ReadonlyField label="Modalidad" value={concessionData?.modalidad} />
+              <ReadonlyField label="Municipio Autorizado" value={concessionData?.municipioAutorizado} />
+              <ReadonlyField label="Clase Unidad" value={concessionData?.claseUnidad} />
+            </div>
+            <div className="space-y-3">
+              <ReadonlyField label="Vigencia" value={concessionData?.vigencia} />
+              <ReadonlyField label="Estatus" value={concessionData?.estatus} />
+              <ReadonlyField label="Serie Placa" value={concessionData?.seriePlaca} />
+              <ReadonlyField label="Fecha Registro" value={concessionData?.fechaRegistro} />
+              <ReadonlyField label="Fecha Renovación" value={concessionData?.fechaRenovacion} />
+              <ReadonlyField label="Número Expediente" value={concessionData?.numeroExpediente} />
+              <ReadonlyField label="Submodalidad" value={concessionData?.submodalidad} />
+            </div>
+          </div>
+          <div className="mt-4">
+            <ReadonlyField label="Observaciones" value={concessionData?.observaciones} />
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Seguro",
+      icon: <Shield className="w-4 h-4 text-gray-600" />,
+      content: (
+        <div className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <ReadonlyField label="Aseguradora" value={seguroData?.aseguradora} />
+              <ReadonlyField label="Número de Póliza" value={seguroData?.numeroPoliza} />
+              <ReadonlyField label="Folio de Pago" value={seguroData?.folioPago} />
+            </div>
+            <div className="space-y-3">
+              <ReadonlyField label="Fecha de Expedición" value={seguroData?.fechaExpedicion} />
+              <ReadonlyField label="Fecha de Vencimiento" value={seguroData?.fechaVencimiento} />
+            </div>
+          </div>
+          <div className="mt-4">
+            <ReadonlyField label="Observaciones" value={seguroData?.observaciones} />
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Vehículo",
+      icon: <Car className="w-4 h-4 text-gray-600" />,
+      content: (
+        <div className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <ReadonlyField label="Marca" value={vehicleDetailsData?.marca} />
+              <ReadonlyField label="SubMarca" value={vehicleDetailsData?.subMarca} />
+              <ReadonlyField label="Modelo" value={vehicleDetailsData?.modelo} />
+              <ReadonlyField label="Tipo" value={vehicleDetailsData?.tipo} />
+              <ReadonlyField label="Clase" value={vehicleDetailsData?.clase} />
+              <ReadonlyField label="Número de Motor" value={vehicleDetailsData?.numeroMotor} />
+            </div>
+            <div className="space-y-3">
+              <ReadonlyField label="Número de Serie" value={vehicleDetailsData?.numeroSerie} />
+              <ReadonlyField label="Placa Anterior" value={vehicleDetailsData?.placaAnterior} />
+              <ReadonlyField label="Póliza de Seguro" value={vehicleDetailsData?.polizaSeguro} />
+              <ReadonlyField label="Capacidad" value={vehicleDetailsData?.capacidad} />
+              <ReadonlyField label="Combustible" value={vehicleDetailsData?.combustible} />
+              <ReadonlyField label="Estatus" value={vehicleDetailsData?.estatus} />
+            </div>
+          </div>
+          <div className="mt-6 flex justify-end gap-4">
+            <Button
+              variant="outline"
+              onClick={navigateToModification}
+              disabled={!concessionData?.idC || !vehicleDetailsData?.idV}
+            >
+              Modificar Vehículo
+            </Button>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={navigateToInspection}
+              disabled={!concessionData?.idC}
+            >
+              Realizar Inspección
+            </Button>
+          </div>
+        </div>
+      ),
+    },
+  ];
+
+  // Función para buscar titulares
   const handleSearch = async (e?: React.FormEvent) => {
     e?.preventDefault();
-
     setIsSearching(true);
     setError(null);
     setSelectionError(null);
@@ -227,37 +470,24 @@ export default function TitularModule() {
     setSelectedExpediente(null);
 
     try {
-      const page = 1;
-      const pageSize = 10;
-
       const searchParams = new URLSearchParams();
       if (nombre.trim()) searchParams.append("nombre", nombre.trim());
       if (paterno.trim()) searchParams.append("paterno", paterno.trim());
       if (materno.trim()) searchParams.append("materno", materno.trim());
-      searchParams.append("page", page.toString());
-      searchParams.append("pageSize", pageSize.toString());
 
-      const { data } = await apiClient(
-        `/concesion/titular?${searchParams.toString()}`,
-        {
-          method: 'GET',
-          withCredentials: true,
-        }
-      );
+      const { data } = await apiClient(`/concesion/titular?${searchParams.toString()}`, {
+        method: 'GET',
+        withCredentials: true,
+      });
 
       const searchResults = data || [];
+      setConcesionariosEncontrados(searchResults);
 
-      if (searchResults.length > 0) {
-        setConcesionariosEncontrados(searchResults);
-        console.log("Resultados de búsqueda:", searchResults);
-        if (searchResults.length === 1) {
-          handleSelectConcesionario(searchResults[0]);
-        }
-      } else {
-        setConcesionariosEncontrados([]);
+      if (searchResults.length === 0) {
         setError("No se encontraron resultados para la búsqueda.");
+      } else if (searchResults.length === 1) {
+        await handleSelectConcesionario(searchResults[0]);
       }
-
     } catch (err) {
       console.error("Error al buscar titular:", err);
       setError("Error al buscar titular. Por favor, intenta de nuevo.");
@@ -266,14 +496,14 @@ export default function TitularModule() {
     }
   };
 
+  // Función para seleccionar concesionario
 
+  // Función para seleccionar concesionario (lógica completada y corregida)
   const handleSelectConcesionario = async (concesionario: any) => {
     setIsLoadingSelection(true);
     setConcesionarioSeleccionado(concesionario);
     setError(null);
     setSelectionError(null);
-    console.log("Concesionario seleccionado:", concesionario);
-
     const idConcesionario = Number(concesionario.idConcesionario);
 
     try {
@@ -289,16 +519,20 @@ export default function TitularModule() {
       console.log("Respuesta de la API para concesionario seleccionado:", response);
 
       let fullConcessionData;
+      let concesionDataFromResponse = response?.concesion?.data;
+      const concesionarioDataFromResponse = response?.concesionario?.data;
+      const isConcesionarioOnlyResponse = concesionarioDataFromResponse && !concesionDataFromResponse;
 
-      // --- LÓGICA DE AJUSTE SIMPLIFICADA ---
-      // Si la respuesta es un objeto con concesionario, la usamos directamente.
-      // Si la respuesta es un array con un ID de concesión, hacemos una segunda llamada.
-      if (response?.concesionario?.data) {
+      // Lógica para cuando la concesión es null
+      if (isConcesionarioOnlyResponse) {
+        console.log("Se recibieron solo datos del concesionario. Procediendo con el flujo adecuado.");
+        fullConcessionData = response;
+      } else if (response?.concesionario?.data) {
         console.log("Se recibieron los datos completos en la primera llamada.");
         fullConcessionData = response;
       } else if (Array.isArray(response?.data) && response.data.length > 0) {
         const primeraConcesion = response.data[0];
-        const idConcesion = Number(primeraConcesion.idConcesion); // Usar IdConcesion como en la API
+        const idConcesion = Number(primeraConcesion.idConcesion);
 
         if (!idConcesion) {
           throw new Error("No se pudo obtener un ID de concesión válido para la segunda llamada.");
@@ -317,55 +551,87 @@ export default function TitularModule() {
       // A partir de aquí, el código maneja de forma segura los datos
       console.log("Respuesta de la API para detalle de concesión (full data):", fullConcessionData);
 
-      // --- MAPEO DE DATOS SEGURO ---
-      // Cada bloque de mapeo es independiente para evitar errores cuando falte información.
+      // Mapeo de datos seguro
+      const concesionItem = fullConcessionData.concesion?.data;
+      const concesionarioItem = fullConcessionData.concesionario?.data;
+      const beneficiariosArr = fullConcessionData.beneficiarios?.data ?? [];
+      const referenciasArr = fullConcessionData.referencias?.data ?? [];
+      const direccionesArr = fullConcessionData.direcciones?.data ?? [];
+      const seguroItem = fullConcessionData.seguro?.data;
+      const vehiculoItem = fullConcessionData.vehiculo?.data;
 
-      // Mapeo de la concesión
-      if (fullConcessionData.concesion?.data) {
-        const concesionItem = fullConcessionData.concesion.data;
-        const concession = {
-          idC: concesionItem.IdConcesion,
-          folio: concesionItem.Folio ?? "",
-          tipoServicio: concesionItem.TipoServicio ?? "",
-          tipoPlaca: concesionItem.TipoPlaca ?? "",
-          mnemotecnia: concesionItem.Mnemotecnia ?? "",
-          modalidad: concesionItem.Modalidad ?? "",
-          municipioAutorizado: concesionItem.MunicipioAutorizado ?? "",
-          claseUnidad: concesionItem.ClaseUnidad ?? "",
-          vigencia: concesionItem.VigenciaAnios ? `${concesionItem.VigenciaAnios} años` : "",
-          estatus: concesionItem.Estatus ?? "",
-          seriePlaca: concesionItem.SeriePlacaActual ?? "",
-          fechaRegistro: concesionItem.FechaExpedicion ?? "",
-          fechaRenovacion: concesionItem.FechaRenovacion ?? "",
-          numeroExpediente: concesionItem.NumeroExpediente ?? "",
-          submodalidad: concesionItem.SubModalidad ?? "",
-          localidadAutorizada: concesionItem.LocalidadAutorizada ?? "",
-          tipoUnidad: concesionItem.TipoUnidad ?? "",
-          seriePlacaAnterior: concesionItem.SeriePlacaAnterior ?? "",
-          fechaVencimiento: concesionItem.FechaVencimiento ?? "",
-          observaciones: concesionItem.Observaciones ?? "",
-        };
-        setConcessionData(concession);
-        setSelectedExpediente({
-          id: concession.numeroExpediente,
-          concesion: concession.folio,
-          titular: concesionario.nombreCompleto,
-          tipo: concession.tipoServicio,
+      if (concesionarioItem) {
+        // ConcesionData (se puede establecer como null si no existe)
+        if (concesionItem) {
+          const concession: ConcesionData = {
+            idC: concesionItem.IdConcesion,
+            folio: concesionItem.Folio ?? "",
+            tipoServicio: concesionItem.TipoServicio ?? "",
+            tipoPlaca: concesionItem.TipoPlaca ?? "",
+            mnemotecnia: concesionItem.Mnemotecnia ?? "",
+            modalidad: concesionItem.Modalidad ?? "",
+            municipioAutorizado: concesionItem.MunicipioAutorizado ?? "",
+            claseUnidad: concesionItem.ClaseUnidad ?? "",
+            vigencia: concesionItem.VigenciaAnios ? `${concesionItem.VigenciaAnios} años` : "",
+            estatus: concesionItem.Estatus ?? concesionItem.estatus ?? "",
+            seriePlaca: concesionItem.SeriePlacaActual ?? "",
+            fechaRegistro: concesionItem.FechaExpedicion ?? "",
+            fechaRenovacion: concesionItem.FechaRenovacion ?? "",
+            numeroExpediente: concesionItem.NumeroExpediente ?? "",
+            submodalidad: concesionItem.SubModalidad ?? "",
+            localidadAutorizada: concesionItem.LocalidadAutorizada ?? "",
+            tipoUnidad: concesionItem.TipoUnidad ?? "",
+            seriePlacaAnterior: concesionItem.SeriePlacaAnterior ?? "",
+            fechaVencimiento: concesionItem.FechaVencimiento ?? "",
+            observaciones: concesionItem.Observaciones ?? "",
+          };
+          setConcessionData(concession);
+        } else {
+          setConcessionData(null); // Establecer como null si no hay datos de concesión
+        }
+
+        // Set selected concesionario and all their concessions for the table (simulate single concession)
+        setConcesionarioSeleccionado({
+          ...concesionario,
+          ...concesionarioItem,
+          nombreCompleto: concesionarioItem.NombreConcesionario ?? `${concesionarioItem.Nombre} ${concesionarioItem.ApellidoPaterno} ${concesionarioItem.ApellidoMaterno}`,
+          concesiones: concesionItem ? [{
+            idConcesion: concesionItem.IdConcesion,
+            folio: concesionItem.Folio,
+            seriePlaca: concesionItem.SeriePlacaActual,
+            numeroExpediente: concesionItem.NumeroExpediente,
+          }] : [],
         });
-      } else {
-        setConcessionData(null);
-        setSelectedExpediente(null);
-      }
 
-      // Mapeo del concesionario
-      // --- 2. Mapeo del Concesionario y su Domicilio ---
-      if (fullConcessionData.concesionario?.data) {
-        const concesionarioItem = fullConcessionData.concesionario.data;
-        const concesionItem = fullConcessionData.concesion?.data; // Obtiene los datos de la concesión
-        const direccionesArr = fullConcessionData.direcciones?.data ?? [];
-        const beneficiariosArr = fullConcessionData.beneficiarios?.data ?? [];
-        const referenciasArr = fullConcessionData.referencias?.data ?? [];
+        if (concesionItem) {
+          setSelectedExpediente({
+            id: concesionItem.NumeroExpediente,
+            concesion: concesionItem.Folio,
+            titular:
+              concesionarioItem.NombreConcesionario ??
+              `${concesionarioItem.Nombre} ${concesionarioItem.ApellidoPaterno} ${concesionarioItem.ApellidoMaterno}`,
+            tipo: concesionItem.TipoServicio,
+          });
+        } else {
+          setSelectedExpediente(null);
+        }
 
+
+        // Seguro
+        if (seguroItem) {
+          setSeguroData({
+            aseguradora: seguroItem.NombreAseguradora ?? "",
+            folioPago: seguroItem.FolioPago ?? "",
+            fechaVencimiento: seguroItem.FechaVencimiento ?? "",
+            numeroPoliza: seguroItem.NumeroPoliza ?? "",
+            fechaExpedicion: seguroItem.FechaExpedicion ?? "",
+            observaciones: seguroItem.Observaciones ?? "",
+          });
+        } else {
+          setSeguroData(null);
+        }
+
+        // ConcesionarioData
         setConcesionarioData({
           tipoPersona: concesionarioItem.TipoPersona ?? "",
           identificador: concesionarioItem.IdConcesionario ?? "",
@@ -382,36 +648,50 @@ export default function TitularModule() {
           fechaAlta: concesionarioItem.FechaAlta ?? "",
           estatus: concesionarioItem.Estatus ?? "",
           observacionesConcesionario: concesionarioItem.Observaciones ?? "",
-
-          // Se corrige el tipo de dato null para evitar errores de TypeScript
-          domicilio: direccionesArr.length > 0
-            ? {
-              calle: direccionesArr[0].Calle ?? "",
-              colonia: direccionesArr[0].Colonia ?? "",
-              cruzaCon: direccionesArr[0].CruceCalles ?? "",
-              referencia: direccionesArr[0].Referencia ?? "",
-              numeroExterior: direccionesArr[0].NumExterior ?? "",
-              numeroInterior: direccionesArr[0].NumInterior ?? "",
-              estado: direccionesArr[0].Estado ?? "",
-              codigoPostal: direccionesArr[0].CodigoPostal ?? "",
-              municipio: direccionesArr[0].Municipio ?? "",
-              localidad: direccionesArr[0].Localidad ?? "",
-              tipoDireccion: direccionesArr[0].TipoDireccion ?? "",
-              esFiscal: direccionesArr[0].EsFiscal ?? false,
-              telefono: direccionesArr[0].Telefono ?? "",
-              fax: direccionesArr[0].Fax ?? "",
-            }
-            : null,
-
+          domicilio:
+            Array.isArray(direccionesArr) && direccionesArr.length > 0
+              ? {
+                calle: direccionesArr[0].Calle ?? "",
+                colonia: direccionesArr[0].Colonia ?? "",
+                cruzaCon: direccionesArr[0].CruceCalles ?? "",
+                referencia: direccionesArr[0].Referencia ?? "",
+                numeroExterior: direccionesArr[0].NumExterior ?? "",
+                numeroInterior: direccionesArr[0].NumInterior ?? "",
+                estado: direccionesArr[0].Estado ?? "",
+                codigoPostal: direccionesArr[0].CodigoPostal ?? "",
+                municipio: direccionesArr[0].Municipio ?? "",
+                localidad: direccionesArr[0].Localidad ?? "",
+                tipoDireccion: direccionesArr[0].TipoDireccion ?? "",
+                esFiscal: direccionesArr[0].EsFiscal ?? false,
+                telefono: direccionesArr[0].Telefono ?? "",
+                fax: direccionesArr[0].Fax ?? "",
+              }
+              : null,
           beneficiarios: Array.isArray(beneficiariosArr)
-            ? beneficiariosArr.map((b: any) => ({ nombre: b.Nombre ?? "", parentesco: b.Parentesco ?? "" }))
+            ? beneficiariosArr.map((b: any) => ({
+              nombre: b.NombreCompleto ?? "",
+              parentesco: b.Parentesco ?? "",
+            }))
             : [],
           referencias: Array.isArray(referenciasArr)
-            ? referenciasArr.map((r: any) => ({ ...r, nombreCompleto: r.NombreCompleto ?? "", parentesco: r.Parentesco ?? "", telefonoParticular: r.Telefono ?? "" }))
+            ? referenciasArr.map((r: any) => ({
+              nombreCompleto: r.NombreCompleto ?? "",
+              parentesco: r.Parentesco ?? "",
+              calle: r.Calle ?? "",
+              colonia: r.Colonia ?? "",
+              cruzaCon: r.CruceCalles ?? "",
+              referencia: r.Referencia ?? "",
+              numeroExterior: r.NumExterior ?? "",
+              numeroInterior: r.NumInterior ?? "",
+              estado: r.Estado ?? "",
+              codigoPostal: r.CodigoPostal ?? "",
+              municipio: r.Municipio ?? "",
+              localidad: r.Localidad ?? "",
+              tipoDireccion: r.TipoDireccion ?? "",
+              telefonoParticular: r.Telefono ?? "",
+              fax: r.Fax ?? "",
+            }))
             : [],
-
-          // AÑADIDO: Volvemos a incluir los datos de la concesión aquí
-          // Usamos el operador ?. para manejar el caso en que concesionItem es null
           idConcesion: concesionItem?.IdConcesion ?? "",
           folio: concesionItem?.Folio ?? "",
           fechaExpedicion: concesionItem?.FechaExpedicion ?? "",
@@ -464,582 +744,73 @@ export default function TitularModule() {
           observaciones: concesionItem?.Observaciones ?? "",
           fechaRenovacion: concesionItem?.FechaRenovacion ?? "",
         });
+
+        // Vehiculo
+        if (vehiculoItem) {
+          setVehicleDetailsData({
+            idV: vehiculoItem.IdVehiculo ?? "",
+            clase: vehiculoItem.Clase ?? "",
+            placaAnterior: vehiculoItem.PlacaAnterior ?? "",
+            tipo: vehiculoItem.Tipo ?? "",
+            categoria: vehiculoItem.Categoria ?? "",
+            marca: vehiculoItem.Marca ?? "",
+            subMarca: vehiculoItem.SubMarca ?? "",
+            modelo: vehiculoItem.Modelo ?? "",
+            numeroMotor: vehiculoItem.NumeroMotor ?? "",
+            numeroSerie: vehiculoItem.NumeroSerie ?? "",
+            polizaSeguro: vehiculoItem.PolizaSeguro ?? "",
+            capacidad: vehiculoItem.Capacidad ?? "",
+            combustible: vehiculoItem.Combustible ?? "",
+            estatus: vehiculoItem.Estatus ?? "",
+          });
+        } else {
+          setVehicleDetailsData(null);
+        }
+
       } else {
-        setConcesionarioData(null);
+        throw new Error("Datos de concesionario no encontrados en la respuesta de la API.");
       }
-
-      // Mapeo del seguro
-      if (fullConcessionData.seguro?.data) {
-        const seguroItem = fullConcessionData.seguro.data;
-        setSeguroData({
-          aseguradora: seguroItem.NombreAseguradora ?? "",
-          folioPago: seguroItem.FolioPago ?? "",
-          fechaVencimiento: seguroItem.FechaVencimiento ?? "",
-          numeroPoliza: seguroItem.NumeroPoliza ?? "",
-          fechaExpedicion: seguroItem.FechaExpedicion ?? "",
-          observaciones: seguroItem.Observaciones ?? "",
-        });
-      } else {
-        setSeguroData(null);
-      }
-
-      // Mapeo del vehículo
-      if (fullConcessionData.vehiculo?.data) {
-        const vehiculoItem = fullConcessionData.vehiculo.data;
-        setVehicleDetailsData({
-          idV: vehiculoItem.IdVehiculo ?? "",
-          // // clase: vehiculoItem.ClaseVehiculo ?? "",
-          // placaAnterior: vehiculoItem.PlacaAnterior ?? "",
-          // tipo: vehiculoItem.TipoVehiculo ?? "",
-          // categoria: vehiculoItem.Categoria ?? "",
-          // marca: vehiculoItem.Marca ?? "",
-          // rfv: vehiculoItem.RegFedVeh ?? "",
-          // subMarca: vehiculoItem.SubMarca ?? "",
-          // cilindros: vehiculoItem.NumeroCilindros?.toString() ?? "",
-          // version: vehiculoItem.Version ?? "",
-          // numeroPasajeros: vehiculoItem.NumeroPasajeros?.toString() ?? "",
-          // modelo: vehiculoItem.Modelo?.toString() ?? "",
-          // vigencia: vehiculoItem.Vigencia ?? "",
-          // tipoPlaca: vehiculoItem.TipoPlaca ?? "",
-          // numeroPuertas: vehiculoItem.NumeroPuertas?.toString() ?? "",
-          // tipoServicio: vehiculoItem.TipoServicio ?? "",
-          // numeroToneladas: vehiculoItem.NumeroToneladas ?? "",
-          // fechaFactura: vehiculoItem.FechaFactura ?? "",
-          // centimetrosCubicos: vehiculoItem.CentrimetrosCubicos ?? "",
-          // folioFactura: vehiculoItem.NumeroFactura ?? "",
-          // color: vehiculoItem.Color ?? "",
-          // importeFactura: vehiculoItem.ImporteFactura?.toString() ?? "",
-          // numeroMotor: vehiculoItem.Motor ?? "",
-          // polizaSeguro: vehiculoItem.PolizaSeguro ?? "",
-          // numeroSerie: vehiculoItem.SerieNIV ?? "",
-          // origen: vehiculoItem.VehiculoOrigen ?? "",
-          // capacidad: vehiculoItem.Capacidad ?? "",
-          // estadoProcedencia: vehiculoItem.EstadoProcedencia ?? "",
-          // combustible: vehiculoItem.Combustible ?? "",
-          // estatus: vehiculoItem.IdEstatus?.toString() ?? "",
-          // nrpv: vehiculoItem.NRPV ?? "",
-        });
-      } else {
-        setVehicleDetailsData(null);
-      }
-
-      // Se establece el estado del concesionario seleccionado con la información actualizada
-      const updatedConcesionarioSeleccionado = {
-        ...concesionario,
-        ...fullConcessionData.concesionario?.data,
-        nombreCompleto: fullConcessionData.concesionario?.data?.NombreConcesionario ?? `${fullConcessionData.concesionario?.data?.Nombre} ${fullConcessionData.concesionario?.data?.ApellidoPaterno} ${fullConcessionData.concesionario?.data?.ApellidoMaterno}`,
-        concesiones: fullConcessionData.concesion?.data
-          ? [
-            {
-              idConcesion: fullConcessionData.concesion.data.IdConcesion,
-              folio: fullConcessionData.concesion.data.Folio,
-              seriePlaca: fullConcessionData.concesion.data.SeriePlacaActual,
-              numeroExpediente: fullConcessionData.concesion.data.NumeroExpediente,
-            },
-          ]
-          : [],
-      };
-      setConcesionarioSeleccionado(updatedConcesionarioSeleccionado);
-
-      // Se abren las secciones y se establece la pestaña activa
-      setOpenSections([0]);
-      setActiveTab(0);
 
     } catch (err) {
-      console.error("Error al obtener detalle de la concesión:", err);
-      setSelectionError("No se pudo obtener el detalle de la concesión. Por favor, intenta de nuevo.");
-      setConcessionData(null);
-      setSeguroData(null);
-      setConcesionarioData(null);
-      setVehicleDetailsData(null);
-      setSelectedExpediente(null);
+      console.error("Error al obtener el detalle del concesionario:", err);
+      setSelectionError("No se pudo cargar la información completa. Por favor, inténtalo de nuevo.");
     } finally {
       setIsLoadingSelection(false);
     }
   };
-  // const handleSelectConcesionario = async (concesionario: any) => {
-  //   setIsLoadingSelection(true);
-  //   setConcesionarioSeleccionado(concesionario);
-  //   setError(null);
-  //   setSelectionError(null);
-  //   console.log("Concesionario seleccionado:", concesionario);
-
-  //   const idConcesionario = Number(concesionario.idConcesionario)
-
-  //   try {
-  //     console.log("Obteniendo detalle de concesión para concesionario ID:", idConcesionario);
-
-  //     const response = await apiClient(`/concesion/concesionario/${idConcesionario}`,
-  //       {
-  //         method: 'GET',
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //         },
-  //         withCredentials: true,
-  //       }
-  //     );
-
-  //     console.log("Respuesta de la API para concesionario seleccionado:", response);
-  //     console.log("Respuesta de la API para concesionario seleccionado:", response.data);
-  //     const primeraConcesion = response.data[0];
-  //     const idC = Number(primeraConcesion.idConcesion)
-
-  //     console.log("ID de concesión a buscar:", idC);  
-
-  //     const resdata = await apiClient(
-  //       `/concesion/${idC}`,
-  //       {
-  //         method: 'GET',
-  //         withCredentials: true,
-  //       }
-  //     );
-  //     const fullConcessionData = resdata;
-  //     console.log("Respuesta de la API para detalle de concesión (full data):", fullConcessionData);
-
-  //     const concesionItem = fullConcessionData.concesion?.data;
-  //     const concesionarioItem = fullConcessionData.concesionario?.data;
-  //     const beneficiariosArr = fullConcessionData.beneficiarios?.data ?? [];
-  //     const referenciasArr = fullConcessionData.referencias?.data ?? [];
-  //     const direccionesArr = fullConcessionData.direcciones?.data ?? [];
-  //     const seguroItem = fullConcessionData.seguro?.data;
-  //     const vehiculoItem = fullConcessionData.vehiculo?.data;
-
-  //     if (concesionItem && concesionarioItem) {
-  //       const concession: ConcesionData = {
-  //         idC: concesionItem.IdConcesion,
-  //         folio: concesionItem.Folio ?? "",
-  //         tipoServicio: concesionItem.TipoServicio ?? "",
-  //         tipoPlaca: concesionItem.TipoPlaca ?? "",
-  //         mnemotecnia: concesionItem.Mnemotecnia ?? "",
-  //         modalidad: concesionItem.Modalidad ?? "",
-  //         municipioAutorizado: concesionItem.MunicipioAutorizado ?? "",
-  //         claseUnidad: concesionItem.ClaseUnidad ?? "",
-  //         vigencia: concesionItem.VigenciaAnios ? `${concesionItem.VigenciaAnios} años` : "",
-  //         estatus: concesionItem.Estatus ?? concesionItem.estatus ?? "",
-  //         seriePlaca: concesionItem.SeriePlacaActual ?? "",
-  //         fechaRegistro: concesionItem.FechaExpedicion ?? "",
-  //         fechaRenovacion: concesionItem.FechaRenovacion ?? "",
-  //         numeroExpediente: concesionItem.NumeroExpediente ?? "",
-  //         submodalidad: concesionItem.SubModalidad ?? "",
-  //         localidadAutorizada: concesionItem.LocalidadAutorizada ?? "",
-  //         tipoUnidad: concesionItem.TipoUnidad ?? "",
-  //         seriePlacaAnterior: concesionItem.SeriePlacaAnterior ?? "",
-  //         fechaVencimiento: concesionItem.FechaVencimiento ?? "",
-  //         observaciones: concesionItem.Observaciones ?? "",
-  //       };
-  //       setConcessionData(concession);
-
-  //       setConcesionarioSeleccionado({
-  //         ...concesionario,
-  //         ...concesionarioItem,
-  //         nombreCompleto: concesionarioItem.NombreConcesionario ?? `${concesionarioItem.Nombre} ${concesionarioItem.ApellidoPaterno} ${concesionarioItem.ApellidoMaterno}`,
-  //         concesiones: [
-  //           {
-  //             idConcesion: concesionItem.IdConcesion,
-  //             folio: concesionItem.Folio,
-  //             seriePlaca: concesionItem.SeriePlacaActual,
-  //             numeroExpediente: concesionItem.NumeroExpediente,
-  //           },
-  //         ],
-  //       });
-
-  //       setSelectedExpediente({
-  //         id: concession.numeroExpediente,
-  //         concesion: concession.folio,
-  //         titular:
-  //           concesionarioItem.NombreConcesionario ??
-  //           `${concesionarioItem.Nombre} ${concesionarioItem.ApellidoPaterno} ${concesionarioItem.ApellidoMaterno}`,
-  //         tipo: concession.tipoServicio,
-  //       });
-
-  //       if (seguroItem) {
-  //         setSeguroData({
-  //           aseguradora: seguroItem.NombreAseguradora ?? "",
-  //           folioPago: seguroItem.FolioPago ?? "",
-  //           fechaVencimiento: seguroItem.FechaVencimiento ?? "",
-  //           numeroPoliza: seguroItem.NumeroPoliza ?? "",
-  //           fechaExpedicion: seguroItem.FechaExpedicion ?? "",
-  //           observaciones: seguroItem.Observaciones ?? "",
-  //         });
-  //       } else {
-  //         setSeguroData(null);
-  //       }
-
-  //       setConcesionarioData({
-  //         tipoPersona: concesionarioItem.TipoPersona ?? "",
-  //         identificador: concesionarioItem.IdConcesionario ?? "",
-  //         nombre: concesionarioItem.Nombre ?? "",
-  //         apellidoPaterno: concesionarioItem.ApellidoPaterno ?? "",
-  //         apellidoMaterno: concesionarioItem.ApellidoMaterno ?? "",
-  //         fechaNacimiento: concesionarioItem.FechaNacimiento ?? "",
-  //         lugarNacimiento: concesionarioItem.LugarNacimiento ?? "",
-  //         genero: concesionarioItem.Genero ?? "",
-  //         rfc: concesionarioItem.RFC ?? "",
-  //         nacionalidad: concesionarioItem.Nacionalidad ?? "",
-  //         correoElectronico: concesionarioItem.Mail ?? "",
-  //         estadoCivil: concesionarioItem.EstadoCivil ?? "",
-  //         fechaAlta: concesionarioItem.FechaAlta ?? "",
-  //         estatus: concesionarioItem.Estatus ?? "",
-  //         observacionesConcesionario: concesionarioItem.Observaciones ?? "",
-  //         domicilio:
-  //           Array.isArray(direccionesArr) && direccionesArr.length > 0
-  //             ? {
-  //               calle: direccionesArr[0].Calle ?? "",
-  //               colonia: direccionesArr[0].Colonia ?? "",
-  //               cruzaCon: direccionesArr[0].CruceCalles ?? "",
-  //               referencia: direccionesArr[0].Referencia ?? "",
-  //               numeroExterior: direccionesArr[0].NumExterior ?? "",
-  //               numeroInterior: direccionesArr[0].NumInterior ?? "",
-  //               estado: direccionesArr[0].Estado ?? "",
-  //               codigoPostal: direccionesArr[0].CodigoPostal ?? "",
-  //               municipio: direccionesArr[0].Municipio ?? "",
-  //               localidad: direccionesArr[0].Localidad ?? "",
-  //               tipoDireccion: direccionesArr[0].TipoDireccion ?? "",
-  //               esFiscal: direccionesArr[0].EsFiscal ?? false,
-  //               telefono: direccionesArr[0].Telefono ?? "",
-  //               fax: direccionesArr[0].Fax ?? "",
-  //             }
-  //             : null,
-  //         beneficiarios: Array.isArray(beneficiariosArr)
-  //           ? beneficiariosArr.map((b: any) => ({
-  //             nombre: b.NombreCompleto ?? "",
-  //             parentesco: b.Parentesco ?? "",
-  //           }))
-  //           : [],
-  //         referencias: Array.isArray(referenciasArr)
-  //           ? referenciasArr.map((r: any) => ({
-  //             nombreCompleto: r.NombreCompleto ?? "",
-  //             parentesco: r.Parentesco ?? "",
-  //             calle: r.Calle ?? "",
-  //             colonia: r.Colonia ?? "",
-  //             cruzaCon: r.CruceCalles ?? "",
-  //             referencia: r.Referencia ?? "",
-  //             numeroExterior: r.NumExterior ?? "",
-  //             numeroInterior: r.NumInterior ?? "",
-  //             estado: r.Estado ?? "",
-  //             codigoPostal: r.CodigoPostal ?? "",
-  //             municipio: r.Municipio ?? "",
-  //             localidad: r.Localidad ?? "",
-  //             tipoDireccion: r.TipoDireccion ?? "",
-  //             telefonoParticular: r.Telefono ?? "",
-  //             fax: r.Fax ?? "",
-  //           }))
-  //           : [],
-  //         idConcesion: concesionItem.IdConcesion ?? "",
-  //         folio: concesionItem.Folio ?? "",
-  //         fechaExpedicion: concesionItem.FechaExpedicion ?? "",
-  //         fechaVencimiento: concesionItem.FechaVencimiento ?? "",
-  //         vigenciaAnios: concesionItem.VigenciaAnios ?? 0,
-  //         seriePlacaActual: concesionItem.SeriePlacaActual ?? "",
-  //         seriePlacaAnterior: concesionItem.SeriePlacaAnterior ?? "",
-  //         ultimaActualizacion: concesionItem.UltimaActualizacion ?? "",
-  //         idItinerario: concesionItem.IdItinerario ?? 0,
-  //         itinerario: concesionItem.Itinerario ?? "",
-  //         ruta: concesionItem.Ruta ?? "",
-  //         idServicio: concesionItem.IdServicio ?? 0,
-  //         idMunicipioAutorizado: concesionItem.IdMunicipioAutorizado ?? 0,
-  //         estadoExpedicion: concesionItem.EstadoExpedicion ?? "",
-  //         municipioAutorizado: concesionItem.MunicipioAutorizado ?? "",
-  //         idMunicipioExpedicion: concesionItem.IdMunicipioExpedicion ?? 0,
-  //         municipioExpedicion: concesionItem.MunicipioExpedicion ?? "",
-  //         idEstadoExpedicion: concesionItem.IdEstadoExpedicion ?? 0,
-  //         idEstatus: concesionItem.IdEstatus ?? 0,
-  //         idVehiculoActual: concesionItem.IdVehiculoActual ?? "",
-  //         idVehiculoAnterior: concesionItem.IdVehiculoAnterior ?? "",
-  //         idDelegacion: concesionItem.IdDelegacion ?? 0,
-  //         delegacion: concesionItem.Delegacion ?? "",
-  //         idConcesionarioActual: concesionItem.IdConcesionarioActual ?? "",
-  //         idConcesionarioAnterior: concesionItem.IdConcesionarioAnterior ?? "",
-  //         tipoServicio: concesionItem.TipoServicio ?? "",
-  //         tipoServicioAbreviatura: concesionItem.TipoServicioAbreviatura ?? "",
-  //         idPropietario: concesionItem.IdPropietario ?? "",
-  //         idTipoPlaca: concesionItem.IdTipoPlaca ?? "",
-  //         tipoPlaca: concesionItem.TipoPlaca ?? "",
-  //         idClaseUnidad: concesionItem.IdClaseUnidad ?? "",
-  //         claseUnidad: concesionItem.ClaseUnidad ?? "",
-  //         idTipoUnidad: concesionItem.IdTipoUnidad ?? "",
-  //         tipoUnidad: concesionItem.TipoUnidad ?? "",
-  //         idUsoUnidad: concesionItem.IdUsoUnidad ?? "",
-  //         usoUnidad: concesionItem.UsoUnidad ?? "",
-  //         idTipoConcesion: concesionItem.IdTipoConcesion ?? "",
-  //         clave: concesionItem.Clave ?? "",
-  //         tipoConcesion: concesionItem.TipoConcesion ?? "",
-  //         idModalidad: concesionItem.IdModalidad ?? 0,
-  //         modalidad: concesionItem.Modalidad ?? "",
-  //         esConcesion: concesionItem.EsConcesion ?? false,
-  //         numeroExpediente: concesionItem.NumeroExpediente ?? "",
-  //         idSubmodalidad: concesionItem.IdSubmodalidad ?? 0,
-  //         subModalidad: concesionItem.SubModalidad ?? "",
-  //         mnemotecnia: concesionItem.Mnemotecnia ?? "",
-  //         idRuta: concesionItem.IdRuta ?? 0,
-  //         idLocalidadAutorizada: concesionItem.IdLocalidadAutorizada ?? 0,
-  //         localidadAutorizada: concesionItem.LocalidadAutorizada ?? "",
-  //         observaciones: concesionItem.Observaciones ?? "",
-  //         fechaRenovacion: concesionItem.FechaRenovacion ?? "",
-  //       });
-
-  //       if (vehiculoItem) {
-  //         setVehicleDetailsData({
-  //           idV: vehiculoItem.IdVehiculo ?? "",
-  //         });
-  //       } else {
-  //         setVehicleDetailsData(null);
-  //       }
-
-  //       setOpenSections([0]);
-  //       setActiveTab(0);
-  //     } else {
-  //       setSelectionError("No se encontraron datos detallados para esta concesión.");
-  //     }
-  //   } catch (err) {
-  //     console.error("Error al obtener detalle de la concesión:", err);
-  //     setSelectionError("No se pudo obtener el detalle de la concesión. Por favor, intenta de nuevo.");
-  //     setConcessionData(null);
-  //     setSeguroData(null);
-  //     setConcesionarioData(null);
-  //     setVehicleDetailsData(null);
-  //     setSelectedExpediente(null);
-  //   }
-  //   finally {
-  //     setIsLoadingSelection(false);
-  //   }
-  // };
-
-  const handleSelectConcesion = async (folio: string) => {
-    setConcesionesSeleccionadas([folio]);
-    setError(null);
-    setSelectionError(null);
-
-    try {
-      const params = new URLSearchParams();
-      params.append("folio", folio);
-
-      const { data: basicData } = await apiClient(
-        `/concesion/folio?${params.toString()}`,
-        {
-          method: 'GET',
-          withCredentials: true,
-        }
-      );
-
-      const concesionBasica = basicData.data;
-
-      const concesion = {
-        idC: concesionBasica?.IdConcesion,
-        folio: concesionBasica.Folio ?? "",
-        tipoServicio: concesionBasica.TipoServicio ?? "",
-        tipoPlaca: concesionBasica.TipoPlaca ?? "",
-        mnemotecnia: concesionBasica.Mnemotecnia ?? "",
-        modalidad: concesionBasica.Modalidad ?? "",
-        municipioAutorizado: concesionBasica.MunicipioAutorizado ?? "",
-        claseUnidad: concesionBasica.ClaseUnidad ?? "",
-        vigencia: concesionBasica.VigenciaAnios ? `${concesionBasica.VigenciaAnios} años` : "",
-        estatus: "",
-        seriePlaca: concesionBasica.SeriePlacaActual ?? "",
-        fechaRegistro: concesionBasica.FechaExpedicion ?? "",
-        fechaRenovacion: concesionBasica.FechaRenovacion ?? "",
-        numeroExpediente: concesionBasica.NumeroExpediente ?? "",
-        submodalidad: concesionBasica.SubModalidad ?? "",
-        localidadAutorizada: concesionBasica.LocalidadAutorizada ?? "",
-        tipoUnidad: concesionBasica.TipoUnidad ?? "",
-        seriePlacaAnterior: concesionBasica.SeriePlacaAnterior ?? "",
-        fechaVencimiento: concesionBasica.FechaVencimiento ?? "",
-        observaciones: concesionBasica.Observaciones ?? "",
-      };
-
-      setConcessionData(concesion);
-      setSeguroData(null);
-      setConcesionarioData(null);
-      setVehicleDetailsData(null);
-      setSelectedExpediente({
-        id: concesionBasica.NumeroExpediente ?? "",
-        concesion: concesionBasica.Folio ?? "",
-        titular: "",
-        tipo: concesionBasica.TipoServicio ?? ""
-      });
-
-    } catch (err: any) {
-      console.error("Error al seleccionar concesión:", err);
-      setSelectionError("No se pudo obtener el detalle de la concesión.");
-    }
-  };
-
-  const toggleConcesionSeleccionada = (id: string) => {
-    setConcesionesSeleccionadas(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
-  };
-
-  function ReadonlyField({ label, value }: { label: string; value: string | undefined | null }) {
-    return (
-      <div>
-        <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
-        <div className="flex items-center h-10 px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50">
-          {value || <span className="text-gray-400">No especificado</span>}
-        </div>
-      </div>
-    );
-  }
-
-  const cardSections = [
-    {
-      title: "Información del Concesionario",
-      icon: <FileText className="w-4 h-4 text-gray-600" />,
-      content: (
-        <div className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div className="space-y-3">
-              <ReadonlyField label="Tipo de Persona" value={concesionarioData?.tipoPersona} />
-              <ReadonlyField label="Identificador" value={concesionarioData?.identificador} />
-              <ReadonlyField label="Nombre" value={concesionarioData?.nombre} />
-              <ReadonlyField label="Apellido Paterno" value={concesionarioData?.apellidoPaterno} />
-              <ReadonlyField label="Apellido Materno" value={concesionarioData?.apellidoMaterno} />
-              <ReadonlyField label="Fecha de Nacimiento" value={concesionarioData?.fechaNacimiento} />
-              <ReadonlyField label="Lugar de Nacimiento" value={concesionarioData?.lugarNacimiento} />
-              <ReadonlyField label="Género" value={concesionarioData?.genero} />
-            </div>
-            <div className="space-y-3">
-              <ReadonlyField label="RFC" value={concesionarioData?.rfc} />
-              <ReadonlyField label="Nacionalidad" value={concesionarioData?.nacionalidad} />
-              <ReadonlyField label="Correo Electrónico" value={concesionarioData?.correoElectronico} />
-              <ReadonlyField label="Estado Civil" value={concesionarioData?.estadoCivil} />
-              <ReadonlyField label="Fecha Alta" value={concesionarioData?.fechaAlta} />
-              <ReadonlyField label="Estatus" value={concesionarioData?.estatus} />
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <ReadonlyField label="Observaciones" value={concesionarioData?.observacionesConcesionario} />
-          </div>
-
-          <Accordion type="multiple" className="w-full space-y-2">
-            <AccordionItem value="beneficiarios" className="border rounded-lg overflow-hidden">
-              <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gray-50">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">Beneficiarios Registrados</span>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="p-4 bg-white">
-                {(concesionarioData?.beneficiarios ?? []).length > 0 ? (
-                  (concesionarioData?.beneficiarios ?? []).map((b, i) => (
-                    <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                      <ReadonlyField label="Nombre" value={b.nombre} />
-                      <ReadonlyField label="Parentesco" value={b.parentesco} />
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500 text-sm">No hay beneficiarios registrados.</p>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="domicilio" className="border rounded-lg overflow-hidden">
-              <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gray-50">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">Domicilio Registrado</span>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-4">
-                {concesionarioData?.domicilio ? (
-                  <>
-                    <ReadonlyField label="Calle" value={concesionarioData.domicilio.calle} />
-                    <ReadonlyField label="Colonia" value={concesionarioData.domicilio.colonia} />
-                    <ReadonlyField label="Cruza con" value={concesionarioData.domicilio.cruzaCon} />
-                    <ReadonlyField label="Referencia" value={concesionarioData.domicilio.referencia} />
-                    <ReadonlyField label="Número Exterior" value={concesionarioData.domicilio.numeroExterior} />
-                    <ReadonlyField label="Número Interior" value={concesionarioData.domicilio.numeroInterior} />
-                    <ReadonlyField label="Estado" value={concesionarioData.domicilio.estado} />
-                    <ReadonlyField label="Código Postal" value={concesionarioData.domicilio.codigoPostal} />
-                    <ReadonlyField label="Municipio" value={concesionarioData.domicilio.municipio} />
-                    <ReadonlyField label="Localidad" value={concesionarioData.domicilio.localidad} />
-                    <ReadonlyField label="Tipo de Dirección" value={concesionarioData.domicilio.tipoDireccion} />
-                    <ReadonlyField label="¿Es Fiscal?" value={concesionarioData.domicilio.esFiscal ? "Sí" : "No"} />
-                    <ReadonlyField label="Teléfono" value={concesionarioData.domicilio.telefono} />
-                    <ReadonlyField label="Fax" value={concesionarioData.domicilio.fax} />
-                  </>
-                ) : (
-                  <p className="text-gray-500 text-sm col-span-2">No hay domicilio registrado.</p>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="referencias" className="border rounded-lg overflow-hidden">
-              <AccordionTrigger className="px-4 py-3 hover:no-underline bg-gray-50">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">Referencias Familiares</span>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="p-4 bg-white space-y-4">
-                {(concesionarioData?.referencias ?? []).length > 0 ? (
-                  (concesionarioData?.referencias ?? []).map((r, i) => (
-                    <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-md">
-                      <ReadonlyField label="Nombre Completo" value={r.nombreCompleto} />
-                      <ReadonlyField label="Parentesco" value={r.parentesco} />
-                      <ReadonlyField label="Calle" value={r.calle} />
-                      <ReadonlyField label="Colonia" value={r.colonia} />
-                      <ReadonlyField label="Cruza con" value={r.cruzaCon} />
-                      <ReadonlyField label="Referencia" value={r.referencia} />
-                      <ReadonlyField label="Número Exterior" value={r.numeroExterior} />
-                      <ReadonlyField label="Número Interior" value={r.numeroInterior} />
-                      <ReadonlyField label="Estado" value={r.estado} />
-                      <ReadonlyField label="Código Postal" value={r.codigoPostal} />
-                      <ReadonlyField label="Municipio" value={r.municipio} />
-                      <ReadonlyField label="Localidad" value={r.localidad} />
-                      <ReadonlyField label="Tipo de Dirección" value={r.tipoDireccion} />
-                      <ReadonlyField label="Teléfono (Particular)" value={r.telefonoParticular} />
-                      <ReadonlyField label="Fax" value={r.fax} />
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500 text-sm">No hay referencias familiares registradas.</p>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </div>
-      ),
-    },
-  ];
 
   return (
     <div className="max-w-full mx-auto md:p-6">
-      <Card className="bg-transparent items-start border-none shadow-none">
-        <div className="text-start items-start mb-4">
-          <div className="flex flex-col">
-            <h1 className="text-2xl font-extrabold text-gray-800">Detalle de Vehículo y Seguro</h1>
-            <p className="text-sm text-gray-600">Administra la información de vehículos y sus pólizas asociadas</p>
-          </div>
+      <Card className="bg-transparent border-none shadow-none">
+        <div className="text-start mb-4">
+          <h1 className="text-2xl font-extrabold text-gray-800">Detalle de Vehículo y Seguro</h1>
+          <p className="text-sm text-gray-600">Administra la información de vehículos y sus pólizas asociadas</p>
         </div>
 
-        <CardContent className="p-6 bg-white shadow-[#B4BFC2] rounded-xl overflow-hidden shadow-md border-[#ECEFF0] space-y-6">
+        <CardContent className="p-6 bg-white rounded-xl shadow-sm border border-gray-200 space-y-6">
+          {/* Sección de búsqueda */}
           <div className="space-y-4">
             <h2 className="text-lg font-medium text-gray-800">Datos de búsqueda</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
                 <Input
-                  id="nombre"
-                  className="w-full"
                   placeholder="Nombre"
                   value={nombre}
                   onChange={e => setNombre(e.target.value)}
                 />
               </div>
               <div>
-                <label htmlFor="paterno" className="block text-sm font-medium text-gray-700 mb-1">Apellido Paterno</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Apellido Paterno</label>
                 <Input
-                  id="paterno"
-                  className="w-full"
                   placeholder="Apellido Paterno"
                   value={paterno}
                   onChange={e => setPaterno(e.target.value)}
                 />
               </div>
               <div>
-                <label htmlFor="materno" className="block text-sm font-medium text-gray-700 mb-1">Apellido Materno</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Apellido Materno</label>
                 <Input
-                  id="materno"
-                  className="w-full"
                   placeholder="Apellido Materno"
                   value={materno}
                   onChange={e => setMaterno(e.target.value)}
@@ -1048,172 +819,141 @@ export default function TitularModule() {
             </div>
             <Button
               onClick={handleSearch}
-              className="rounded-lg bg-blue-500 hover:bg-blue-600 text-white mt-4"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
               disabled={isSearching}
             >
-              {isSearching ? "Buscando..." : "Buscar Titular"}
+              {isSearching ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Buscando...
+                </>
+              ) : "Buscar Titular"}
             </Button>
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-sm text-sm">
-              <p>{error}</p>
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              {error}
             </div>
           )}
 
-          {concesionariosEncontrados.length > 0 ? (
-            <>
-              <div className="bg-white rounded-lg border border-gray-200 mb-6 overflow-x-auto">
-                <h3 className="px-4 py-3 text-lg font-semibold text-gray-800 border-b">Resultados de la Búsqueda</h3>
-                <table className="min-w-full border border-gray-300">
-                  <thead className="bg-[#f7fafc]">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-300">Seleccionar</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-300">Tipo Persona</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-300">Nombre Completo</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-300">RFC</th>
+          {/* Resultados de búsqueda */}
+          {concesionariosEncontrados.length > 0 && (
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <h3 className="px-4 py-3 text-lg font-semibold text-gray-800 border-b">Resultados de la Búsqueda</h3>
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Seleccionar</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo Persona</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre Completo</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">RFC</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {concesionariosEncontrados.map((item, index) => (
+                    <tr
+                      key={index}
+                      className={`hover:bg-gray-50 cursor-pointer ${concesionarioSeleccionado?.idConcesionario === item.idConcesionario ? 'bg-blue-50' : ''}`}
+                      onClick={() => handleSelectConcesionario(item)}
+                    >
+                      <td className="px-4 py-3">
+                        <input
+                          type="radio"
+                          checked={concesionarioSeleccionado?.idConcesionario === item.idConcesionario}
+                          onChange={() => handleSelectConcesionario(item)}
+                          className="accent-blue-600"
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">{item.tipoPersona}</td>
+                      <td className="px-4 py-3 text-gray-700">{item.nombreCompleto}</td>
+                      <td className="px-4 py-3 text-gray-700">{item.RFC}</td>
                     </tr>
-                  </thead>
-                  <tbody className="bg-white">
-                    {concesionariosEncontrados.map((item, index) => (
-                      <tr
-                        key={index}
-                        className={`cursor-pointer hover:bg-gray-50 ${concesionarioSeleccionado?.idConcesionario === item.idConcesionario ? 'bg-blue-50' : ''}`}
-                        onClick={() => handleSelectConcesionario(item)}
-                      >
-                        <td className="px-4 py-3 border-b border-r border-gray-300">
-                          <input
-                            type="radio"
-                            name="selectedConcesionario"
-                            checked={concesionarioSeleccionado?.idConcesionario === item.idConcesionario}
-                            onChange={() => handleSelectConcesionario(item)}
-                            className="accent-blue-600 cursor-pointer"
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-gray-700 border-b border-r border-gray-300">{item.tipoPersona}</td>
-                        <td className="px-4 py-3 text-gray-700 border-b border-r border-gray-300">{item.nombreCompleto || `${item.Nombre} ${item.ApellidoPaterno} ${item.ApellidoMaterno}`}</td>
-                        <td className="px-4 py-3 text-gray-700 border-b border-gray-300">{item.RFC}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                {/* Mostrar error de selección debajo de la tabla */}
-                {selectionError && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-b-lg shadow-sm text-sm">
-                    <p>{selectionError}</p>
-                  </div>
-                )}
-
-                {concesionarioSeleccionado && Array.isArray(concesionarioSeleccionado.concesiones) && (
-                  <Card className="border-none shadow-none rounded-xl overflow-hidden">
-                    <CardHeader className="border-b p-6">
-                      <div className="flex flex-col space-y-1.5">
-                        <h2 className="text-xl font-extrabold text-gray-800">Concesiones del Titular Seleccionado</h2>
-                        <p className="text-sm">
-                          Información de todas las concesiones asociadas a {concesionarioSeleccionado.nombreCompleto || `${concesionarioSeleccionado.Nombre} ${concesionarioSeleccionado.ApellidoPaterno} ${concesionarioSeleccionado.ApellidoMaterno}`}
-                        </p>
-                      </div>
-                      <div className="mt-4 border-t pt-4">
-                        <table className="w-full text-sm text-gray-700 border border-gray-300 rounded-lg overflow-hidden">
-                          <thead className="border border-gray-300">
-                            <tr>
-                              <th className="font-medium pr-4 py-2 border border-gray-300 bg-gray-50">Seleccionar</th>
-                              <th className="font-medium pr-4 py-2 border border-gray-300 bg-gray-50">ID Concesión</th>
-                              <th className="font-medium pr-4 py-2 border border-gray-300 bg-gray-50">Folio</th>
-                              <th className="font-medium pr-4 py-2 border border-gray-300 bg-gray-50">Serie Placa</th>
-                              <th className="font-medium pr-4 py-2 border border-gray-300 bg-gray-50">Número Expediente</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {concesionarioSeleccionado.concesiones.map((item: any, idx: number) => (
-                              <tr key={idx} className="border-b border-gray-200">
-                                <td className="py-2 px-2 border-r border-gray-200 text-center">
-                                  <input
-                                    type="radio"
-                                    name="selectedConcesion"
-                                    checked={concessionData?.folio?.toString().trim() === item.folio?.toString().trim()}
-                                    onChange={() => handleSelectConcesion(item.folio)}
-                                    className="accent-blue-600 cursor-pointer"
-                                  />
-                                </td>
-                                <td className="py-2 px-2 border-r border-gray-200">{item.idConcesion || 'N/A'}</td>
-                                <td className="py-2 px-2 border-r border-gray-200">{item.folio || 'N/A'}</td>
-                                <td className="py-2 px-2 border-r border-gray-200">{item.seriePlaca || 'N/A'}</td>
-                                <td className="py-2 px-2">{item.numeroExpediente || 'N/A'}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </CardHeader>
-                  </Card>
-                )}
-              </div>
-            </>
-          ) : (
-            !isSearching && !error && (
-              <div className="flex flex-col items-center justify-center py-20 space-y-6 text-center bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="p-4 bg-gray-100 rounded-full">
-                  <Search className="h-8 w-8 text-gray-500" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-800">
-                  No hay resultados para mostrar
-                </h3>
-                <p className="text-base text-gray-600 max-w-md leading-relaxed">
-                  Ingresa el nombre o RFC para buscar información del titular.
-                </p>
-              </div>
-            )
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
 
-          <div className="flex justify-end mb-6">
-            <Button
-              variant="outline"
-              className="border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 px-4 py-2 rounded-md text-sm"
-              onClick={navigateToModification}
-            >
-              Continuar modificación
-            </Button>
-          </div>
-
+          {/* Detalles del concesionario seleccionado */}
           {concesionarioSeleccionado && (
-            <div className="mt-8">
-              <h2 className="text-2xl font-bold mb-4 text-gray-800">Detalles del Concesionario</h2>
+            <div className="mt-6">
               {isLoadingSelection ? (
-                <div className="flex items-center justify-center p-8 bg-white rounded-lg shadow-md">
-                  <Loader2 className="h-8 w-8 animate-spin text-blue-600 mr-2" />
-                  <p className="text-gray-600">Cargando...</p>
+                <div className="flex justify-center p-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                 </div>
               ) : (
-                <div className="bg-white rounded-lg border border-gray-200">
-                  <div className="flex border-b bg-gray-50 border-gray-200 px-4">
-                    {cardSections.map((section, index) => (
-                      <button
-                        key={index}
-                        className={`
-                          -mb-px px-5 py-3 font-medium text-sm transition-colors duration-200
-                          ${activeTab === index
-                            ? 'text-blue-600 border-b-2 border-blue-600'
-                            : 'text-gray-700 hover:text-blue-500'
-                          }
-                          ${index > 0 ? 'ml-0' : ''}
-                        `}
-                        onClick={() => setActiveTab(index)}
-                      >
-                        {section.title}
-                      </button>
-                    ))}
-                  </div>
+                <>
+                  {selectionError && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4">
+                      {selectionError}
+                    </div>
+                  )}
+                  {/* Tabla de resultados */}
+                   {concesionarioSeleccionado && Array.isArray(concesionarioSeleccionado.concesiones) && (
+                  <div className="bg-white rounded-lg border border-gray-200 mb-6 overflow-x-auto">
+                    <h2 className="px-4 py-3 text-lg font-semibold text-gray-800 border-b"> Información de la consesion seleccionado</h2>
 
-                  <div className="p-6 bg-white max-h-[500px] overflow-y-auto">
-                    {cardSections[activeTab]?.content || (
-                      <p className="text-gray-500 italic text-base">
-                        Seleccione una pestaña para ver su contenido.
-                      </p>
-                    )}
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-[#f7fafc]">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Elegir</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Documento</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Folio</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serie Placa</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Número Expediente</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-100">
+                        <tr>
+                          <td className="px-4 py-3">
+                            <input
+                              type="radio"
+                              checked
+                              readOnly
+                              className="accent-blue-600"
+                            />
+                          </td>
+                          <td className="px-4 py-3 text-gray-700">Concesión</td>
+                          <td className="px-4 py-3 text-gray-700">{concessionData?.folio ?? ""}</td>
+                          <td className="px-4 py-3 text-gray-700">{concessionData?.seriePlaca ?? ""}</td>
+                          <td className="px-4 py-3 text-gray-700">{concessionData?.numeroExpediente ?? ""}</td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
-                </div>
+                )}
+
+
+                  <div className="bg-white rounded-lg border border-gray-200">
+                    {/* Pestañas */}
+                    {/* Sistema de Tabs y Contenido */}
+                    <h2 className="px-4 py-3 text-lg font-semibold text-gray-800 border-b">Detalles del Concesionario</h2>
+
+                    <div className="flex border-b border-gray-200">
+                      {cardSections.map((section, index) => (
+                        <button
+                          key={index}
+                          className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors ${activeTab === index
+                            ? 'border-blue-600 text-blue-600'
+                            : 'border-transparent text-gray-600 hover:text-blue-500'
+                            }`}
+                          onClick={() => setActiveTab(index)}
+                        >
+                          <div className="flex items-center gap-2">
+                            {section.icon}
+                            {section.title}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Contenido de la pestaña activa */}
+                    <div className="p-6">
+                      {cardSections[activeTab]?.content}
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           )}

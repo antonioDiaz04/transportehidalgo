@@ -9,6 +9,6 @@ const TitularModule = dynamic(() => import("./titular-module"), {
   ssr: false,
 })
 
-export default function ExpedientePage() {
+export default function TitularPage() {
   return <TitularModule />
 }

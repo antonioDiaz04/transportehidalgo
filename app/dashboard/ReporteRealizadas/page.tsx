@@ -18,6 +18,6 @@ const ReporteRealizadasmodule = dynamic(() => import("./ReporteRealizadas-module
   ssr: false,
 })
 
-export default function InspeccionRevistaVehicularPage() {
+export default function ReporteRealizadasPage() {
   return <ReporteRealizadasmodule/>
 }
