@@ -1,4 +1,6 @@
 "use client";
+import { formatDate } from '@/lib/formatDate'; // Usamos el alias @ o la ruta relativa
+
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Search, FileText, Loader2, Car, Shield } from "lucide-react";
@@ -253,7 +255,7 @@ export default function TitularModule() {
               <ReadonlyField label="Nombre" value={concesionarioData?.nombre} />
               <ReadonlyField label="Apellido Paterno" value={concesionarioData?.apellidoPaterno} />
               <ReadonlyField label="Apellido Materno" value={concesionarioData?.apellidoMaterno} />
-              <ReadonlyField label="Fecha de Nacimiento" value={concesionarioData?.fechaNacimiento} />
+              <ReadonlyField label="Fecha de Nacimiento" value={formatDate(concesionarioData?.fechaNacimiento)} />
               <ReadonlyField label="Lugar de Nacimiento" value={concesionarioData?.lugarNacimiento} />
               <ReadonlyField label="Género" value={concesionarioData?.genero} />
             </div>
@@ -262,7 +264,7 @@ export default function TitularModule() {
               <ReadonlyField label="Nacionalidad" value={concesionarioData?.nacionalidad} />
               <ReadonlyField label="Correo Electrónico" value={concesionarioData?.correoElectronico} />
               <ReadonlyField label="Estado Civil" value={concesionarioData?.estadoCivil} />
-              <ReadonlyField label="Fecha Alta" value={concesionarioData?.fechaAlta} />
+              <ReadonlyField label="Fecha Alta" value={formatDate(concesionarioData?.fechaAlta)} />
               <ReadonlyField label="Estatus" value={concesionarioData?.estatus} />
             </div>
           </div>
@@ -377,8 +379,8 @@ export default function TitularModule() {
               <ReadonlyField label="Vigencia" value={concessionData?.vigencia} />
               <ReadonlyField label="Estatus" value={concessionData?.estatus} />
               <ReadonlyField label="Serie Placa" value={concessionData?.seriePlaca} />
-              <ReadonlyField label="Fecha Registro" value={concessionData?.fechaRegistro} />
-              <ReadonlyField label="Fecha Renovación" value={concessionData?.fechaRenovacion} />
+              <ReadonlyField label="Fecha Registro" value={formatDate(concessionData?.fechaRegistro)} />
+              <ReadonlyField label="Fecha Renovación" value={formatDate(concessionData?.fechaRenovacion)} />
               <ReadonlyField label="Número Expediente" value={concessionData?.numeroExpediente} />
               <ReadonlyField label="Submodalidad" value={concessionData?.submodalidad} />
             </div>
@@ -401,8 +403,8 @@ export default function TitularModule() {
               <ReadonlyField label="Folio de Pago" value={seguroData?.folioPago} />
             </div>
             <div className="space-y-3">
-              <ReadonlyField label="Fecha de Expedición" value={seguroData?.fechaExpedicion} />
-              <ReadonlyField label="Fecha de Vencimiento" value={seguroData?.fechaVencimiento} />
+              <ReadonlyField label="Fecha de Expedición" value={formatDate(seguroData?.fechaExpedicion)} />
+              <ReadonlyField label="Fecha de Vencimiento" value={formatDate(seguroData?.fechaVencimiento)} />
             </div>
           </div>
           <div className="mt-4">

@@ -1,6 +1,7 @@
 'use client';
 
 import apiClient from '@/lib/apiClient';
+import { formatDate } from '@/lib/formatDate'; // Usamos el alias @ o la ruta relativa
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';

@@ -1,6 +1,6 @@
 "use client"
 import axios from "axios";
-
+import {formatDate} from "@/lib/formatDate"; // Asegúrate de que la ruta sea correcta según tu estructura de carpetas
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Search, ChevronDown, ChevronUp, Folder, FileText, Download, Plus } from "lucide-react"
@@ -508,14 +508,14 @@ export default function VehiculoModule() {
           </div>
           <div className="space-y-3">
             <ReadonlyField label="Serie Placa" value={concessionData?.seriePlaca ?? ""} />
-            <ReadonlyField label="Fecha Registro" value={concessionData?.fechaRegistro ?? ""} />
-            <ReadonlyField label="Fecha Renovación" value={concessionData?.fechaRenovacion ?? ""} />
+            <ReadonlyField label="Fecha Registro" value={formatDate(concessionData?.fechaRegistro)?? ""} />
+            <ReadonlyField label="Fecha Renovación" value={formatDate(concessionData?.fechaRenovacion) ?? ""} />
             <ReadonlyField label="Número Expediente" value={concessionData?.numeroExpediente ?? ""} />
             <ReadonlyField label="Submodalidad" value={concessionData?.submodalidad ?? ""} />
             <ReadonlyField label="Localidad Autorizada" value={concessionData?.localidadAutorizada ?? ""} />
             <ReadonlyField label="Tipo Unidad" value={concessionData?.tipoUnidad ?? ""} />
             <ReadonlyField label="Serie Placa Anterior" value={concessionData?.seriePlacaAnterior ?? ""} />
-            <ReadonlyField label="Fecha de Vencimiento" value={concessionData?.fechaVencimiento ?? ""} />
+            <ReadonlyField label="Fecha de Vencimiento" value={formatDate(concessionData?.fechaVencimiento) ?? ""} />
           </div>
           <div className="md:col-span-2">
             <ReadonlyField label="Observaciones" value={concessionData?.observaciones ?? ""} />
@@ -531,11 +531,11 @@ export default function VehiculoModule() {
           <div className="space-y-3">
             <ReadonlyField label="Aseguradora" value={seguroData?.aseguradora ?? ""} />
             <ReadonlyField label="Folio de Pago" value={seguroData?.folioPago ?? ""} />
-            <ReadonlyField label="Fecha de Vencimiento" value={seguroData?.fechaVencimiento ?? ""} />
+            <ReadonlyField label="Fecha de Vencimiento" value={formatDate(seguroData?.fechaVencimiento) ?? ""} />
           </div>
           <div className="space-y-3">
             <ReadonlyField label="Número de Póliza" value={seguroData?.numeroPoliza ?? ""} />
-            <ReadonlyField label="Fecha de Expedición" value={seguroData?.fechaExpedicion ?? ""} />
+            <ReadonlyField label="Fecha de Expedición" value={formatDate(seguroData?.fechaExpedicion) ?? ""} />
           </div>
           <div className="md:col-span-2">
             <ReadonlyField label="Observaciones" value={seguroData?.observaciones ?? ""} />
@@ -555,7 +555,7 @@ export default function VehiculoModule() {
               <ReadonlyField label="Nombre" value={concesionarioData?.nombre ?? ""} />
               <ReadonlyField label="Apellido Paterno" value={concesionarioData?.apellidoPaterno ?? ""} />
               <ReadonlyField label="Apellido Materno" value={concesionarioData?.apellidoMaterno ?? ""} />
-              <ReadonlyField label="Fecha de Nacimiento" value={concesionarioData?.fechaNacimiento ?? ""} />
+              <ReadonlyField label="Fecha de Nacimiento" value={formatDate(concesionarioData?.fechaNacimiento) ?? ""} />
               <ReadonlyField label="Lugar de Nacimiento" value={concesionarioData?.lugarNacimiento ?? ""} />
               <ReadonlyField label="Género" value={concesionarioData?.genero ?? ""} />
             </div>
@@ -564,7 +564,7 @@ export default function VehiculoModule() {
               <ReadonlyField label="Nacionalidad" value={concesionarioData?.nacionalidad ?? ""} />
               <ReadonlyField label="Correo Electrónico" value={concesionarioData?.correoElectronico ?? ""} />
               <ReadonlyField label="Estado Civil" value={concesionarioData?.estadoCivil ?? ""} />
-              <ReadonlyField label="Fecha Alta" value={concesionarioData?.fechaAlta ?? ""} />
+              <ReadonlyField label="Fecha Alta" value={formatDate(concesionarioData?.fechaAlta) ?? ""} />
               <ReadonlyField label="Estatus" value={concesionarioData?.estatus ?? ""} />
             </div>
           </div>
@@ -661,7 +661,7 @@ export default function VehiculoModule() {
               <ReadonlyField label="Modelo" value={vehicleDetailsData?.modelo ?? ""} />
               <ReadonlyField label="Tipo de Placa" value={vehicleDetailsData?.tipoPlaca ?? ""} />
               <ReadonlyField label="Tipo de Servicio" value={vehicleDetailsData?.tipoServicio ?? ""} />
-              <ReadonlyField label="Fecha Factura" value={vehicleDetailsData?.fechaFactura ?? ""} />
+              <ReadonlyField label="Fecha Factura" value={formatDate(vehicleDetailsData?.fechaFactura) ?? ""} />
               <ReadonlyField label="Folio Factura" value={vehicleDetailsData?.folioFactura ?? ""} />
               <ReadonlyField label="Importe Factura" value={vehicleDetailsData?.importeFactura ?? ""} />
               <ReadonlyField label="Número de Motor" value={vehicleDetailsData?.numeroMotor ?? ""} />
@@ -679,7 +679,7 @@ export default function VehiculoModule() {
               <ReadonlyField label="RFV" value={vehicleDetailsData?.rfv ?? ""} />
               <ReadonlyField label="Cilindros" value={vehicleDetailsData?.cilindros ?? ""} />
               <ReadonlyField label="Número de Pasajeros" value={vehicleDetailsData?.numeroPasajeros ?? ""} />
-              <ReadonlyField label="Vigencia" value={vehicleDetailsData?.vigencia ?? ""} />
+              <ReadonlyField label="Vigencia" value={formatDate(vehicleDetailsData?.vigencia) ?? ""} />
               <ReadonlyField label="Número de Puertas" value={vehicleDetailsData?.numeroPuertas ?? ""} />
               <ReadonlyField label="Número de Toneladas" value={vehicleDetailsData?.numeroToneladas ?? ""} />
               <ReadonlyField label="Centímetros Cúbicos" value={vehicleDetailsData?.centimetrosCubicos ?? ""} />
