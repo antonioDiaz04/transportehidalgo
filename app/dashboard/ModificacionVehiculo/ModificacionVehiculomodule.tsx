@@ -247,7 +247,7 @@ export default function ModificacionVehiculo() {
         apiClient("/vehiculo/clases", { withCredentials: true }),
         apiClient("/vehiculo/tipos", { method: 'GET', withCredentials: true }),
         vehiculo.IdClase && vehiculo.IdClase !== '0' ? apiClient(`/vehiculo/categorias?idClase=${vehiculo.IdClase}`, { method: 'GET', withCredentials: true }) : Promise.resolve({ data: [] }),
-        vehiculo.ClaveCategoria && vehiculo.ClaveCategoria !== '0' ? apiClient(`/vehiculo/marcas?claveCategoria=${vehiculo.ClaveCategoria}`, { method: 'GET', withCredentials: true }) : Promise.resolve({ data: [] }),
+         apiClient(`/vehiculo/marcas?claveCategoria=${vehiculo.ClaveCategoria}`, { method: 'GET', withCredentials: true }),
         (vehiculo.IdMarca && vehiculo.IdCategoria) && (vehiculo.IdMarca !== '0' && vehiculo.IdCategoria !== '0') ? apiClient(`/vehiculo/submarcas?idMarca=${vehiculo.IdMarca}&idCategoria=${vehiculo.IdCategoria}`, { method: 'GET', withCredentials: true }) : Promise.resolve({ data: [] }),
         (vehiculo.IdClase && vehiculo.IdSubMarca) && (vehiculo.IdClase !== '0' && vehiculo.IdSubMarca !== '0') ? apiClient(`/vehiculo/versiones?idClase=${vehiculo.IdClase}&idSubMarca=${vehiculo.IdSubMarca}`, { method: 'GET', withCredentials: true }) : Promise.resolve({ data: [] }),
       ]);
