@@ -516,7 +516,7 @@ export default function ModificacionVehiculo() {
     { key: "NumeroMotor", label: "Número de Motor", type: "text", value: vehiculoData.NumeroMotor },
     { key: "NumeroSerie", label: "Número de Serie", type: "text", value: vehiculoData.NumeroSerie },
     { key: "Capacidad", label: "Capacidad", type: "text", value: vehiculoData.Capacidad },
-    { key: "IdEstatus", label: "Estatus", type: "select", value: vehiculoData.IdEstatus, options: catalogos.estatus,readonly: true, disabled: false },
+    { key: "IdEstatus", label: "Estatus", type: "select", value: vehiculoData.IdEstatus, options: catalogos.estatus,readonly: true, disabled: true },
   ];
 
   const seguroFields: Array<SeguroInputFieldPropsDynamic> = [
