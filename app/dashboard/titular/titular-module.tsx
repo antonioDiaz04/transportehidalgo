@@ -930,7 +930,7 @@ export default function TitularModule() {
                     {/* Sistema de Tabs y Contenido */}
                     <h2 className="px-4 py-3 text-lg font-semibold text-gray-800 border-b">Detalles del Concesionario</h2>
 
-                    <div className="flex border-b border-gray-200">
+                    <div className="flex border-b bg-[#f7fafc] border-gray-200">
                       {cardSections.map((section, index) => (
                         <button
                           key={index}

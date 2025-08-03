@@ -856,7 +856,10 @@ export default function VehiculoModule() {
                   `}
                       onClick={() => setActiveTab(index)}
                     >
-                      {section.title}
+                      <div className="flex items-center gap-2">
+                        {section.icon}
+                        {section.title}
+                      </div>
                     </button>
                   ))}
                 </div>
