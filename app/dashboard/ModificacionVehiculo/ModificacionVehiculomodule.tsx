@@ -220,62 +220,28 @@ export default function ModificacionVehiculo() {
     marcas: [],
     submarcas: [],
     versiones: [],
-    estatus: []
+    estatus: [],
   });
 
   const formatOptions = useCallback(
     (arr: any[], idKey: string, labelKey: string): SelectOption[] => {
       if (!Array.isArray(arr)) return [];
-      return arr.map((item) => ({
-        value: String(item[idKey] ?? ""),
-        label: String(item[labelKey] ?? ""),
-      }));
+      const uniqueOptionsMap = new Map();
+      arr.forEach(item => {
+        const idValue = String(item[idKey] ?? "");
+        if (idValue !== "" && !uniqueOptionsMap.has(idValue)) {
+          uniqueOptionsMap.set(idValue, {
+            value: idValue,
+            label: String(item[labelKey] ?? ""),
+          });
+        }
+      });
+      return Array.from(uniqueOptionsMap.values());
     },
     []
   );
 
-  const fetchDependentCatalogs = useCallback(async (vehiculo: VehiculoData) => {
-    try {
-      const [
-        clasesRes,
-        tiposRes,
-        categoriasRes,
-        marcasRes,
-        submarcasRes,
-        versionesRes,
-      ] = await Promise.all([
-        apiClient("/vehiculo/clases", { withCredentials: true }),
-        apiClient("/vehiculo/tipos", { method: 'GET', withCredentials: true }),
-        apiClient(`/vehiculo/categorias?idClase=${vehiculo.IdClase}`, { method: 'GET', withCredentials: true }),
-         apiClient(`/vehiculo/marcas?claveCategoria=${vehiculo.ClaveCategoria}`, { method: 'GET', withCredentials: true }),
-          apiClient(`/vehiculo/submarcas?idMarca=${vehiculo.IdMarca}&idCategoria=${vehiculo.IdCategoria}`, { method: 'GET', withCredentials: true }),
-         apiClient(`/vehiculo/versiones?idClase=${vehiculo.IdClase}&idSubMarca=${vehiculo.IdSubMarca}`, { method: 'GET', withCredentials: true }),
-      ]);
-
-      const estatusOptions = [
-        { value: "0", label: "No especificado" },
-        { value: "1", label: "Activo/Asignado" },
-        { value: "2", label: "Baja" },
-        { value: "3", label: "Temporal" },
-        { value: "4", label: "En trámite" },
-        { value: "5", label: "Baja temporal" },
-      ];
-
-      setCatalogos({
-        clases: formatOptions(clasesRes.data || [], "IdClase", "Clase"),
-        tipos: formatOptions(tiposRes.data || [], "IdTipoVehiculo", "TipoVehiculo"),
-        categorias: formatOptions(categoriasRes.data || [], "IdCategoria", "Categoria"),
-        marcas: formatOptions(marcasRes.data || [], "IdMarca", "Marca"),
-        submarcas: formatOptions(submarcasRes.data || [], "IdSubMarca", "SubMarca"),
-        versiones: formatOptions(versionesRes.data || [], "IdVersion", "Version"),
-        estatus: estatusOptions,
-      });
-    } catch (err) {
-      console.error("Error cargando catálogos:", err);
-      setToast({ message: "Error al cargar catálogos", type: "error" });
-    }
-  }, [formatOptions]);
-
+  // useEffect para cargar los datos iniciales del vehículo y del seguro
   useEffect(() => {
     const fetchInitialData = async () => {
       if (!idConcesion || !idVehiculo) {
@@ -319,7 +285,6 @@ export default function ModificacionVehiculo() {
           };
           
           setVehiculoData(formattedVehiculoData);
-          await fetchDependentCatalogs(formattedVehiculoData);
         }
         
         if (aseguradora) {
@@ -340,62 +305,170 @@ export default function ModificacionVehiculo() {
       }
     };
     fetchInitialData();
-  }, [idConcesion, idVehiculo, fetchDependentCatalogs]);
+  }, [idConcesion, idVehiculo]);
+
+  // useEffect para cargar catálogos de clases, tipos y estatus (independientes)
+  useEffect(() => {
+    const fetchIndependentCatalogs = async () => {
+      try {
+        const [clasesRes, tiposRes] = await Promise.all([
+          apiClient("/vehiculo/clases", { withCredentials: true }),
+          apiClient("/vehiculo/tipos", { method: 'GET', withCredentials: true }),
+        ]);
+
+        const estatusOptions = [
+          { value: "0", label: "No especificado" },
+          { value: "1", label: "Activo/Asignado" },
+          { value: "2", label: "Baja" },
+          { value: "3", label: "Temporal" },
+          { value: "4", label: "En trámite" },
+          { value: "5", label: "Baja temporal" },
+        ];
+
+        setCatalogos(prev => ({
+          ...prev,
+          clases: formatOptions(clasesRes.data || [], "IdClase", "Clase"),
+          tipos: formatOptions(tiposRes.data || [], "IdTipoVehiculo", "TipoVehiculo"),
+          estatus: estatusOptions,
+        }));
+      } catch (err) {
+        console.error("Error al cargar catálogos iniciales:", err);
+        setToast({ message: "Error al cargar catálogos iniciales", type: "error" });
+      }
+    };
+    fetchIndependentCatalogs();
+  }, [formatOptions]);
+
+  // useEffect para cargar categorías cuando IdClase cambie
+  useEffect(() => {
+    // El endpoint de categorías espera el parámetro 'idClase'
+    if (vehiculoData.IdClase) {
+      apiClient(`/vehiculo/categorias?idClase=${vehiculoData.IdClase}`, { method: 'GET', withCredentials: true })
+        .then(res => {
+          setCatalogos(prev => ({ ...prev, categorias: formatOptions(res.data, "IdCategoria", "Categoria") }));
+        })
+        .catch(err => {
+          console.error("Error cargando categorías:", err);
+          setToast({ message: "Error al cargar categorías", type: "error" });
+        });
+    } else {
+      setCatalogos(prev => ({ ...prev, categorias: [] }));
+    }
+  }, [vehiculoData.IdClase, formatOptions]);
+
+  // useEffect para cargar marcas cuando ClaveCategoria cambie
+  useEffect(() => {
+    // El endpoint de marcas espera el parámetro 'claveCategoria'
+    if (vehiculoData.ClaveCategoria) {
+      apiClient(`/vehiculo/marcas?claveCategoria=${vehiculoData.ClaveCategoria}`, { method: 'GET', withCredentials: true })
+        .then(res => {
+          setCatalogos(prev => ({ ...prev, marcas: formatOptions(res.data, "IdMarca", "Marca") }));
+        })
+        .catch(err => {
+          console.error("Error cargando marcas:", err);
+          setToast({ message: "Error al cargar marcas", type: "error" });
+        });
+    } else {
+      setCatalogos(prev => ({ ...prev, marcas: [] }));
+    }
+  }, [vehiculoData.ClaveCategoria, formatOptions]);
+
+  // useEffect para cargar submarcas cuando IdMarca y IdCategoria cambien
+  useEffect(() => {
+    // El endpoint de submarcas espera 'idMarca' e 'idCategoria'
+    if (vehiculoData.IdMarca && vehiculoData.IdCategoria) {
+      apiClient(`/vehiculo/submarcas?idMarca=${vehiculoData.IdMarca}&idCategoria=${vehiculoData.IdCategoria}`, { method: 'GET', withCredentials: true })
+        .then(res => {
+          setCatalogos(prev => ({ ...prev, submarcas: formatOptions(res.data, "IdSubMarca", "SubMarca") }));
+        })
+        .catch(err => {
+          console.error("Error cargando submarcas:", err);
+          setToast({ message: "Error al cargar submarcas", type: "error" });
+        });
+    } else {
+      setCatalogos(prev => ({ ...prev, submarcas: [] }));
+    }
+  }, [vehiculoData.IdMarca, vehiculoData.IdCategoria, formatOptions]);
+
+  // useEffect para cargar versiones cuando IdClase y IdSubMarca cambien
+  useEffect(() => {
+    // El endpoint de versiones espera 'idClase' e 'idSubMarca'
+    if (vehiculoData.IdClase && vehiculoData.IdSubMarca) {
+      apiClient(`/vehiculo/versiones?idClase=${vehiculoData.IdClase}&idSubMarca=${vehiculoData.IdSubMarca}`, { method: 'GET', withCredentials: true })
+        .then(res => {
+          setCatalogos(prev => ({ ...prev, versiones: formatOptions(res.data, "IdVersion", "Version") }));
+        })
+        .catch(err => {
+          console.error("Error cargando versiones:", err);
+          setToast({ message: "Error al cargar versiones", type: "error" });
+        });
+    } else {
+      setCatalogos(prev => ({ ...prev, versiones: [] }));
+    }
+  }, [vehiculoData.IdClase, vehiculoData.IdSubMarca, formatOptions]);
 
   const handleVehiculoChange = useCallback((field: keyof VehiculoData, value: string) => {
     setVehiculoData(prev => {
-        const newData = { ...prev, [field]: value };
-        
-        const nameMap: Record<keyof VehiculoData, keyof VehiculoData> = {
-            IdClase: 'Clase',
-            IdCategoria: 'ClaveCategoria',
-            IdMarca: 'Marca',
-            IdSubMarca: 'Submarca',
-            IdVersion: 'Version',
-            IdTipo: 'Tipo',
-            IdEstatus: 'IdEstatus'
-        } as any;
+      const newData = { ...prev, [field]: value };
+      
+      const nameMap: Record<keyof VehiculoData, keyof VehiculoData> = {
+          IdClase: 'Clase',
+          IdCategoria: 'ClaveCategoria',
+          IdMarca: 'Marca',
+          IdSubMarca: 'Submarca',
+          IdVersion: 'Version',
+          IdTipo: 'Tipo',
+          IdEstatus: 'IdEstatus'
+      } as any;
 
-        const selectedOption = (() => {
-            switch (field) {
-                case "IdClase": return catalogos.clases.find(opt => opt.value === value);
-                case "IdCategoria": return catalogos.categorias.find(opt => opt.value === value);
-                case "IdMarca": return catalogos.marcas.find(opt => opt.value === value);
-                case "IdSubMarca": return catalogos.submarcas.find(opt => opt.value === value);
-                case "IdVersion": return catalogos.versiones.find(opt => opt.value === value);
-                case "IdTipo": return catalogos.tipos.find(opt => opt.value === value);
-                case "IdEstatus": return catalogos.estatus.find(opt => opt.value === value);
-                default: return null;
-            }
-        })();
+      const selectedOption = (() => {
+        switch (field) {
+            case "IdClase": return catalogos.clases.find(opt => opt.value === value);
+            case "IdCategoria": return catalogos.categorias.find(opt => opt.value === value);
+            case "IdMarca": return catalogos.marcas.find(opt => opt.value === value);
+            case "IdSubMarca": return catalogos.submarcas.find(opt => opt.value === value);
+            case "IdVersion": return catalogos.versiones.find(opt => opt.value === value);
+            case "IdTipo": return catalogos.tipos.find(opt => opt.value === value);
+            case "IdEstatus": return catalogos.estatus.find(opt => opt.value === value);
+            default: return null;
+        }
+      })();
 
-        if (selectedOption && nameMap[field]) {
+      if (selectedOption && nameMap[field]) {
+          // Si el campo modificado es 'IdCategoria', actualizamos 'ClaveCategoria'
+          if (field === 'IdCategoria') {
+            (newData.ClaveCategoria as any) = selectedOption.label;
+          } else {
             (newData[nameMap[field]] as any) = selectedOption.label;
-        }
+          }
+      }
 
-        // Recargar catálogos dependientes solo si el campo modificado es uno de los padres y es editable
-        switch(field) {
-            case "IdClase":
-                // Aquí solo se limpia los campos dependientes para que se recarguen
-                fetchDependentCatalogs({...newData, IdCategoria: '', IdMarca: '', IdSubMarca: '', IdVersion: ''});
-                break;
-            case "IdCategoria":
-                fetchDependentCatalogs({...newData, IdMarca: '', IdSubMarca: '', IdVersion: ''});
-                break;
-            case "IdMarca":
-                fetchDependentCatalogs({...newData, IdSubMarca: '', IdVersion: ''});
-                break;
-            case "IdSubMarca":
-                fetchDependentCatalogs({...newData, IdVersion: ''});
-                break;
-            default:
-                // No se recargan los catálogos para otros campos, incluyendo estatus
-                break;
-        }
-
-        return newData;
+      // Reinicia los campos dependientes cuando se cambia un campo padre
+      if (field === "IdClase") {
+          newData.IdCategoria = '';
+          newData.ClaveCategoria = ''; // También reiniciamos ClaveCategoria
+          newData.IdMarca = '';
+          newData.IdSubMarca = '';
+          newData.IdVersion = '';
+          setCatalogos(prev => ({ ...prev, categorias: [], marcas: [], submarcas: [], versiones: [] }));
+      } else if (field === "IdCategoria") {
+          // El ID de categoría ya está en newData, lo usamos para el siguiente
+          newData.IdMarca = '';
+          newData.IdSubMarca = '';
+          newData.IdVersion = '';
+          setCatalogos(prev => ({ ...prev, marcas: [], submarcas: [], versiones: [] }));
+      } else if (field === "IdMarca") {
+          newData.IdSubMarca = '';
+          newData.IdVersion = '';
+          setCatalogos(prev => ({ ...prev, submarcas: [], versiones: [] }));
+      } else if (field === "IdSubMarca") {
+          newData.IdVersion = '';
+          setCatalogos(prev => ({ ...prev, versiones: [] }));
+      }
+      
+      return newData;
     });
-  }, [catalogos, fetchDependentCatalogs]);
+  }, [catalogos]);
 
   const handleSeguroChange = useCallback(
     (field: keyof SeguroData, value: string) => {
@@ -429,7 +502,7 @@ export default function ModificacionVehiculo() {
   const vehiculoFields: Array<SelectFieldPropsDynamic | InputFieldPropsDynamic> = [
     { key: "IdConcesion", label: "Id Concesión", type: "text", value: vehiculoData.IdConcesion, readonly: true, disabled: true },
     { key: "IdVehiculo", label: "Id Vehículo", type: "text", value: vehiculoData.IdVehiculo, readonly: true, disabled: true },
-    { key: "IdClase", label: "Clase", type: "select", value: vehiculoData.IdClase, options: catalogos.clases },
+    { key: "IdClase", label: "Clase", type: "select", value: vehiculoData.IdClase, options: catalogos.clases, disabled: false },
     { key: "PlacaAnterior", label: "Placa Anterior", type: "text", value: vehiculoData.PlacaAnterior },
     { key: "PlacaAsignada", label: "Placa Asignada", type: "text", value: vehiculoData.PlacaAsignada },
     { key: "IdTipo", label: "Tipo", type: "select", value: vehiculoData.IdTipo, options: catalogos.tipos },
@@ -443,7 +516,7 @@ export default function ModificacionVehiculo() {
     { key: "NumeroMotor", label: "Número de Motor", type: "text", value: vehiculoData.NumeroMotor },
     { key: "NumeroSerie", label: "Número de Serie", type: "text", value: vehiculoData.NumeroSerie },
     { key: "Capacidad", label: "Capacidad", type: "text", value: vehiculoData.Capacidad },
-    { key: "IdEstatus", label: "Estatus", type: "select", value: vehiculoData.IdEstatus, options: catalogos.estatus, disabled: true },
+    { key: "IdEstatus", label: "Estatus", type: "select", value: vehiculoData.IdEstatus, options: catalogos.estatus, disabled: false },
   ];
 
   const seguroFields: Array<SeguroInputFieldPropsDynamic> = [
