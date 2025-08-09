@@ -420,9 +420,9 @@ export async function generarPDF(idRV: string): Promise<jsPDF> {
         let footerY = doc.internal.pageSize.height - 20;
 
         doc.setFontSize(9);
-        doc.text('Av. de la Prensa No. 205, Col. L. García', 150, footerY);
-        doc.text('Pachuca de Soto, Hidalgo, México', 158, footerY + 5);
-        doc.text('Tel: 01 (771) 717 8000 ext. 1755', 160, footerY + 10);
+        doc.text('Avenida de Los Prismas N° 205, Colonia La Colonia', 150, footerY);
+        doc.text('Pachuca de Soto, Hidalgo; México, C.P. 42083', 158, footerY + 5);
+        doc.text('Tel: 01 (771) 717 6000 Ext. 1797', 160, footerY + 10);
         console.log('[PDF] PDF generado dinámicamente.');
         return doc;
     } catch (error) {
