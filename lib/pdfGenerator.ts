@@ -125,17 +125,27 @@ export async function generarPDF(idRV: string): Promise<jsPDF> {
         doc.setFont('helvetica');
         doc.setFontSize(12);
 
-        // --- Header Section ---
-        const logoIzquierdo = "https://res.cloudinary.com/dvvhnrvav/image/upload/v1750179371/transporte/ydrefbxmpld29lrcskkt.png";
+        // --- Imgs urls ---
+        const logoIzquierdo = "/imagens/LogotipoMovilidadHidalgo.png";
         doc.addImage(logoIzquierdo, "PNG", 15, 10, 40, 20);
 
-        const logoDerecho = "https://res.cloudinary.com/dvvhnrvav/image/upload/v1750179074/transporte/lamhdjofyqwajgu6rzno.png";
+        const logoDerecho = "/imagens/EscudodeHidalgo.png";
         doc.addImage(logoDerecho, "JPEG", 180, 10, 20, 20);
 
-        doc.setTextColor(255, 0, 0);
-        doc.text('Revista:', 179, 35);
+        // --- ETIQUETA Y VALOR DE FOLIO ---
+        /*
+         El valor se imprime en las coordenadas (188, 35). La posición X de 188 está más cerca de 179
+         */
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
         doc.setTextColor(0, 0, 0);
-        doc.text(truncateText(doc, inspectionData.IdRevistaVehicular, 30, 10, 20), 195, 35);
+        doc.setTextColor(255, 0, 0);
+        doc.text('Folio:', 178, 35);
+
+
+        doc.setTextColor(0, 0, 0);
+        doc.text(truncateText(doc, inspectionData.IdRevistaVehicular, 30, 10, 20), 188, 35);
+
 
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
@@ -297,7 +307,7 @@ export async function generarPDF(idRV: string): Promise<jsPDF> {
         // --- Código con la posición vertical más alta ---
         doc.text(`BOLSA DE AIRE: ${tipoBolsaLabel}`, 10, 170);
         doc.text(`TIPO: ${tipoVehiculoLabel}`, 90, 170);
-        doc.text(`TIPO DE FRENO: ${tipoFrenoLabel}`, 150, 170); 
+        doc.text(`TIPO DE FRENO: ${tipoFrenoLabel}`, 150, 170);
         y += 3;
 
         doc.text(`CANTIDAD DE CINTURONES: ${truncateText(doc, String(inspectionData.Cantidad), 50, 10, 20)}`, col1X, y);
@@ -309,12 +319,28 @@ export async function generarPDF(idRV: string): Promise<jsPDF> {
         doc.setFont('helvetica', 'normal');
 
         y += 10;
+        // Tu código original para el texto sin bordes
         doc.text('No. DE MOTOR:', 40, y);
         doc.text('No. DE SERIE:', 140, y);
+
+        // ---
+        // Definimos una nueva coordenada 'y' para el espacio de abajo
+        // Por ejemplo, le sumamos 10 a la coordenada 'y' original para que aparezca más abajo.
+        const y_abajo = y + 10;
+
+        // Ahora, dibuja un rectángulo más alto debajo del texto "No. DE MOTOR:"
+        doc.setDrawColor(0, 0, 0); // Color del borde: negro
+        doc.setLineWidth(0.5); // Ancho del borde: 0.5 puntos
+        // El último valor, '20', hace que el rectángulo sea más alto.
+        doc.rect(10, y_abajo - 5, 90, 30); // x, y, ancho, alto
+
+        // Y el rectángulo más alto debajo del texto "No. DE SERIE:"
+        // El último valor, '20', hace que el rectángulo sea más alto.
+        doc.rect(120, y_abajo - 5, 90, 30); // x, y, ancho, alto
         y = Math.max(y, doc.internal.pageSize.height / 2 + 30);
 
         // --- Observations and Approval Section ---
-        y += 30;
+        y += 40;
         doc.setFont('helvetica', 'bold');
         doc.text('OBSERVACIONES:', 15, y);
         doc.setFont('helvetica', 'normal');
@@ -327,7 +353,7 @@ export async function generarPDF(idRV: string): Promise<jsPDF> {
         doc.text(`APROBADO: ${formatSiNo(inspectionData.Aprobado)}`, doc.internal.pageSize.width / 2, y, { align: 'center' });
 
         // --- Signatures Section ---
-        y += 12;
+        y += 10;
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
 
@@ -346,33 +372,50 @@ export async function generarPDF(idRV: string): Promise<jsPDF> {
         let bottomPonderationY = doc.internal.pageSize.height - footerHeight - scoreClassificationHeight - 5;
         bottomPonderationY = Math.max(bottomPonderationY, y + 40);
 
-        // ...
-        // ...
+        /*
+        const lineY = inspectorY - 2;: Se define una nueva variable lineY para la posición vertical de la línea. 
+        Se resta 2 de la posición del texto (inspectorY) para que la línea quede ligeramente arriba del texto, dejando un pequeño espacio.
+        doc.line(col1X, lineY, col1X + 100, lineY);: Esta es la función clave para dibujar la línea.
+        col1X: La coordenada X de inicio de la línea.
+        lineY: La coordenada Y de inicio y fin de la línea.
+        col1X + 100: La coordenada X de fin. Se extiende 100 unidades para que sea lo suficientemente larga para una firma.
+        lineY: La coordenada Y de fin.
+        */
+
         doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
 
         const inspectorLabel = 'INSPECTOR: ';
         const inspectorName = inspectionData.Inspector;
         const inspectorY = bottomPonderationY - 15;
 
+        // Dibuja la línea horizontal para la firma
+        const lineY = inspectorY - 5; // Ajusta la posición de la línea
+        doc.line(col1X, lineY, col1X + 60, lineY);// modificado para que la línea sea más corta de 100 a 60
+        doc.setFont('helvetica', 'bold');
         // Muestra la etiqueta y el nombre del inspector, con salto de línea si es necesario
         const inspectorText = inspectorLabel + inspectorName;
         const maxWidthForInspector = 100;
         const inspectorTextLines = doc.splitTextToSize(inspectorText, maxWidthForInspector);
         doc.text(inspectorTextLines, col1X, inspectorY);
-        // ...
-        const newYForPonderation = inspectorY + (inspectorTextLines.length * 6);
-        doc.setFont('helvetica', 'bold');
+        /*
+        // **************************************************************************************
+        // esta parte del código se ha comentado porque no se está utilizando en este momento.
+        // Si en el futuro necesitas mostrar la puntuación y clasificación, puedes descomentarla y
+        // ajustar la lógica según sea necesario.
+        // **************************************************************************************
+      
+        // const newYForPonderation = inspectorY + (inspectorTextLines.length * 6);
+        // doc.setFont('helvetica', 'bold');
 
-        const puntuacionText = `PUNTUACIÓN OBTENIDA: ${truncateText(doc, String(inspectionData.Puntuacion), 40, 10, 20)}`;
-        doc.text(puntuacionText, col1X, newYForPonderation);
+        // const puntuacionText = `PUNTUACIÓN OBTENIDA: ${truncateText(doc, String(inspectionData.Puntuacion), 40, 10, 20)}`;
+        // doc.text(puntuacionText, col1X, newYForPonderation);
 
-        const puntuacionWidth = doc.getStringUnitWidth(puntuacionText) * doc.getFontSize() / doc.internal.scaleFactor;
-        const marginX = 10;
-        const newCol2X = col1X + puntuacionWidth + marginX;
+        // const puntuacionWidth = doc.getStringUnitWidth(puntuacionText) * doc.getFontSize() / doc.internal.scaleFactor;
+        // const marginX = 10;
+        // const newCol2X = col1X + puntuacionWidth + marginX;
 
-        doc.text(`CLASIFICACIÓN: ${truncateText(doc, inspectionData.Clasificacion, 60, 10, 20)}`, newCol2X, newYForPonderation);
-
+        // doc.text(`CLASIFICACIÓN: ${truncateText(doc, inspectionData.Clasificacion, 60, 10, 20)}`, newCol2X, newYForPonderation);
+        */
         // --- Footer Section ---
         let footerY = doc.internal.pageSize.height - 20;
 
@@ -380,7 +423,6 @@ export async function generarPDF(idRV: string): Promise<jsPDF> {
         doc.text('Av. de la Prensa No. 205, Col. L. García', 150, footerY);
         doc.text('Pachuca de Soto, Hidalgo, México', 158, footerY + 5);
         doc.text('Tel: 01 (771) 717 8000 ext. 1755', 160, footerY + 10);
-
         console.log('[PDF] PDF generado dinámicamente.');
         return doc;
     } catch (error) {
