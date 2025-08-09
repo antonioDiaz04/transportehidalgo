@@ -417,12 +417,17 @@ export async function generarPDF(idRV: string): Promise<jsPDF> {
         // doc.text(`CLASIFICACIÓN: ${truncateText(doc, inspectionData.Clasificacion, 60, 10, 20)}`, newCol2X, newYForPonderation);
         */
         // --- Footer Section ---
-        let footerY = doc.internal.pageSize.height - 20;
+        let footerY = doc.internal.pageSize.height - 15;
 
+        /*
+        /*******************************************************************************
+        // El valor de coordenadaX define la posición horizontal desde la izquierda. Un valor más pequeño, como 10 en este caso, lo a
+        /*******************************************************************************
+        */
         doc.setFontSize(9);
-        doc.text('Avenida de Los Prismas N° 205, Colonia La Colonia', 150, footerY);
-        doc.text('Pachuca de Soto, Hidalgo; México, C.P. 42083', 158, footerY + 5);
-        doc.text('Tel: 01 (771) 717 6000 Ext. 1797', 160, footerY + 10);
+        doc.text('Avenida de Los Prismas N° 205, Colonia La Colonia', 135, footerY);
+        doc.text('Pachuca de Soto, Hidalgo; México, C.P. 42083', 143, footerY + 5);
+        doc.text('Tel: 01 (771) 717 6000 Ext. 1797', 165, footerY + 10);
         console.log('[PDF] PDF generado dinámicamente.');
         return doc;
     } catch (error) {
