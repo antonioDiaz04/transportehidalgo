@@ -1,6 +1,6 @@
 "use client"
 import apiClient from '@/lib/apiClient'
-  
+
 import { formatDate } from '@/lib/formatDate'; // Usamos el alias @ o la ruta relativa
 
 import { useState, useEffect, useCallback } from "react"
@@ -198,9 +198,17 @@ export default function AutorizacionModule() {
   const handleSearch = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!searchTerm.trim()) return;
-
-    setIsSearching(true);
+    // **Limpia todo el estado despues de realizar nuevamente la busqueda**
     setError(null);
+    setIsSearching(true);
+    setConcessionData(null);
+    setSeguroData(null);
+    setConcesionarioData(null);
+    setVehicleDetailsData(null);
+    setSelectedExpediente(null);
+    setSearchResults([]);
+    setOpenSections([]);
+
 
     try {
       // Buscar por folio
