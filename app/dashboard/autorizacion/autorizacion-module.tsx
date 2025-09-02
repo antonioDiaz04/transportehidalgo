@@ -695,7 +695,7 @@ export default function AutorizacionModule() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     type="search"
-                    placeholder="Buscar por número de expediente, placa o folio..."
+                    placeholder="Buscar por número de autorización"
                     className="pl-10 w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
